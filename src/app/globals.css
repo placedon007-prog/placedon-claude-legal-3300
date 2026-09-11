@@ -1323,9 +1323,14 @@ code {
 }
 .legal-body h2 {
   font-size: 30px;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--track-m);
+  line-height: 1.18;
   margin: 40px 0 20px;
   scroll-margin-top: 115px;
+  font-variation-settings:
+    "opsz" 32,
+    "SOFT" 0,
+    "WONK" 0;
 }
 .legal-body h3 {
   margin: 20px 0;
@@ -1371,6 +1376,34 @@ code {
   font-size: 13px;
   margin-bottom: 30px;
   background: var(--surface);
+}
+
+/* Legal-page reveal.
+   Sections lift and settle as they scroll into view. Pure CSS scroll-driven
+   animation — no JavaScript, so the page stays a server component. Guarded
+   three ways: only with motion allowed, only where the feature exists, and
+   text never starts below the contrast floor (0.55), so a section mid-reveal
+   is always readable. Reduced-motion or older browsers get the final state. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .page-hero > *,
+    .template-banner,
+    .legal-body > * {
+      animation: legal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 32%;
+    }
+  }
+}
+@keyframes legal-rise {
+  from {
+    opacity: var(--reveal-floor);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .template-placeholder {
   font-style: italic;
