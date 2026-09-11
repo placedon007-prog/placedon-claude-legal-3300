@@ -1,5 +1,6 @@
 import { legalDocument, type LegalKind } from "@/lib/legal";
 import { LegalDocument, headingId } from "./legal-document";
+import { ScrollReveal } from "./scroll-reveal";
 import { systemContent } from "@/lib/placedon-content/content/system";
 export function LegalPage({ kind }: { kind: LegalKind }) {
   let source = legalDocument(kind);
@@ -30,7 +31,7 @@ Any optional analytics provider, data fields, storage identifiers, and retention
   const copy = systemContent.legalPages[kind];
   const headings = [...source.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   return (
-    <>
+    <ScrollReveal selector=".page-hero > *, .template-banner, .legal-body > *">
       <div className="container page-hero">
         <p className="eyebrow">Policies · Pre-launch</p>
         <h1>{copy.headline}</h1>
@@ -52,6 +53,6 @@ Any optional analytics provider, data fields, storage identifiers, and retention
         </nav>
         <LegalDocument source={source} />
       </div>
-    </>
+    </ScrollReveal>
   );
 }
