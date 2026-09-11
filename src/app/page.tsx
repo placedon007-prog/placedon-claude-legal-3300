@@ -477,7 +477,8 @@ const demos: Demo[] = [
         h: "1. Extract",
         p: (
           <>
-            The Board's Report carries the disclosures prescribed under Rule 8.
+            The Board&rsquo;s Report carries the disclosures prescribed under
+            Rule 8.
             The PoSH extract under{" "}
             <span className="dcite">Rule 8(5)(x)</span> attaches to companies
             other than a One Person Company and small companies.
@@ -744,7 +745,7 @@ export default function DashboardPage() {
           </div>
         </Reveal>
 
-        <Reveal>
+        <Reveal mode="surface">
           <div className="ddemo-stage">
             <div className="ddoc">
               <AnimatePresence mode="wait">

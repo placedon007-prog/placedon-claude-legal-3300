@@ -179,9 +179,28 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--ink) 82%, transparent);
-  backdrop-filter: saturate(140%) blur(14px);
+  /* Designed opaque default — what ships where backdrop-filter is missing or
+     transparency is reduced. */
+  background: color-mix(in srgb, var(--ink) 94%, var(--cream));
   border-bottom: 1px solid var(--line);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dnav {
+    background: rgb(12 12 13 / 0.72);
+    /* brightness() clamps the contrast floor deterministically; saturate()
+       is wrong here — it would pull colour out of the warm greys. Blur kept
+       light (18px, not the 36px chrome token) because the backdrop is a
+       document scrolling at 60fps. */
+    -webkit-backdrop-filter: blur(18px) brightness(var(--glass-clamp));
+    backdrop-filter: blur(18px) brightness(var(--glass-clamp));
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .dnav {
+    background: color-mix(in srgb, var(--ink) 94%, var(--cream));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .dnav-inner {
   display: flex;
@@ -558,11 +577,31 @@
   flex-direction: column;
   gap: 16px;
 }
+/* The Prompt/Connectors rail is the translucent READING beside the opaque
+   cream document (the record) — glass-2, styled here directly so the whole
+   card lives in one rule. Radius pulled to 10px (instrument, not pill). */
 .dcard {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--ink-2);
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-solid);
   padding: 18px;
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge-lit),
+    inset 0 -1px 0 var(--glass-seat);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dcard {
+    background: rgb(12 12 13 / var(--glass-2-tint));
+    -webkit-backdrop-filter: blur(var(--glass-2-blur)) brightness(var(--glass-clamp));
+    backdrop-filter: blur(var(--glass-2-blur)) brightness(var(--glass-clamp));
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .dcard {
+    background: var(--glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .dcard-label {
   font-size: 12px;
