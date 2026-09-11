@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
 import {
@@ -9,6 +8,7 @@ import {
   useReducedMotion,
   type Variants,
 } from "framer-motion";
+import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import "./dashboard.css";
 
 /* ---------------------------------------------------------------- icons */
@@ -103,25 +103,6 @@ const I = {
   arrowR: <path d="M4 12h15m-6-6 6 6-6 6" />,
   arrowL: <path d="M20 12H5m6 6-6-6 6-6" />,
 };
-
-/* ------------------------------------- rotating / bobbing brand logo */
-function BrandMark({ spin = false }: { spin?: boolean }) {
-  const reduce = useReducedMotion();
-  const animate = reduce ? {} : spin ? { rotate: 360 } : { y: [0, 3, 0] };
-  const transition = spin
-    ? { duration: 24, repeat: Infinity, ease: "linear" as const }
-    : { duration: 3.4, repeat: Infinity, ease: "easeInOut" as const };
-  return (
-    <motion.span
-      style={{ display: "inline-flex" }}
-      animate={animate}
-      transition={transition}
-      whileHover={reduce ? {} : { y: spin ? 0 : 3, scale: 1.06 }}
-    >
-      <Image src="/brand/placedon-white.png" alt="" width={23} height={26} />
-    </motion.span>
-  );
-}
 
 /* -------------------------------- section icon with a small wiggle */
 function SecIcon({ d, size = 42 }: { d: ReactNode; size?: number }) {
@@ -328,7 +309,7 @@ const features = [
   {
     icon: I.plug,
     title: "Connected to your filings",
-    body: "Placedon reads from MCA21 filings, board minutes, and your statutory registers — no re-keying, no copy-paste, no re-explaining the company each time you open a question.",
+    body: "Placedon is built to read from MCA21 filings, board minutes, and your statutory registers — no re-keying, no copy-paste, no re-explaining the company each time you open a question.",
   },
   {
     icon: I.checks,
@@ -562,25 +543,6 @@ const resources = [
   { title: "Reading the obligation matrix", kind: "Guide", icon: I.grid },
 ];
 
-const footerCols = [
-  {
-    label: "Product",
-    links: ["The record", "Placedon Matrix", "Placedon for Word", "Plugins", "Platform", "Pricing"],
-  },
-  {
-    label: "Solutions",
-    links: ["Company secretaries", "In-house counsel", "Advisors", "Startups", "Annual filings"],
-  },
-  {
-    label: "Evidence",
-    links: ["How the record works", "Abstention", "Source defects", "Benchmark", "Changelog"],
-  },
-  {
-    label: "Company",
-    links: ["About", "Careers", "Privacy", "Terms", "Contact"],
-  },
-];
-
 /* small helper: ledger index eyebrow */
 function Index({ n, label }: { n: string; label: string }) {
   return (
@@ -599,41 +561,13 @@ export default function DashboardPage() {
   return (
     <div className="dash">
       {/* NAV */}
-      <header className="dnav">
-        <div className="dash-container dnav-inner">
-          <Link href="#top" className="dnav-brand" aria-label="Placedon">
-            <BrandMark />
-            Placedon
-          </Link>
-          <nav className="dnav-links" aria-label="Primary">
-            <Link href="#product">Product</Link>
-            <Link href="#solutions">Solutions</Link>
-            <Link href="#evidence">Evidence</Link>
-            <Link href="#resources">Resources</Link>
-          </nav>
-          <div className="dnav-actions">
-            <Link href="#pilot" className="dnav-login">
-              Log in
-            </Link>
-            <Link href="#pilot" className="dbtn dbtn-ghost">
-              Contact
-            </Link>
-            <Link href="#pilot" className="dbtn dbtn-solid">
-              Request a pilot
-            </Link>
-            <button className="dnav-burger" aria-label="Open menu">
-              <span />
-              <span />
-            </button>
-          </div>
-        </div>
-      </header>
+      <SiteNav />
 
       {/* breadcrumb */}
       <div className="dcrumb" id="top">
         <div className="dash-container dcrumb-inner">
           <span>
-            Solutions <span className="sep">/</span> Placedon legal solutions
+            Placedon <span className="sep">/</span> Indian corporate law
           </span>
           <span className="dcrumb-here">
             Explore here <Icon d={<path d="m6 9 6 6 6-6" />} size={16} />
@@ -644,7 +578,7 @@ export default function DashboardPage() {
       {/* HERO */}
       <section className="dash-container dsection dhero dsection-flush">
         <Reveal>
-          <span className="eyebrow">Placedon Legal Solutions</span>
+          <span className="eyebrow">Placedon · Indian corporate law</span>
           <h1>Compliance you can put in front of a judge.</h1>
           <p className="lead">
             Placedon answers Indian corporate-law questions with the exact
@@ -789,7 +723,7 @@ export default function DashboardPage() {
       </section>
 
       {/* TOOLS */}
-      <section id="solutions" className="dash-container dsection">
+      <section id="tools" className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 20 }}>
             <SecIcon d={I.bag} size={42} />
@@ -928,43 +862,7 @@ export default function DashboardPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="dfoot">
-        <div className="dash-container">
-          <div className="dfoot-top">
-            <div>
-              <Link href="#top" className="dnav-brand" aria-label="Placedon">
-                <BrandMark spin />
-                Placedon
-              </Link>
-              <div className="dfoot-ask">
-                How can I help you today?
-                <span>
-                  <Icon d={I.arrowR} size={16} />
-                </span>
-              </div>
-            </div>
-            <div className="dfoot-cols">
-              {footerCols.map((col) => (
-                <div className="dfoot-col" key={col.label}>
-                  <div className="dfoot-col-label">{col.label}</div>
-                  {col.links.map((l) => (
-                    <Link href="#top" key={l}>
-                      {l}
-                    </Link>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="dfoot-bottom">
-            <span>
-              © <span className="mono">2026</span> Placedon
-            </span>
-            <span>A witness, not a tool.</span>
-            <span>Not legal advice.</span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

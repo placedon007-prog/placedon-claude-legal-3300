@@ -1,6 +1,7 @@
 import { legalDocument, type LegalKind } from "@/lib/legal";
 import { LegalDocument, headingId } from "./legal-document";
 import { ScrollReveal } from "./scroll-reveal";
+import { SiteNav, SiteFooter } from "./site-chrome";
 import { systemContent } from "@/lib/placedon-content/content/system";
 export function LegalPage({ kind }: { kind: LegalKind }) {
   let source = legalDocument(kind);
@@ -31,28 +32,32 @@ Any optional analytics provider, data fields, storage identifiers, and retention
   const copy = systemContent.legalPages[kind];
   const headings = [...source.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   return (
-    <ScrollReveal selector=".page-hero > *, .template-banner, .legal-body > *">
-      <div className="container page-hero">
-        <p className="eyebrow">Policies · Pre-launch</p>
-        <h1>{copy.headline}</h1>
-        <p className="page-intro">{copy.subhead}</p>
-      </div>
-      <div className="container">
-        <aside className="template-banner">
-          {copy.notice} Business details remain subject to confirmation before
-          registration opens.
-        </aside>
-      </div>
-      <div className="container legal-layout">
-        <nav className="legal-toc" aria-label="Document sections">
-          {headings.map((heading) => (
-            <a key={heading} href={`#${headingId(heading)}`}>
-              {heading}
-            </a>
-          ))}
-        </nav>
-        <LegalDocument source={source} />
-      </div>
-    </ScrollReveal>
+    <div className="dash">
+      <SiteNav />
+      <ScrollReveal selector=".page-hero > *, .template-banner, .legal-body > *">
+        <div className="container page-hero">
+          <p className="eyebrow">Policies · Pre-launch</p>
+          <h1>{copy.headline}</h1>
+          <p className="page-intro">{copy.subhead}</p>
+        </div>
+        <div className="container">
+          <aside className="template-banner">
+            {copy.notice} Business details remain subject to confirmation before
+            registration opens.
+          </aside>
+        </div>
+        <div className="container legal-layout">
+          <nav className="legal-toc" aria-label="Document sections">
+            {headings.map((heading) => (
+              <a key={heading} href={`#${headingId(heading)}`}>
+                {heading}
+              </a>
+            ))}
+          </nav>
+          <LegalDocument source={source} />
+        </div>
+      </ScrollReveal>
+      <SiteFooter />
+    </div>
   );
 }
