@@ -139,17 +139,23 @@ function SecIcon({ d, size = 42 }: { d: ReactNode; size?: number }) {
   );
 }
 
-/* ---------------------------- heading with word-reveal typography */
+/* ---------------------------- heading with word-reveal typography
+   Words rise from behind a clipped edge rather than fading up. A fade sets
+   every word to opacity 0 first, so on a five-word heading the last word was
+   still invisible three quarters of a second in — the headline read as a
+   fragment ("How…") for most of the reveal. A mask wipe paints each word at
+   full contrast or not at all. */
+const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
+
 const h2Container: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.045 } },
 };
 const h2Word: Variants = {
-  hidden: { opacity: 0, y: "0.5em" },
+  hidden: { y: "110%" },
   show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.22, 0.61, 0.36, 1] },
+    y: "0%",
+    transition: { duration: 0.42, ease: EASE },
   },
 };
 function AnimatedH2({ children }: { children: string }) {
@@ -165,9 +171,11 @@ function AnimatedH2({ children }: { children: string }) {
     >
       {words.map((w, i) => (
         <Fragment key={i}>
-          <motion.span variants={h2Word} style={{ display: "inline-block" }}>
-            {w}
-          </motion.span>
+          <span className="dword">
+            <motion.span className="dword-in" variants={h2Word}>
+              {w}
+            </motion.span>
+          </span>
           {i < words.length - 1 ? " " : ""}
         </Fragment>
       ))}
@@ -263,24 +271,45 @@ function HeroVideo() {
 }
 
 /* ------------------------------------------------------------- reveal */
+/**
+ * Scroll reveal.
+ *
+ * Text never starts at `opacity: 0`. Cream on ink falls under the 4.5:1 AA
+ * floor below roughly alpha 0.48, so a fade from zero leaves a window where
+ * the words are on screen and unreadable — the reason headings looked broken
+ * while scrolling. Reveals start at --reveal-floor (0.55) and mostly move.
+ *
+ * `mode="surface"` animates transform only. An ancestor at opacity < 1 becomes
+ * a backdrop root, which silently kills `backdrop-filter` on any glass inside
+ * it, so anything carrying glass must use this mode.
+ */
+const REVEAL_FLOOR = 0.55;
+
 function Reveal({
   children,
   delay = 0,
   className,
+  mode = "text",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
+  mode?: "text" | "surface";
 }) {
   const reduce = useReducedMotion();
-  const variants: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : 20 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.55, delay, ease: [0.22, 0.61, 0.36, 1] },
-    },
-  };
+
+  // Reduced motion renders the final state — no movement, no fade.
+  const variants: Variants = reduce
+    ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
+    : {
+        hidden: { opacity: mode === "surface" ? 1 : REVEAL_FLOOR, y: 14 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.32, delay, ease: EASE },
+        },
+      };
+
   return (
     <motion.div
       className={className}

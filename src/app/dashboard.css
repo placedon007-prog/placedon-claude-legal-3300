@@ -32,30 +32,64 @@
   margin-inline: auto;
 }
 
-/* ---- type ---- */
+/* ---- type ----
+   One tracking and one leading used to cover an 88px h1 and a 22px h3, which
+   is why the small headings read cramped. Each tier now carries its own
+   optical size, tracking and leading. */
 .dash h1,
 .dash h2,
 .dash h3 {
   margin: 0;
   font-family: var(--font-display), serif;
-  font-weight: 440;
-  letter-spacing: -0.03em;
-  line-height: 1.04;
   text-wrap: balance;
 }
 .dash h1 {
   font-size: clamp(44px, 6vw, 88px);
+  font-weight: 400;
+  letter-spacing: var(--track-xl);
+  line-height: var(--lead-xl);
+  font-variation-settings:
+    "opsz" var(--opsz-xl),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash h2 {
-  font-size: clamp(34px, 4.4vw, 60px);
+  font-size: clamp(34px, 4.4vw, 58px);
+  font-weight: 420;
+  letter-spacing: var(--track-l);
+  line-height: var(--lead-l);
+  font-variation-settings:
+    "opsz" var(--opsz-l),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash h3 {
   font-size: clamp(22px, 2vw, 27px);
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: var(--track-m);
+  line-height: var(--lead-m);
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash p {
   margin: 0;
-  max-width: 60ch;
+  max-width: 62ch;
+}
+
+/* Word mask for the heading reveal. The padding/negative-margin pair keeps
+   descenders and accents outside the clip, so `overflow: hidden` trims the
+   travelling word and nothing else. */
+.dword {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding: 0.1em 0 0.18em;
+  margin: -0.1em 0 -0.18em;
+}
+.dword-in {
+  display: inline-block;
 }
 .dash .eyebrow {
   font-family: var(--font-body), sans-serif;
@@ -161,8 +195,13 @@
   gap: 10px;
   font-family: var(--font-display), serif;
   font-size: 22px;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: var(--track-m);
   color: var(--cream);
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dnav-brand img {
   display: block;
@@ -372,8 +411,13 @@
 .dfeature-title {
   font-family: var(--font-display), serif;
   font-size: 25px;
-  letter-spacing: -0.02em;
-  line-height: 1.12;
+  font-weight: 500;
+  letter-spacing: var(--track-m);
+  line-height: 1.2;
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dfeature-body {
   color: var(--muted);
@@ -472,7 +516,13 @@
   margin: 0;
   font-family: var(--font-display), serif;
   font-size: 30px;
-  letter-spacing: -0.02em;
+  font-weight: 460;
+  letter-spacing: var(--track-m);
+  line-height: 1.18;
+  font-variation-settings:
+    "opsz" 32,
+    "SOFT" 0,
+    "WONK" 0;
 }
 .ddoc-meta {
   font-style: italic;
@@ -1129,6 +1179,10 @@
 .prin-card h3 {
   font-family: var(--font-display), serif;
   font-size: 24px;
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .prin-card p {
   color: var(--muted);
@@ -1158,9 +1212,14 @@
   border-radius: 0;
   font-family: var(--font-display), serif;
   font-size: 20px;
-  letter-spacing: -0.015em;
-  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: var(--track-m);
+  line-height: 1.25;
   color: var(--cream);
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 
 /* hero video */

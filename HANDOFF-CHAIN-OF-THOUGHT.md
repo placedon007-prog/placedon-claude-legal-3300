@@ -240,3 +240,37 @@ abstention/uncertainty states). Each section = specific Placedon recommendations
 - ⏸ 4 analysis dossiers NOT written (agents died on spend limit) — must rerun (§9).
 - ⏸ No design spec yet; no code changes made; :3300 untouched; no git in :3300 yet.
 - 🔒 Nothing built — brainstorming HARD-GATE still closed (design not yet approved).
+
+---
+
+# 13. RESUME POINT — updated 2026-09-11 (session-2, after session limit hit; resets ~17:10 IST)
+
+**All four dossiers ARE now written** (superseding §12) — in `docs/specs/` (committed) and
+`scratchpad/analysis/`: `3300-codebase-dossier.md`, `codex12-claude13-integration-dossier.md`,
+`backend-architecture-dossier.md`, `design-research-dossier.md`, `visual-audit-3300.md`.
+
+**Design spec approved and committed:** `docs/specs/2026-09-11-placedon-frontend-redesign-design.md`.
+Owner decisions are settled in its §7: multi-page restore; autonomous execution; keep hero.mp4 but
+grade it into the dark palette (do NOT delete). Earlier locks unchanged (glass = signature layer;
+keep+perfect Fraunces/Inter/Plex Mono; richer reduced-motion-safe motion).
+
+**The 9-layer build plan is in the spec §6.** Progress so far:
+
+| Layer | State |
+|---|---|
+| 0 Truth | ✅ DONE. `AGENTS.md` fixed (deleted false `/standing` route + `/ask`; banned "Join the waitlist"; added the 6 real routes; added the "transport error ≠ abstention" rule; added the no-accuracy-claims rule). Palette already single-sourced in `tokens.ts`/`globals.css`. |
+| 1 Engine | ⚠ PARTIAL — sub-agent died mid-build. WROTE: `src/lib/engine/{types.ts, errors.ts, http.ts, server-guard.ts}`. MISSING: `provider.ts` (interface + `getEngine()` reading `PLACEDON_API_ORIGIN` inside the fn, `import "server-only"`), `mock.ts` (deterministic fixtures incl. an abstained one; same zod schemas as http.ts), `index.ts` (re-exports). Also still TODO: add `PLACEDON_API_ORIGIN` to `.env.example`; retire the fictional `src/lib/api.ts` once callers move over. **tsc currently FAILS** solely because `http.ts` imports the missing `./provider`. Finish these 3 files → tsc green. (`server-guard.ts` is the agent's substitute because the `server-only` npm pkg may not be installed — check and prefer real `server-only`.) |
+| 2 Type system | ✅ DONE. Root cause of "font not perfect" fixed. Fraunces axes parsed from the ttf: opsz 9..144 **default 9**, wght default **900**, WONK default **1**. Fixes applied in `globals.css` + `dashboard.css`: WONK/SOFT 0 + tabular-nums set once on `body` (inherited), per-tier `opsz`/tracking/leading tokens (`--opsz-*`, `--track-*`, `--lead-*`), explicit `font-variation-settings` per heading tier, weight normalised off 900. Verified served CSS carries the `--opsz-*` tokens. |
+| 3 Motion | ✅ DONE (code). `page.tsx`: `Reveal` now floors text opacity at 0.55 and has a `mode="surface"` (transform-only) variant to avoid the backdrop-root trap for glass; reduced-motion renders final state. `AnimatedH2` switched from opacity-fade-per-word to a **mask wipe** (`.dword`/`.dword-in` in dashboard.css) so headings never paint at low contrast (fixes the "only the word 'Built'/'How' visible while scrolling" illegibility). One shared `EASE` + `--dur-*` tokens. NOT yet visually verified in browser (extension disconnected after account switch). |
+| 4 Glass | ⏳ NEXT. Tokens are already defined in `globals.css` (`--glass-*`, tiers 1/2/3, clamp, edges, cast, solid fallback). STILL TODO: author the `.glass-1/2/3` classes + `@supports (backdrop-filter)` progressive enhancement + `prefers-reduced-transparency` + `prefers-contrast` branches, then apply to nav (glass-3), citation/status chips (glass-1), provenance + abstain rail (glass-2, abstain uses cool-grey `#5B6472` surface). Rules in spec §3.2 and design-research-dossier §2.2 (blur+brightness(0.55) clamp, NOT saturate; interactive glass needs ≥3:1 boundary; ≤3 backdrop surfaces/viewport; never animate blur; never fade a glass panel's own opacity). |
+| 5 Recover dead layer | ⏳ TODO. Wire `src/lib/placedon-content/*` + `seo/{metadata,structured-data}` (call `pageMetadata()` in `layout.tsx` instead of hard-coded metadata; emit JSON-LD). Build `/privacy` `/terms` `/cookies` routes from the existing legal `.md` + `legal-page.tsx`/`legal-document.tsx`. Consider borrowing `:3200`'s `app/[slug]/page.tsx` (adds 11 routes, revives 4 orphans). Restore `evidence-card.tsx:85-118`'s APG roving-tabindex tabs into the live demo (better a11y than the live tabs). Delete ~1,150 dead lines in globals.css + ~250 in dashboard.css. |
+| 6 Hero + features | ⏳ TODO. Grade the white hero.mp4 block into the dark palette (owner: keep it). Make the ONE orchestrated hero moment. Animated feature explainers. |
+| 7 Product surfaces | ⏳ TODO. compliance-pack · events · document-check · instrument-affected on the Mock engine (needs Layer 1 finished). State→UI map incl. a **visibly distinct transport-error state** (spec §4.1). |
+| 8 Verify | ⏳ TODO. a11y AA, reduced-motion, 360px, `npm run lint` + `tsc --noEmit` + `node tests/contracts.mjs` + `npx next build`, screenshots both themes. |
+
+**DO THIS FIRST on resume:** finish Layer 1's 3 missing files (`provider.ts`, `mock.ts`, `index.ts`) so
+`npx tsc --noEmit` goes green again, then proceed to Layer 4 (glass classes). Do NOT delete the partial
+engine files. `:3200` still must never be modified. Both dev servers were on :3300/:3200.
+
+**Repo:** github.com/placedon007-prog/placedon-claude-legal-3300 (branch `main`). Push WIP after each work
+session. Browser extension needs re-pairing to the active claude.ai account for the visual pass.

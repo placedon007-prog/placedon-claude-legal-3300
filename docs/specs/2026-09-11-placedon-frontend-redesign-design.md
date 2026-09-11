@@ -165,11 +165,16 @@ browser check at :3300. Commit per layer. Never force-push.
 
 ---
 
-## 7. Open decision for the owner
-**Scope:** single landing page, or restore the full multi-page site?
-Recommendation: **multi-page.** `/privacy` must exist (you asked for animation there), `/terms` and `/cookies`
-are table stakes for a legal product, the SEO layer already declares 11 routes, and `:3200`'s
-`app/[slug]/page.tsx` (176 lines) adds 11 routes and revives four orphans. The content is already written.
+## 7. Owner decisions — SETTLED 2026-09-11
+1. **Scope: restore the full multi-page site.** Build `/privacy`, `/terms`, `/cookies` and the SEO-declared
+   routes by rewiring the dead content layer.
+2. **Execution: approved, autonomous.** Layers 0→8 executed without per-layer checkpoints; escalate only on a
+   genuine decision.
+3. **Hero video: keep `hero.mp4`, fix the tone.** Grade/mask it into the dark palette so it no longer flashes
+   white — do NOT delete it.
+
+Earlier locked decisions (unchanged): glass as a signature layer; keep and perfect Fraunces/Inter/IBM Plex Mono;
+motion purposeful and richer but reduced-motion safe.
 
 ---
 

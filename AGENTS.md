@@ -30,7 +30,10 @@ change — check them before you consider any task done.
 ## Honesty — do not overclaim
 - **Pre-launch framing.** No live-corpus, customer-count, or accuracy-track-record claims. No fabricated
   metrics or logo clouds. **Never invent a statutory figure/section/date** — if unsure, show the abstain
-  state, don't guess. Primary CTAs: "Request a pilot" / "Join the waitlist."
+  state, don't guess. Primary CTA: **"Request a pilot."**
+  ⚠ **"Join the waitlist" is BANNED** (retired by codex 1.2). Never reintroduce it.
+- **Never claim an accuracy rate.** Stanford RegLab's *Hallucination-Free?* (arXiv:2405.20362) measured 17–33%
+  hallucination in legal AI. "Hallucination-free", "100% accurate" and confidence percentages are forbidden.
 - Privacy policy and any legal copy are templates for counsel review, marked "not legal advice."
 
 ## Design & motion discipline
@@ -45,9 +48,22 @@ change — check them before you consider any task done.
 - TypeScript strict; eslint/prettier clean; builds and runs. Accessible: WCAG AA, visible focus,
   keyboard nav, 44px targets, labelled controls, no colour-only status (the answer classes must be
   distinguishable without colour).
-- Product data behind a typed API client with a `MockProvider` now and an `HttpProvider` matching the
-  real backend contracts (`/v1/compliance-pack`, `/v1/company/{cin}/standing`, `/v1/company/{cin}/events`;
-  output classes `verified_fact | deterministic_conclusion | predictive_signal` + `abstained`).
+- Product data behind a typed engine client (`src/lib/engine/*`) with a `MockProvider` now and an
+  `HttpProvider` matching the real backend. Output classes
+  `verified_fact | deterministic_conclusion | predictive_signal` + `abstained`.
+  **The backend has exactly SIX routes** (verified against `checker/api.py`):
+  `GET /v1/health` · `POST /v1/compliance-pack` · `POST /v1/document-check` ·
+  `GET /v1/company/{cin}/events` · `GET /v1/company/{cin}/events/{event_id}` ·
+  `GET /v1/instruments/{fragment}/affected`.
+  ⚠ **`/v1/company/{cin}/standing` DOES NOT EXIST** — nor does `/v1/ask`. Earlier revisions of this file
+  documented `/standing`; that was wrong. Do not call it.
+  ⚠ `/events` is **not** per-company: `cin` is echoed back but never used to filter. No UI may promise
+  "this company's events."
+  ⚠ **A transport failure must NEVER render as an abstention.** Abstention is a verified product state;
+  a network/DNS/5xx error is a separate, visibly distinct state. Use `EngineResult<T>`, never
+  `catch { return abstention }`.
+  ⚠ The engine is plain HTTP on `127.0.0.1:8020`, unauthenticated, no CORS. It is **server-only** —
+  never import a provider into a `"use client"` module (it would inline the token into the public bundle).
 - Forms (waitlist/pilot): server-side validation (zod), honeypot, pluggable sink via env, recorded
   consent, no secrets in the repo, `.env.example` maintained. **Fail closed** — never render a
   fabricated legal figure when data is missing; show the abstain state.
