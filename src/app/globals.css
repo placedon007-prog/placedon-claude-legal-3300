@@ -332,13 +332,33 @@ code {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  transition: opacity 160ms;
+  transition:
+    opacity 160ms,
+    transform var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
 }
 .button:hover {
-  opacity: 0.8;
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
+}
+.button:active {
+  transform: translateY(0) scale(0.97);
 }
 .button svg {
   flex-shrink: 0;
+  transition: transform var(--dur-2) var(--ease);
+}
+.button:hover svg {
+  transform: translateX(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button:hover,
+  .button:active,
+  .button:hover svg {
+    transform: none;
+  }
 }
 .button-gold {
   background: var(--gold);

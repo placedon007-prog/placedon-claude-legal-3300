@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Analytics } from "@/components/analytics";
 import "./globals.css";
 
 const fraunces = localFont({
@@ -51,6 +52,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <main id="main-content">{children}</main>
+        <Analytics />
       </body>
     </html>
   );

@@ -4,6 +4,13 @@ import Link from "next/link";
 import { formContent } from "@/lib/placedon-content/content/waitlist";
 import type { FormFieldCopy } from "@/lib/placedon-content/content/types";
 type Intent = "waitlist" | "pilot";
+
+/**
+ * Where a request is emailed while no submission backend is wired.
+ * Change this to your pilot inbox. Note: an address in page source can be
+ * scraped, so prefer a dedicated address over a personal one.
+ */
+const REQUEST_EMAIL = "heshjain123@gmail.com";
 export function RequestForm({
   initialIntent,
   enabled,
@@ -18,6 +25,7 @@ export function RequestForm({
   const [intent, setIntent] = useState<Intent>(initialIntent);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [sentByEmail, setSentByEmail] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [invalid, setInvalid] = useState<string[]>([]);
   const requestId = useRef<string | null>(null);
@@ -37,11 +45,40 @@ export function RequestForm({
   }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!enabled || pending) return;
+    if (pending) return;
+    const formEl = event.currentTarget;
+    if (!formEl.checkValidity()) {
+      formEl.reportValidity();
+      return;
+    }
+
+    // No submission backend wired yet → send via the visitor's email client.
+    // When a reviewed sink is configured (`enabled`), the recorded flow below runs instead.
+    if (!enabled) {
+      const data = new FormData(formEl);
+      const label = intent === "pilot" ? "Pilot request" : "Register interest";
+      const lines = [
+        `Request type: ${label}`,
+        `Email: ${data.get("email") ?? ""}`,
+        `Name: ${data.get("name") ?? ""}`,
+        `Organisation: ${data.get("organisation") ?? ""}`,
+        `Role: ${data.get("role") ?? ""}`,
+      ];
+      if (intent === "pilot")
+        lines.push(`Workflow to review: ${data.get("workflow") ?? ""}`);
+      const href = `mailto:${REQUEST_EMAIL}?subject=${encodeURIComponent(
+        `Placedon — ${label}`,
+      )}&body=${encodeURIComponent(lines.join("\n"))}`;
+      window.location.assign(href);
+      setSentByEmail(true);
+      setSuccess(true);
+      return;
+    }
+
     setPending(true);
     setFeedback("");
     setInvalid([]);
-    const data = new FormData(event.currentTarget);
+    const data = new FormData(formEl);
     const payload = {
       ...Object.fromEntries(data),
       intent,
@@ -100,13 +137,29 @@ export function RequestForm({
   if (success)
     return (
       <div className="request-form" role="status">
-        <p className="eyebrow">Request recorded</p>
-        <h2>{copy.success.title}</h2>
-        <p>{copy.success.description}</p>
-        {feedback && <p className="form-feedback">{feedback}</p>}
-        <Link className="text-link" href={copy.success.action.href}>
-          {copy.success.action.label}
-        </Link>
+        {sentByEmail ? (
+          <>
+            <p className="eyebrow">Almost done</p>
+            <h2>Your email is ready to send.</h2>
+            <p>
+              We&rsquo;ve opened a pre-filled email in your mail app. Send it to
+              reach the Placedon team — nothing is submitted until you do.
+            </p>
+            <Link className="text-link" href="/product">
+              Read the product concept
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="eyebrow">Request recorded</p>
+            <h2>{copy.success.title}</h2>
+            <p>{copy.success.description}</p>
+            {feedback && <p className="form-feedback">{feedback}</p>}
+            <Link className="text-link" href={copy.success.action.href}>
+              {copy.success.action.label}
+            </Link>
+          </>
+        )}
       </div>
     );
   return (
@@ -129,15 +182,9 @@ export function RequestForm({
           </button>
         ))}
       </div>
-      {!enabled && (
-        <div className="form-notice">
-          <strong>{formContent.errors.unavailable.title}</strong>
-          {formContent.errors.unavailable.description}
-        </div>
-      )}
       <p className="small muted">{copy.description}</p>
       <fieldset
-        disabled={!enabled || pending}
+        disabled={pending}
         style={{ border: 0, padding: 0, margin: 0 }}
       >
         <legend className="sr-only">Contact details and consent</legend>
@@ -231,7 +278,7 @@ export function RequestForm({
       <button
         className="button form-submit"
         type="submit"
-        disabled={!enabled || pending}
+        disabled={pending}
       >
         {pending ? copy.pendingLabel : copy.submitLabel}
       </button>
