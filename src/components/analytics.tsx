@@ -1,20 +1,17 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import Script from "next/script";
+import { useEffect, useSyncExternalStore } from "react";
 
 /**
  * Consent-gated Google Analytics 4 + cookie-consent banner.
  *
  * Analytics is OFF by default and loads only after the visitor clicks Accept —
- * which is what the privacy policy promises ("only collected if you consent").
- * The choice is stored on the device under `placedon-analytics-consent` and read
- * via useSyncExternalStore (SSR-safe: the server snapshot is always "no choice").
+ * which is what the privacy policy promises. On Accept, the gtag script is
+ * injected directly into <head> (more reliable than a conditionally-rendered
+ * next/script). Skipped on localhost so local development never reaches GA.
  *
- * The Measurement ID is public (it ships in client JS), so it is baked in and
- * works on any production deploy with no extra config; override or disable it
- * with NEXT_PUBLIC_GA_ID. GA loads in production only, so local dev never
- * reaches your reports.
+ * The Measurement ID is public (it ships in client JS); override with
+ * NEXT_PUBLIC_GA_ID or set it empty to disable.
  */
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "G-DE8BMPJRVL";
 const CONSENT_KEY = "placedon-analytics-consent";
@@ -49,53 +46,52 @@ function setConsent(value: "granted" | "denied") {
 
 export function Analytics() {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const consent = raw === "granted" ? "granted" : raw === "denied" ? "denied" : null;
+  const consent =
+    raw === "granted" ? "granted" : raw === "denied" ? "denied" : null;
 
-  const isProduction = process.env.NODE_ENV === "production";
-  const loadGA = isProduction && !!GA_ID && consent === "granted";
+  useEffect(() => {
+    if (consent !== "granted" || !GA_ID) return;
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return;
+    if (document.getElementById("ga4-src")) return; // already loaded
+
+    const tag = document.createElement("script");
+    tag.id = "ga4-src";
+    tag.async = true;
+    tag.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+    document.head.appendChild(tag);
+
+    const init = document.createElement("script");
+    init.id = "ga4-init";
+    init.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${GA_ID}');`;
+    document.head.appendChild(init);
+  }, [consent]);
+
+  if (consent !== null) return null;
 
   return (
-    <>
-      {loadGA && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-            strategy="afterInteractive"
-          />
-          <Script id="ga4-init" strategy="afterInteractive">
-            {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_ID}');`}
-          </Script>
-        </>
-      )}
-
-      {consent === null && (
-        <div className="consent-banner" role="dialog" aria-label="Cookie choice">
-          <p className="consent-text">
-            We use Google Analytics to understand how the site is used — no
-            personal data, no advertising. It stays off unless you accept.{" "}
-            <a href="/cookies">How we use data</a>.
-          </p>
-          <div className="consent-actions">
-            <button
-              type="button"
-              className="consent-btn consent-ghost"
-              onClick={() => setConsent("denied")}
-            >
-              Decline
-            </button>
-            <button
-              type="button"
-              className="consent-btn consent-solid"
-              onClick={() => setConsent("granted")}
-            >
-              Accept analytics
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+    <div className="consent-banner" role="dialog" aria-label="Cookie choice">
+      <p className="consent-text">
+        We use Google Analytics to understand how the site is used — no personal
+        data, no advertising. It stays off unless you accept.{" "}
+        <a href="/cookies">How we use data</a>.
+      </p>
+      <div className="consent-actions">
+        <button
+          type="button"
+          className="consent-btn consent-ghost"
+          onClick={() => setConsent("denied")}
+        >
+          Decline
+        </button>
+        <button
+          type="button"
+          className="consent-btn consent-solid"
+          onClick={() => setConsent("granted")}
+        >
+          Accept analytics
+        </button>
+      </div>
+    </div>
   );
 }
