@@ -10,6 +10,7 @@ import {
   type Variants,
 } from "framer-motion";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
+import { track } from "@/lib/track";
 import "./dashboard.css";
 
 /* ---------------------------------------------------------------- icons */
@@ -628,10 +629,18 @@ export default function DashboardPage() {
               abstains when it cannot verify.
             </p>
             <div className="dhero-img-actions">
-              <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
+              <Link
+                href="/waitlist?intent=pilot"
+                className="dbtn dbtn-solid"
+                onClick={() => track("request_pilot_click", { location: "hero" })}
+              >
                 Request a pilot
               </Link>
-              <Link href="#evidence" className="dbtn dbtn-ghost">
+              <Link
+                href="#evidence"
+                className="dbtn dbtn-ghost"
+                onClick={() => track("see_evidence_click", { location: "hero" })}
+              >
                 See the evidence
               </Link>
             </div>
@@ -722,7 +731,10 @@ export default function DashboardPage() {
                 aria-selected={i === tab}
                 data-active={i === tab}
                 className="ddemo-tab"
-                onClick={() => setTab(i)}
+                onClick={() => {
+                  setTab(i);
+                  track("demo_tab_view", { tab: d.tab });
+                }}
               >
                 {d.tab}
               </button>
@@ -902,10 +914,18 @@ export default function DashboardPage() {
             building on the record, we will help you find where to start.
           </p>
           <div className="dhero2-actions">
-            <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
+            <Link
+              href="/waitlist?intent=pilot"
+              className="dbtn dbtn-solid"
+              onClick={() => track("request_pilot_click", { location: "secondary_hero" })}
+            >
               Request a pilot
             </Link>
-            <Link href="/product/compliance-pack" className="dbtn dbtn-ghost">
+            <Link
+              href="/product/compliance-pack"
+              className="dbtn dbtn-ghost"
+              onClick={() => track("see_evidence_click", { location: "secondary_hero" })}
+            >
               See the evidence
             </Link>
           </div>

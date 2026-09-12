@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { formContent } from "@/lib/placedon-content/content/waitlist";
 import type { FormFieldCopy } from "@/lib/placedon-content/content/types";
+import { track } from "@/lib/track";
 type Intent = "waitlist" | "pilot";
 
 /**
@@ -31,7 +32,13 @@ export function RequestForm({
   const requestId = useRef<string | null>(null);
   const fingerprint = useRef("");
   const form = useRef<HTMLFormElement>(null);
+  const started = useRef(false);
   const copy = formContent.purposes[intent];
+  function markStart() {
+    if (started.current) return;
+    started.current = true;
+    track("form_start", { intent });
+  }
   function changeIntent(next: Intent) {
     if (pending) return;
     setIntent(next);
@@ -91,6 +98,8 @@ export function RequestForm({
         });
         const result = await response.json();
         if (response.ok && result.success) {
+          track("generate_lead", { intent });
+          track("request_submitted", { intent });
           setSuccess(true);
         } else {
           setFeedback(formContent.errors.storageFailure.description);
@@ -179,6 +188,7 @@ export function RequestForm({
       ref={form}
       className="request-form"
       onSubmit={submit}
+      onFocusCapture={markStart}
       aria-label={formContent.formLabel}
     >
       <div className="intent-controls" aria-label="Request type">

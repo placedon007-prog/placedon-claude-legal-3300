@@ -10,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useReducedMotion, motion } from "framer-motion";
+import { track } from "@/lib/track";
 import "../app/dashboard.css";
 
 /** Brand mark — static in both nav and footer; a small hover response only.
@@ -56,7 +57,11 @@ export function SiteNav() {
           ))}
         </nav>
         <div className="dnav-actions">
-          <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
+          <Link
+            href="/waitlist?intent=pilot"
+            className="dbtn dbtn-solid"
+            onClick={() => track("request_pilot_click", { location: "nav" })}
+          >
             Request a pilot
           </Link>
           <button
@@ -81,7 +86,10 @@ export function SiteNav() {
           <Link
             href="/waitlist?intent=pilot"
             className="dbtn dbtn-solid"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              track("request_pilot_click", { location: "mobile_nav" });
+            }}
           >
             Request a pilot
           </Link>
