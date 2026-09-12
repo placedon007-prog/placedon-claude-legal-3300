@@ -6,11 +6,12 @@ import type { FormFieldCopy } from "@/lib/placedon-content/content/types";
 type Intent = "waitlist" | "pilot";
 
 /**
- * Where a request is emailed while no submission backend is wired.
- * Change this to your pilot inbox. Note: an address in page source can be
- * scraped, so prefer a dedicated address over a personal one.
+ * Web3Forms access key — submissions are delivered to the operator's inbox
+ * (placedon007@gmail.com) server-side, so they arrive regardless of the
+ * visitor's device or mail app. The key is public by design (it lives in the
+ * client form); it only authorises delivery to the configured inbox.
  */
-const REQUEST_EMAIL = "placedon007@gmail.com";
+const WEB3FORMS_ACCESS_KEY = "2fc8ec09-4cad-46fe-96ee-a67b244a616e";
 export function RequestForm({
   initialIntent,
   enabled,
@@ -25,7 +26,6 @@ export function RequestForm({
   const [intent, setIntent] = useState<Intent>(initialIntent);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [sentByEmail, setSentByEmail] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [invalid, setInvalid] = useState<string[]>([]);
   const requestId = useRef<string | null>(null);
@@ -52,26 +52,54 @@ export function RequestForm({
       return;
     }
 
-    // No submission backend wired yet → send via the visitor's email client.
-    // When a reviewed sink is configured (`enabled`), the recorded flow below runs instead.
+    // No internal sink wired → deliver the request through Web3Forms, which
+    // emails it to the operator server-side (reliable on any device). When a
+    // reviewed internal sink is configured (`enabled`), the flow below runs.
     if (!enabled) {
       const data = new FormData(formEl);
+      // Honeypot: a filled hidden field means a bot — accept silently, send nothing.
+      if ((data.get("website") as string)?.length) {
+        setSuccess(true);
+        return;
+      }
+      setPending(true);
+      setFeedback("");
       const label = intent === "pilot" ? "Pilot request" : "Register interest";
-      const lines = [
-        `Request type: ${label}`,
-        `Email: ${data.get("email") ?? ""}`,
-        `Name: ${data.get("name") ?? ""}`,
-        `Organisation: ${data.get("organisation") ?? ""}`,
-        `Role: ${data.get("role") ?? ""}`,
-      ];
+      const payload: Record<string, string> = {
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject: `Placedon — ${label}`,
+        from_name: "Placedon website",
+        request_type: label,
+        email: String(data.get("email") ?? ""),
+        name: String(data.get("name") ?? ""),
+        organisation: String(data.get("organisation") ?? ""),
+        role: String(data.get("role") ?? ""),
+        product_updates:
+          data.get("productUpdatesConsent") === "on" ? "yes" : "no",
+      };
       if (intent === "pilot")
-        lines.push(`Workflow to review: ${data.get("workflow") ?? ""}`);
-      const href = `mailto:${REQUEST_EMAIL}?subject=${encodeURIComponent(
-        `Placedon — ${label}`,
-      )}&body=${encodeURIComponent(lines.join("\n"))}`;
-      window.location.assign(href);
-      setSentByEmail(true);
-      setSuccess(true);
+        payload.workflow = String(data.get("workflow") ?? "");
+      try {
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(20000),
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSuccess(true);
+        } else {
+          setFeedback(formContent.errors.storageFailure.description);
+        }
+      } catch {
+        setFeedback(formContent.errors.networkUncertain.description);
+      } finally {
+        setPending(false);
+      }
       return;
     }
 
@@ -137,29 +165,13 @@ export function RequestForm({
   if (success)
     return (
       <div className="request-form" role="status">
-        {sentByEmail ? (
-          <>
-            <p className="eyebrow">Almost done</p>
-            <h2>Your email is ready to send.</h2>
-            <p>
-              We&rsquo;ve opened a pre-filled email in your mail app. Send it to
-              reach the Placedon team — nothing is submitted until you do.
-            </p>
-            <Link className="text-link" href="/product">
-              Read the product concept
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="eyebrow">Request recorded</p>
-            <h2>{copy.success.title}</h2>
-            <p>{copy.success.description}</p>
-            {feedback && <p className="form-feedback">{feedback}</p>}
-            <Link className="text-link" href={copy.success.action.href}>
-              {copy.success.action.label}
-            </Link>
-          </>
-        )}
+        <p className="eyebrow">Request received</p>
+        <h2>{copy.success.title}</h2>
+        <p>{copy.success.description}</p>
+        {feedback && <p className="form-feedback">{feedback}</p>}
+        <Link className="text-link" href={copy.success.action.href}>
+          {copy.success.action.label}
+        </Link>
       </div>
     );
   return (

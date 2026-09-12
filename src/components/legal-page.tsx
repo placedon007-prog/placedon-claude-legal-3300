@@ -23,7 +23,7 @@ Selecting an appearance stores \`placedon-theme\` in local storage on this devic
 
 ## Requests and hosting
 
-The site is hosted on Vercel, which may process an IP address and request information to deliver and protect the site. A request submitted through the form is sent, from your own email application, to the operator's inbox; the site does not store form submissions on a server. See the [privacy policy](/privacy) for who is responsible, retention, and your rights.
+The site is hosted on Vercel, which may process an IP address and request information to deliver and protect the site. A request submitted through the form is delivered through Web3Forms, which forwards your submitted details by email to the operator's inbox. See the [privacy policy](/privacy) for who is responsible, retention, and your rights.
 
 ## Contact
 
