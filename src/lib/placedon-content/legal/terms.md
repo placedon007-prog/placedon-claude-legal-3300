@@ -4,12 +4,12 @@
 
 **Status:** Proposed terms for a pre-launch information website. Complete the operator details and obtain counsel review before publication. These terms do not constitute a pilot agreement.
 
-**Effective date:** `{{EFFECTIVE_DATE}}`  
-**Version:** `{{TERMS_VERSION}}`
+**Effective date:** `14 September 2026`  
+**Version:** `1.0`
 
 ## Operator and scope
 
-Placedon is operated by **{{OPERATOR_LEGAL_NAME}}**, at **{{OPERATOR_POSTAL_ADDRESS}}**. Questions about these terms may be sent to **{{LEGAL_CONTACT_EMAIL}}**.
+Placedon is operated by **Placedon Technologies Private Limited**, at **A registered postal address is not yet published; please use the email contacts in this notice.**. Questions about these terms may be sent to **placedon007@gmail.com**.
 
 These terms address use of the Placedon marketing website, its product descriptions, and its request forms. The operator must present them clearly and obtain legally sufficient assent where a contractual commitment is intended. Merely loading a page must not be represented as agreement to undisclosed terms.
 
@@ -71,4 +71,4 @@ The operator may restrict access where reasonably necessary to address abuse, le
 
 The proposed governing law is the law of India, subject to mandatory protections that apply to a user elsewhere. This template does not impose an exclusive court, arbitration clause, or class-action waiver. Any jurisdiction clause must be determined with counsel after the operator's identity and location are confirmed.
 
-Raise a concern at **{{LEGAL_CONTACT_EMAIL}}**. Privacy grievances have the separate route described in the privacy policy. Contacting the operator does not restrict a right to approach a competent court, authority, or other forum.
+Raise a concern at **placedon007@gmail.com**. Privacy grievances have the separate route described in the privacy policy. Contacting the operator does not restrict a right to approach a competent court, authority, or other forum.

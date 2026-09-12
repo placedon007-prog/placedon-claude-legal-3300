@@ -4,14 +4,14 @@
 
 **Status:** Proposed notice for the Placedon pre-launch website. This draft describes the intended processing arrangement, not a verified deployment. Complete the operator and processor details and confirm the practices below before collecting personal data.
 
-**Effective date:** `{{EFFECTIVE_DATE}}`  
-**Notice version:** `{{PRIVACY_NOTICE_VERSION}}`
+**Effective date:** `14 September 2026`  
+**Notice version:** `1.0`
 
 ## Who is responsible
 
-Placedon is the product name. The website operator responsible for deciding why and how personal data is processed is **{{OPERATOR_LEGAL_NAME}}**, at **{{OPERATOR_POSTAL_ADDRESS}}**. References to “we”, “us”, and “our” mean that operator.
+Placedon is the product name. The website operator responsible for deciding why and how personal data is processed is **Placedon Technologies Private Limited**, at **A registered postal address is not yet published; please use the email contacts in this notice.**. References to “we”, “us”, and “our” mean that operator.
 
-Contact **{{PRIVACY_CONTACT_NAME_OR_ROLE}}** at **{{PRIVACY_EMAIL}}** for a privacy question, consent withdrawal, or request concerning your data. You can also write to the postal address above. You do not need to register interest or request a pilot to exercise a privacy choice.
+Contact **Hardik Singh Rajpurohit and Nishant Singh (Data Protection Contacts), tel. +91 93013 40351 / +91 98942 76843** at **placedonsecurity@gmail.com** for a privacy question, consent withdrawal, or request concerning your data. You can also write to the postal address above. You do not need to register interest or request a pilot to exercise a privacy choice.
 
 This notice covers the marketing website, waitlist, pilot enquiries, related correspondence, and consent choices. It does not authorise the collection of client files or govern a future pilot's processing of company documents. A separate notice and agreement must define any such processing before it begins.
 
@@ -71,10 +71,10 @@ Access is limited to authorised people and providers needed for the stated purpo
 
 | Service                           | Provider legal name                | Processing location and transfers         | Role and retention terms                   |
 | --------------------------------- | ---------------------------------- | ----------------------------------------- | ------------------------------------------ |
-| Hosting and site security         | {{HOSTING_PROVIDER}}               | {{HOSTING_LOCATIONS}}                     | {{HOSTING_DATA_TERMS}}                     |
-| Form storage                      | {{FORM_STORAGE_PROVIDER}}          | {{FORM_STORAGE_LOCATIONS}}                | {{FORM_STORAGE_DATA_TERMS}}                |
-| Email delivery and correspondence | {{EMAIL_PROVIDER}}                 | {{EMAIL_LOCATIONS}}                       | {{EMAIL_DATA_TERMS}}                       |
-| Optional analytics                | {{ANALYTICS_PROVIDER_OR_DISABLED}} | {{ANALYTICS_LOCATIONS_OR_NOT_APPLICABLE}} | {{ANALYTICS_DATA_TERMS_OR_NOT_APPLICABLE}} |
+| Hosting and site security         | Vercel Inc.               | Vercel's global edge network, with dynamic requests processed in the Mumbai (India) region                     | under Vercel's Data Processing Addendum and privacy policy                     |
+| Form storage                      | none — the site does not store submissions on a server; your email application sends the details directly to the operator          | not applicable (no server-side form storage)                | not applicable                |
+| Email delivery and correspondence | Google (Gmail), which receives request emails at the operator's inbox                 | Google servers, which may be located outside India                       | under Google's privacy policy                       |
+| Optional analytics                | Google Analytics 4 (Google LLC) | Google servers, which may be located outside India, including the United States | under Google's Analytics Terms of Service and data-protection terms |
 
 Any independent use a provider makes of technical data must be identified here. Do not describe a provider as acting only on our instructions if its terms permit independent purposes that have not been disclosed.
 
@@ -88,7 +88,7 @@ The proposed policy excludes submitted form and pilot data from model training. 
 
 The intended safeguards include restricted access, protected transport, controlled storage access, and limited operational logging. These are requirements for the deployed service, not a claim of certification or an independent audit. The operator must confirm implementation before intake. No storage or transmission method can be represented as eliminating all risk.
 
-Report a suspected exposure to **{{SECURITY_EMAIL}}** without including passwords or additional sensitive material. We will assess incidents and provide notices to affected people and authorities when required by applicable law.
+Report a suspected exposure to **placedonsecurity@gmail.com** without including passwords or additional sensitive material. We will assess incidents and provide notices to affected people and authorities when required by applicable law.
 
 ## Your choices and requests
 
@@ -100,7 +100,7 @@ Under the Indian framework, access-related information, correction, erasure, gri
 
 Where the GDPR applies, rights may also include restriction, portability, objection, and complaint to a competent supervisory authority, subject to the conditions for each right. Consent withdrawal does not invalidate earlier lawful processing. We will explain any lawful refusal or limitation and respond within the applicable period. [GDPR text](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679)
 
-**Grievance contact:** {{GRIEVANCE_CONTACT_NAME_OR_ROLE}}, **{{GRIEVANCE_EMAIL}}**. The published notice must state the applicable response period and escalation route: **{{GRIEVANCE_RESPONSE_AND_ESCALATION}}**. These channels are separate from marketing consent.
+**Grievance contact:** Hardik Singh Rajpurohit and Nishant Singh (Grievance Officers), **placedon007@gmail.com**. The published notice must state the applicable response period and escalation route: **We acknowledge within 7 days and aim to resolve within 30 days; unresolved matters may be escalated to the Data Protection Board of India.**. These channels are separate from marketing consent.
 
 ## Children, external links, and changes
 

@@ -52,9 +52,9 @@ On withdrawal, stop future optional events, remove optional identifiers under th
 
 | Category                       | Identifier                          | Provider and domain                  | Purpose                                                       | Proposed expiry                                   | Status                                  |
 | ------------------------------ | ----------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------- |
-| Required preference            | {{CONSENT_STORAGE_KEY}}             | {{FIRST_PARTY_DOMAIN}}               | Remember the consent choice and notice version                | 6 months                                          | Confirm actual implementation           |
-| Required submission protection | {{FORM_PROTECTION_STORAGE_OR_NONE}} | {{FORM_PROTECTION_PROVIDER_OR_NONE}} | Protect submission integrity, if browser storage is necessary | {{FORM_PROTECTION_EXPIRY_OR_NOT_APPLICABLE}}      | Remove this row if none is used         |
-| Optional analytics             | {{ANALYTICS_STORAGE_OR_DISABLED}}   | {{ANALYTICS_PROVIDER_OR_DISABLED}}   | Consented page-use measurement only                           | {{ANALYTICS_IDENTIFIER_EXPIRY_OR_NOT_APPLICABLE}} | Disabled until configured and disclosed |
+| Required preference            | placedon-analytics-consent             | placedon.com               | Remember the consent choice and notice version                | 6 months                                          | Confirm actual implementation           |
+| Required submission protection | none | none beyond a hidden honeypot field; no third-party service is used | Protect submission integrity, if browser storage is necessary | not applicable      | Remove this row if none is used         |
+| Optional analytics             | first-party cookies (_ga and _ga_*) and related analytics identifiers   | Google Analytics 4 (Google LLC)   | Consented page-use measurement only                           | up to 2 years | Disabled until configured and disclosed |
 
 List local storage and similar browser storage as well as cookies. Do not label third-party tracking “required” merely because a vendor loads it by default. If provider-side data retention differs from browser expiry, state both in the privacy notice.
 

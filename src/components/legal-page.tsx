@@ -7,29 +7,27 @@ import { systemContent } from "@/lib/placedon-content/content/system";
 export function LegalPage({ kind }: { kind: LegalKind }) {
   let source = legalDocument(kind);
   if (kind === "cookies")
-    source = `## This preview
+    source = `## Analytics
 
-Optional analytics is not configured. No analytics choice will enable tracking. The site does not load advertising, session recording, or third-party font services.
+This site uses **Google Analytics 4** (provided by Google LLC) to understand, in aggregate, how the site is used — which pages are visited and where visitors arrive from. It is **off by default**: nothing loads and no analytics cookies are set until you select **Accept analytics** on the consent banner.
+
+When you accept, Google Analytics sets first-party cookies (\`_ga\` and \`_ga_*\`) that expire after up to two years. They hold a random identifier, not your name or email. Google may process this data on servers outside India, including the United States, under its own terms. The site does not use advertising, cross-site tracking, or session recording, and analytics never receives your email address, a workflow description, or URL query parameters.
+
+## Your choice, and how to change it
+
+Your accept-or-decline choice is stored on this device under \`placedon-analytics-consent\`. If you decline, Google Analytics never loads. To change your choice later, clear this site's data in your browser and the banner will appear again. Declining does not affect your ability to use the site.
 
 ## Appearance preference
 
-Selecting an appearance stores \`placedon-theme\` in local storage on this device. The value is light or dark; it contains no contact details. It remains until replaced or removed through your browser's site-data controls. If storage is unavailable, the choice applies only to the current visit.
+Selecting an appearance stores \`placedon-theme\` in local storage on this device. The value is light or dark; it contains no contact details and authorises no tracking. It remains until replaced or removed through your browser's site-data controls.
 
 ## Requests and hosting
 
-Hosting may process an IP address and request information to deliver and protect the site. Hosting details and retention must be confirmed in the [privacy policy](/privacy) before publication.
+The site is hosted on Vercel, which may process an IP address and request information to deliver and protect the site. A request submitted through the form is sent, from your own email application, to the operator's inbox; the site does not store form submissions on a server. See the [privacy policy](/privacy) for who is responsible, retention, and your rights.
 
-Registration remains closed until the reviewed notice and storage provider are configured. A waitlist request requires an email address and purpose-specific consent; name, organisation, and role are optional. A pilot enquiry also requires a non-confidential workflow description. Development updates are a separate, unchecked choice.
+## Contact
 
-## Your choices
-
-The footer's Cookie preferences control reports the current analytics status. Optional analytics remains off whether you open, close, or dismiss the panel. The appearance preference does not authorise tracking or email.
-
-Use the contact identified in the reviewed [privacy policy](/privacy) for requests concerning records already held. Browser storage controls do not delete records held by a website operator.
-
-## Before collection changes
-
-Any optional analytics provider, data fields, storage identifiers, and retention must be disclosed before activation. Optional tracking requires a separate affirmative choice; form consent is not analytics consent.`;
+Use the contact identified in the [privacy policy](/privacy) for any request concerning records already held. Browser storage controls do not delete records held by a website operator.`;
   const copy = systemContent.legalPages[kind];
   const headings = [...source.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   return (
