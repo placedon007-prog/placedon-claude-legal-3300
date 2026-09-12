@@ -601,9 +601,9 @@ export default function DashboardPage() {
           <span>
             Placedon <span className="sep">/</span> Indian corporate law
           </span>
-          <span className="dcrumb-here">
+          <a href="#product" className="dcrumb-here" aria-label="Explore — scroll to the product overview">
             Explore here <Icon d={<path d="m6 9 6 6 6-6" />} size={16} />
-          </span>
+          </a>
         </div>
       </div>
 

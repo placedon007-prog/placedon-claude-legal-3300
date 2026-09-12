@@ -363,6 +363,27 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--dur-2) var(--ease);
+}
+.dcrumb-here:hover {
+  color: var(--cream);
+}
+.dcrumb-here svg {
+  transition: transform var(--dur-2) var(--ease);
+}
+.dcrumb-here:hover svg {
+  transform: translateY(2px);
+}
+.dcrumb-here:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+/* In-page anchor targets clear the 68px sticky nav. */
+.dsection {
+  scroll-margin-top: 84px;
 }
 
 /* ============================================================
