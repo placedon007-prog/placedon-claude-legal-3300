@@ -3,10 +3,13 @@ import { legalReady, legalDetails } from "./legal";
 import { siteOrigin } from "./site";
 const roles = [
   "",
+  "advocate",
   "corporate-lawyer",
   "in-house-counsel",
   "company-secretary",
+  "practising-company-secretary",
   "chartered-accountant",
+  "cost-accountant",
   "founder-operator",
   "other",
   "prefer-not-to-say",

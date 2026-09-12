@@ -45,13 +45,14 @@ export function ReadingSection({
 }) {
   return (
     <section id={section.id} className="reading-section">
-      <div className="section-aside">
-        <Mark name={index % 2 ? "instrument" : "provision"} />
-        <h2>
-          <LegalText>{section.heading}</LegalText>
-        </h2>
-      </div>
-      <div className="section-body">
+      <div className="container reading-grid">
+        <div className="section-aside">
+          <Mark name={index % 2 ? "instrument" : "provision"} />
+          <h2>
+            <LegalText>{section.heading}</LegalText>
+          </h2>
+        </div>
+        <div className="section-body">
         <p className="claim">
           <LegalText>{section.claim}</LegalText>
         </p>
@@ -77,6 +78,7 @@ export function ReadingSection({
           </div>
         )}
         {section.action && <Action action={section.action} secondary />}
+        </div>
       </div>
     </section>
   );
@@ -101,7 +103,7 @@ export function ClosingInvitation() {
           action={{ label: "Request a pilot", href: "/waitlist?intent=pilot" }}
         />
         <Action
-          action={{ label: "Join the waitlist", href: "/waitlist" }}
+          action={{ label: "How Placedon works", href: "/how-it-works" }}
           secondary
         />
         <span className="small muted">

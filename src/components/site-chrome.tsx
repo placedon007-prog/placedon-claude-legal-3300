@@ -1,49 +1,26 @@
 "use client";
 
 /* Shared site chrome (nav + footer) for every route.
-   Extracted from the homepage so the legal pages carry the same dark
-   nav/footer instead of rendering bare. Links are root-relative so they
-   resolve from any route: "/#product" navigates home then scrolls to the
-   section; "/privacy" etc. are real pages. */
+   Links are real routes so they resolve from any page. The homepage sections
+   still carry in-page anchors, but primary navigation is page-to-page.
+   One ambient motion device only: the footer brand mark's slow rotation
+   (user-approved). The nav mark is static with a hover response. */
 
 import Image from "next/image";
 import Link from "next/link";
-import { useReducedMotion } from "framer-motion";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { useReducedMotion, motion } from "framer-motion";
 import "../app/dashboard.css";
 
-const arrowR = <path d="M4 12h15m-6-6 6 6-6 6" />;
-
-function ChromeIcon({ size = 30 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      {arrowR}
-    </svg>
-  );
-}
-
-function BrandMark({ spin = false }: { spin?: boolean }) {
+/** Brand mark — static in both nav and footer; a small hover response only.
+ *  (The footer mark was previously an ambient rotation; frozen per request.) */
+function BrandMark() {
   const reduce = useReducedMotion();
-  const animate = reduce ? {} : spin ? { rotate: 360 } : { y: [0, 3, 0] };
-  const transition = spin
-    ? { duration: 24, repeat: Infinity, ease: "linear" as const }
-    : { duration: 3.4, repeat: Infinity, ease: "easeInOut" as const };
   return (
     <motion.span
       style={{ display: "inline-flex" }}
-      animate={animate}
-      transition={transition}
-      whileHover={reduce ? {} : { y: spin ? 0 : 3, scale: 1.06 }}
+      whileHover={reduce ? {} : { scale: 1.06 }}
+      transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
     >
       <Image src="/brand/placedon-white.png" alt="" width={23} height={26} />
     </motion.span>
@@ -51,87 +28,94 @@ function BrandMark({ spin = false }: { spin?: boolean }) {
 }
 
 const navLinks = [
-  { label: "Product", href: "/#product" },
-  { label: "Tools", href: "/#tools" },
-  { label: "Evidence", href: "/#evidence" },
-  { label: "Resources", href: "/#resources" },
+  { label: "Product", href: "/product" },
+  { label: "How it works", href: "/how-it-works" },
+  { label: "Security", href: "/security" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export function SiteNav() {
+  const [open, setOpen] = useState(false);
   return (
-    <header className="dnav">
+    <header className="dnav" data-open={open ? "true" : "false"}>
       <div className="dash-container dnav-inner">
-        <Link href="/" className="dnav-brand" aria-label="Placedon">
+        <Link
+          href="/"
+          className="dnav-brand"
+          aria-label="Placedon home"
+          onClick={() => setOpen(false)}
+        >
           <BrandMark />
           Placedon
         </Link>
-        <nav className="dnav-links" aria-label="Primary">
+        <nav className="dnav-links" aria-label="Main navigation">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}
             </Link>
           ))}
         </nav>
         <div className="dnav-actions">
-          <Link href="/#pilot" className="dnav-login">
-            Log in
-          </Link>
-          <Link href="/#pilot" className="dbtn dbtn-ghost">
-            Contact
-          </Link>
-          <Link href="/#pilot" className="dbtn dbtn-solid">
+          <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
             Request a pilot
           </Link>
-          <button className="dnav-burger" aria-label="Open menu">
+          <button
+            className="dnav-burger"
+            aria-label={open ? "Close navigation" : "Open navigation"}
+            aria-expanded={open}
+            aria-controls="dnav-mobile"
+            onClick={() => setOpen((v) => !v)}
+          >
             <span />
             <span />
           </button>
         </div>
       </div>
+      <div className="dnav-mobile" id="dnav-mobile" hidden={!open}>
+        <nav aria-label="Main navigation">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
+              {link.label}
+            </Link>
+          ))}
+          <Link
+            href="/waitlist?intent=pilot"
+            className="dbtn dbtn-solid"
+            onClick={() => setOpen(false)}
+          >
+            Request a pilot
+          </Link>
+        </nav>
+      </div>
     </header>
   );
 }
 
+/* Real footer links only — no fabricated features, every href resolves. */
 const footerCols = [
   {
     label: "Product",
     links: [
-      { label: "The record", href: "/#product" },
-      { label: "Placedon Matrix", href: "/#product" },
-      { label: "Placedon for Word", href: "/#tools" },
-      { label: "Plugins", href: "/#tools" },
-      { label: "Platform", href: "/#product" },
-      { label: "Pricing", href: "/#pilot" },
-    ],
-  },
-  {
-    label: "Who it's for",
-    links: [
-      { label: "Company secretaries", href: "/#pilot" },
-      { label: "In-house counsel", href: "/#pilot" },
-      { label: "Advisors", href: "/#pilot" },
-      { label: "Startups", href: "/#pilot" },
-      { label: "Annual filings", href: "/#tools" },
-    ],
-  },
-  {
-    label: "Evidence",
-    links: [
-      { label: "How the record works", href: "/#evidence" },
-      { label: "Abstention", href: "/#evidence" },
-      { label: "Source defects", href: "/#evidence" },
-      { label: "Benchmark", href: "/#evidence" },
-      { label: "Changelog", href: "/#evidence" },
+      { label: "Product", href: "/product" },
+      { label: "How it works", href: "/how-it-works" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Security", href: "/security" },
     ],
   },
   {
     label: "Company",
     links: [
-      { label: "About", href: "/#product" },
-      { label: "Careers", href: "/#pilot" },
-      { label: "Privacy", href: "/privacy" },
+      { label: "About", href: "/about" },
+      { label: "FAQ", href: "/faq" },
+      { label: "Request a pilot", href: "/waitlist?intent=pilot" },
+    ],
+  },
+  {
+    label: "Legal",
+    links: [
+      { label: "Privacy policy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Cookies", href: "/cookies" },
+      { label: "Cookies and data collection", href: "/cookies" },
     ],
   },
 ];
@@ -142,16 +126,14 @@ export function SiteFooter() {
       <div className="dash-container">
         <div className="dfoot-top">
           <div>
-            <Link href="/" className="dnav-brand" aria-label="Placedon">
-              <BrandMark spin />
+            <Link href="/" className="dnav-brand" aria-label="Placedon home">
+              <BrandMark />
               Placedon
             </Link>
-            <div className="dfoot-ask">
-              How can I help you today?
-              <span>
-                <ChromeIcon size={16} />
-              </span>
-            </div>
+            <p className="dfoot-note">
+              Placedon is being built for Indian corporate law. Pre-launch; not
+              legal advice.
+            </p>
           </div>
           <div className="dfoot-cols">
             {footerCols.map((col) => (

@@ -104,15 +104,20 @@ const I = {
   arrowL: <path d="M20 12H5m6 6-6-6 6-6" />,
 };
 
-/* -------------------------------- section icon with a small wiggle */
+/* -------------------------------- section icon (draws in on reveal)
+   A purposeful entrance — the mark settles as its section arrives — not the
+   old infinite wiggle. Replays with the section (once:false), reduced-motion
+   renders the settled state. */
 function SecIcon({ d, size = 42 }: { d: ReactNode; size?: number }) {
   const reduce = useReducedMotion();
   return (
     <div className="dsec-icon">
       <motion.span
         style={{ display: "inline-flex", transformOrigin: "50% 55%" }}
-        animate={reduce ? {} : { rotate: [0, 7, -4, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        initial={reduce ? false : { opacity: 0, scale: 0.8, rotate: -8 }}
+        whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+        viewport={{ once: false, margin: "-70px" }}
+        transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
       >
         <Icon d={d} size={size} />
       </motion.span>
@@ -148,7 +153,7 @@ function AnimatedH2({ children }: { children: string }) {
       variants={h2Container}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
     >
       {words.map((w, i) => (
         <Fragment key={i}>
@@ -297,7 +302,7 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
     >
       {children}
     </motion.div>
@@ -364,27 +369,26 @@ const demos: Demo[] = [
     meta: "Note No. PL-2026-014 · Companies Act, 2013",
     blocks: [
       {
-        h: "1. Obligation",
+        h: "1. The rule",
         p: (
           <>
-            Every company other than a One Person Company shall hold an annual
-            general meeting each year under{" "}
-            <span className="dcite">s.96(1)</span>, with not more than fifteen
-            months between two meetings.
+            Almost every company must hold an Annual General Meeting each year,
+            and no more than fifteen months can pass between two of them. This
+            comes from <span className="dcite">s.96(1)</span>.
           </>
         ),
       },
       {
-        h: "2. Timing",
+        h: "2. For this company",
         p: (
           <>
-            The meeting must be held within six months of the close of the
-            financial year. For the year ending{" "}
-            <span className="dcite">2026-03-31</span>, the outer date is{" "}
+            The meeting has to happen within six months of the financial
+            year&rsquo;s end. For the year ending{" "}
+            <span className="dcite">2026-03-31</span>, the last allowed date is{" "}
             <span className="dcite">2026-09-30</span>.
           </>
         ),
-        note: "First-AGM relief not applicable — company incorporated before this financial year. No Registrar extension under the s.96(1) proviso is on record.",
+        note: "This company was set up before this financial year, so the extra time first-year companies get does not apply. No extension from the Registrar is on record.",
       },
     ],
     prompt:
@@ -397,22 +401,22 @@ const demos: Demo[] = [
     meta: "Note No. PL-2026-021 · Companies Act, 2013",
     blocks: [
       {
-        h: "1. Frequency",
+        h: "1. The rule",
         p: (
           <>
-            A company shall hold a minimum of four board meetings every year
-            under <span className="dcite">s.173(1)</span>, with not more than one
-            hundred and twenty days between two consecutive meetings.
+            A company must hold at least four board meetings a year, and no more
+            than 120 days can pass between any two of them. This comes from{" "}
+            <span className="dcite">s.173(1)</span>.
           </>
         ),
       },
       {
-        h: "2. Standing",
+        h: "2. For this company",
         p: (
           <>
-            Three meetings are held to date; the gap since the last meeting is{" "}
-            <span className="dcite">96 days</span>. One further meeting is due
-            before <span className="dcite">2026-10-14</span>.
+            Three meetings have been held so far. It has been{" "}
+            <span className="dcite">96 days</span> since the last one, and one
+            more is due before <span className="dcite">2026-10-14</span>.
           </>
         ),
       },
@@ -426,22 +430,28 @@ const demos: Demo[] = [
     meta: "Note No. PL-2026-030 · Companies Act, 2013",
     blocks: [
       {
-        h: "1. Test",
+        h: "1. The rule",
         p: (
           <>
-            A small company is one whose paid-up capital and turnover do not
-            exceed the limits prescribed under{" "}
-            <span className="dcite">s.2(85)</span>.
+            A &ldquo;small company&rdquo; is one whose capital and turnover stay
+            under the limits set in <span className="dcite">s.2(85)</span>.
+            Being small means lighter rules apply, so the status matters.
           </>
         ),
       },
       {
-        h: "2. Determination",
-        p: <>Placedon abstains. No status is asserted without the instrument.</>,
+        h: "2. For this company",
+        p: (
+          <>
+            Placedon does not answer this one — and it will not guess. It only
+            confirms a status it can prove.
+          </>
+        ),
         note: (
           <>
-            The prescribed threshold depends on{" "}
-            <span className="dcite">G.S.R. 700(E)</span>, which is not on record.
+            The size limit was changed by a government notification,{" "}
+            <span className="dcite">G.S.R. 700(E)</span>, that is not in the
+            record yet. Until it is, the small-company status stays unconfirmed.
           </>
         ),
       },
@@ -455,17 +465,25 @@ const demos: Demo[] = [
     meta: "Note No. PL-2026-037 · Companies Act, 2013",
     blocks: [
       {
-        h: "1. Extract",
+        h: "1. The rule",
         p: (
           <>
-            The Board&rsquo;s Report carries the disclosures prescribed under
-            Rule 8.
-            The PoSH extract under{" "}
-            <span className="dcite">Rule 8(5)(x)</span> attaches to companies
-            other than a One Person Company and small companies.
+            A company&rsquo;s yearly Board&rsquo;s Report must include a set of
+            disclosures listed in Rule 8. One of them — a statement on preventing
+            sexual harassment at work, under{" "}
+            <span className="dcite">Rule 8(5)(x)</span> — applies to every
+            company except One Person Companies and small companies.
           </>
         ),
-        note: "Company is not a small company on record → the Rule 8(5)(x) extract attaches.",
+      },
+      {
+        h: "2. For this company",
+        p: (
+          <>
+            This company is not recorded as a small company, so that disclosure
+            applies to it and must be included.
+          </>
+        ),
       },
     ],
     prompt: "Draft the Board's-report disclosures that attach to us.",
@@ -477,15 +495,24 @@ const demos: Demo[] = [
     meta: "Note No. PL-2026-041 · Companies Act, 2013",
     blocks: [
       {
-        h: "1. Statutory registers",
+        h: "1. The rule",
         p: (
           <>
-            Every company shall keep the registers prescribed under{" "}
-            <span className="dcite">s.88</span> — of members, debenture-holders,
-            and other security holders — at its registered office.
+            Every company has to keep certain official registers — of its
+            members, debenture-holders, and other security holders — at its
+            registered office. This is required by <span className="dcite">s.88</span>.
           </>
         ),
-        note: "Register of members present. Register of charges under s.85 not located — flagged for review.",
+      },
+      {
+        h: "2. For this company",
+        p: (
+          <>
+            The register of members is in place. The register of charges,
+            required by <span className="dcite">s.85</span>, could not be found —
+            so it is flagged for review.
+          </>
+        ),
       },
     ],
     prompt: "Which statutory registers are missing from our record?",
@@ -498,21 +525,25 @@ const tools = [
     icon: I.pen,
     title: "Placedon for Word",
     body: "Draft board resolutions, notices, and Board's-report extracts inside Word, each clause carrying its section and operative date.",
+    href: "/product",
   },
   {
     icon: I.checks,
     title: "Placedon Matrix",
     body: "Hand off a company and get back the full obligation matrix — one row per duty, marked attaches, met, or missing.",
+    href: "/product/compliance-pack",
   },
   {
     icon: I.bag,
     title: "Plugins",
-    body: "Add practice packs for corporate-secretarial, POSH, and annual-filing workflows, configured to your registers and calendar.",
+    body: "Practice packs for corporate-secretarial work and MCA annual filings — AOC-4, MGT-7, DIR-3 KYC — configured to your registers and ROC calendar.",
+    href: "/product",
   },
   {
     icon: I.network,
     title: "Platform",
-    body: "Integrate Placedon into your secretarial or GRC system through the API and the evidence contract.",
+    body: "Integrate Placedon into your secretarial or GRC stack through the API and the evidence contract — built for Indian corporate-law workflows.",
+    href: "/how-it-works",
   },
 ];
 
@@ -520,7 +551,7 @@ const build = [
   {
     icon: I.network,
     title: "MCP for statutory data",
-    body: "Connect your registers, filings, and minute books to Placedon through the open Model Context Protocol.",
+    body: "Connect your registers, MCA21 filings, and minute books to Placedon through the open Model Context Protocol.",
   },
   {
     icon: I.cpu,
@@ -529,8 +560,8 @@ const build = [
   },
   {
     icon: I.shield,
-    title: "Built for sensitive data",
-    body: "No employee-level PII, an audit trail on every answer, and abstention wherever the source is missing.",
+    title: "Built for India's data law",
+    body: "Designed to hold data under India's DPDP Act, 2023: no personal data beyond what a request needs, an audit trail on every answer, and abstention wherever the source is missing.",
   },
 ];
 
@@ -575,18 +606,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* HERO */}
+      {/* HERO — first screen: the line only, no video */}
       <section className="dash-container dsection dhero dsection-flush">
         <Reveal>
           <span className="eyebrow">Placedon · Indian corporate law</span>
-          <h1>Compliance you can put in front of a judge.</h1>
+          <h1>Every answer carries its evidence.</h1>
           <p className="lead">
             Placedon answers Indian corporate-law questions with the exact
             provision, the amending instrument, and the operative date — and
             abstains when it cannot verify.
           </p>
           <div className="dhero-actions">
-            <Link href="#pilot" className="dbtn dbtn-solid">
+            <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
               Request a pilot
             </Link>
             <Link href="#evidence" className="dbtn dbtn-ghost">
@@ -594,7 +625,11 @@ export default function DashboardPage() {
             </Link>
           </div>
         </Reveal>
-        <Reveal delay={0.1}>
+      </section>
+
+      {/* HERO VIDEO — reveals on scroll, below the first screen */}
+      <section className="dash-container dsection dhero-media dsection-flush">
+        <Reveal mode="surface">
           <HeroVideo />
         </Reveal>
       </section>
@@ -641,12 +676,12 @@ export default function DashboardPage() {
                 Every answer traces to a provision, an instrument, and an
                 operative date. Nothing ships while it cannot be verified.
               </p>
-              <button className="dbtn dbtn-link">
+              <Link href="/how-it-works" className="dbtn dbtn-link">
                 How the record works
                 <span className="dbtn-arrow">
                   <Icon d={I.arrowR} size={16} />
                 </span>
-              </button>
+              </Link>
             </aside>
           </Reveal>
         </div>
@@ -659,6 +694,10 @@ export default function DashboardPage() {
             <SecIcon d={I.feather} size={42} />
             <Index n="02" label="In practice" />
             <AnimatedH2>How compliance teams use Placedon</AnimatedH2>
+            <p className="ddemo-caption">
+              Illustrative example — sample data shown to demonstrate the format.
+              Not a live answer for a real company.
+            </p>
           </div>
         </Reveal>
 
@@ -686,10 +725,10 @@ export default function DashboardPage() {
                 <motion.div
                   key={tab}
                   className="ddoc-paper"
-                  initial={reduce ? false : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  initial={reduce ? false : { opacity: 0, y: 10, filter: "blur(6px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={reduce ? undefined : { opacity: 0, y: -8, filter: "blur(6px)" }}
+                  transition={{ duration: 0.34, ease: [0.2, 0, 0, 1] }}
                 >
                   <h4>{active.title}</h4>
                   <div className="ddoc-meta mono">{active.meta}</div>
@@ -741,12 +780,12 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="dfeature-body">{f.body}</p>
-                  <button className="dbtn dbtn-link dfeature-learn">
+                  <Link href={f.href ?? "/product"} className="dbtn dbtn-link dfeature-learn">
                     Learn more
                     <span className="dbtn-arrow">
                       <Icon d={I.arrowR} size={16} />
                     </span>
-                  </button>
+                  </Link>
                 </div>
               </div>
             </Reveal>
@@ -834,7 +873,7 @@ export default function DashboardPage() {
               <Icon d={I.scale} size={34} />
             </span>
             <h3>Placedon for Indian corporate law</h3>
-            <Link href="#pilot" className="dbtn dbtn-ghost">
+            <Link href="/product" className="dbtn dbtn-ghost">
               Learn more
               <Icon d={I.arrowR} size={16} />
             </Link>
@@ -851,10 +890,10 @@ export default function DashboardPage() {
             building on the record, we will help you find where to start.
           </p>
           <div className="dhero2-actions">
-            <Link href="#pilot" className="dbtn dbtn-solid">
+            <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
               Request a pilot
             </Link>
-            <Link href="#evidence" className="dbtn dbtn-ghost">
+            <Link href="/product/compliance-pack" className="dbtn dbtn-ghost">
               See the evidence
             </Link>
           </div>

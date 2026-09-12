@@ -167,6 +167,8 @@ export function RequestForm({
                 name={field.name}
                 required={field.required}
                 maxLength={field.maxLength}
+                placeholder={field.example}
+                rows={4}
                 aria-describedby={`${field.name}-help`}
                 aria-invalid={invalid.includes(field.name)}
               />
@@ -177,6 +179,7 @@ export function RequestForm({
                 type={field.type}
                 required={field.required}
                 maxLength={field.maxLength}
+                placeholder={field.example}
                 autoComplete={field.autocomplete}
                 aria-describedby={`${field.name}-help`}
                 aria-invalid={invalid.includes(field.name)}

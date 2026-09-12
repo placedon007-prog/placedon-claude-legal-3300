@@ -11,7 +11,7 @@
 
 Placedon is the product name. The website operator responsible for deciding why and how personal data is processed is **{{OPERATOR_LEGAL_NAME}}**, at **{{OPERATOR_POSTAL_ADDRESS}}**. References to “we”, “us”, and “our” mean that operator.
 
-Contact **{{PRIVACY_CONTACT_NAME_OR_ROLE}}** at **{{PRIVACY_EMAIL}}** for a privacy question, consent withdrawal, or request concerning your data. You can also write to the postal address above. You do not need to join the waitlist or request a pilot to exercise a privacy choice.
+Contact **{{PRIVACY_CONTACT_NAME_OR_ROLE}}** at **{{PRIVACY_EMAIL}}** for a privacy question, consent withdrawal, or request concerning your data. You can also write to the postal address above. You do not need to register interest or request a pilot to exercise a privacy choice.
 
 This notice covers the marketing website, waitlist, pilot enquiries, related correspondence, and consent choices. It does not authorise the collection of client files or govern a future pilot's processing of company documents. A separate notice and agreement must define any such processing before it begins.
 

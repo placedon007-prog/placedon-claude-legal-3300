@@ -928,6 +928,23 @@ code {
   padding-top: 80px;
   padding-bottom: 65px;
 }
+/* Marketing pages: the hero is a full first screen (viewport minus the 68px
+   sticky nav), vertically centred, so the landing "covers the whole" screen
+   and the record section begins cleanly below the fold. */
+.marketing-main .page-hero {
+  min-height: calc(100svh - 68px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 48px;
+  padding-bottom: 72px;
+}
+@media (max-width: 760px) {
+  .marketing-main .page-hero {
+    min-height: calc(100svh - 68px);
+    padding-top: 40px;
+  }
+}
 .page-hero h1 {
   max-width: 1000px;
   font-size: clamp(44px, 5.6vw, 76px);
@@ -943,14 +960,38 @@ code {
   margin-top: 30px;
 }
 .reading-section {
+  border-top: 1px solid var(--border);
+  padding-block: 64px;
+}
+/* Inset the grid to the same gutter as the hero (.container), so the left
+   column and its mark are no longer flush to the screen edge. */
+.reading-grid {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
   gap: 90px;
-  border-top: 1px solid var(--border);
-  padding-block: 50px;
 }
 .section-aside svg {
   margin-bottom: 20px;
+  transition:
+    transform var(--dur-3) var(--ease),
+    opacity var(--dur-3) var(--ease);
+}
+/* The mark before each topic settles as its section reveals (driven by the
+   IntersectionObserver's data-reveal on .reading-section). Replays on scroll. */
+.reading-section[data-reveal="out"] .section-aside svg {
+  opacity: 0.5;
+  transform: scale(0.82) rotate(-6deg);
+}
+.reading-section[data-reveal="in"] .section-aside svg {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-aside svg {
+    transition: none;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 .section-aside h2 {
   font-size: 32px;
@@ -1234,6 +1275,13 @@ code {
   min-height: 140px;
   resize: vertical;
 }
+/* Example placeholders read as a dimmed hint, never as a filled-in value. */
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.42;
+  font-style: italic;
+}
 .field-help {
   font-size: 11px;
   line-height: 1.7;
@@ -1315,11 +1363,41 @@ code {
   gap: 5px;
 }
 .legal-toc a {
+  position: relative;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--muted-2);
   min-height: 44px;
+  padding-left: 16px;
   display: flex;
   align-items: center;
+  transition: color var(--dur-2) var(--ease);
+}
+/* The white marker — grows in beside the topic currently under the fold line,
+   moving down the list one topic at a time as the reader scrolls. */
+.legal-toc a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  background: var(--cream);
+  transform: translateY(-50%);
+  transition: height var(--dur-2) var(--ease);
+}
+.legal-toc a:hover {
+  color: var(--cream);
+}
+.legal-toc a[data-active="true"] {
+  color: var(--cream);
+}
+.legal-toc a[data-active="true"]::before {
+  height: 18px;
+}
+.legal-toc a:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 .legal-body h2 {
   font-size: 30px;
@@ -1455,7 +1533,7 @@ code {
     gap: 40px;
     grid-template-columns: 0.7fr 1.3fr;
   }
-  .reading-section {
+  .reading-grid {
     gap: 50px;
   }
   .product-showcase {
@@ -1679,9 +1757,11 @@ code {
     font-size: 14px;
     margin-top: 24px;
   }
-  .reading-section {
+  .reading-grid {
     grid-template-columns: 1fr;
     gap: 22px;
+  }
+  .reading-section {
     padding-block: 32px;
   }
   .section-aside h2 {

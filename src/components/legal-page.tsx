@@ -1,5 +1,6 @@
 import { legalDocument, type LegalKind } from "@/lib/legal";
-import { LegalDocument, headingId } from "./legal-document";
+import { LegalDocument } from "./legal-document";
+import { LegalToc } from "./legal-toc";
 import { ScrollReveal } from "./scroll-reveal";
 import { SiteNav, SiteFooter } from "./site-chrome";
 import { systemContent } from "@/lib/placedon-content/content/system";
@@ -47,13 +48,7 @@ Any optional analytics provider, data fields, storage identifiers, and retention
           </aside>
         </div>
         <div className="container legal-layout">
-          <nav className="legal-toc" aria-label="Document sections">
-            {headings.map((heading) => (
-              <a key={heading} href={`#${headingId(heading)}`}>
-                {heading}
-              </a>
-            ))}
-          </nav>
+          <LegalToc headings={headings} />
           <LegalDocument source={source} />
         </div>
       </ScrollReveal>

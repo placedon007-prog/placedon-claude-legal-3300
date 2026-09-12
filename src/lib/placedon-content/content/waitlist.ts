@@ -6,7 +6,7 @@ export const waitlistContent = {
   eyebrow: "Register interest · Pre-launch",
   headline: "Leave a contact. State the work.",
   subhead:
-    "Join the waitlist for future access updates, or request a pilot discussion about a defined corporate compliance workflow. Neither request confirms access or creates a payment obligation.",
+    "Register your interest for future access updates, or request a pilot discussion about a defined corporate compliance workflow. Neither request confirms access or creates a payment obligation.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [
@@ -73,6 +73,7 @@ const contactFields = [
     required: true,
     autocomplete: "email",
     maxLength: 254,
+    example: "priya.mehta@lawfirm.in",
     help: "Use an address where you want to receive a reply or access updates. A personal address is accepted.",
     errors: {
       required: "Enter your email address.",
@@ -87,6 +88,7 @@ const contactFields = [
     required: false,
     autocomplete: "name",
     maxLength: 100,
+    example: "Priya Mehta",
     help: "Optional. Tell us how to address you.",
     errors: { tooLong: "Keep your name to 100 characters or fewer." },
   },
@@ -97,6 +99,7 @@ const contactFields = [
     required: false,
     autocomplete: "organization",
     maxLength: 160,
+    example: "Mehta & Associates",
     help: "Optional. Name your own organisation only if you are comfortable doing so; do not name a client.",
     errors: {
       tooLong: "Keep the organisation name to 160 characters or fewer.",
@@ -110,10 +113,16 @@ const contactFields = [
     help: "Optional. Select the role most relevant to this request.",
     options: [
       { value: "", label: "Select a role (optional)" },
+      { value: "advocate", label: "Advocate" },
       { value: "corporate-lawyer", label: "Corporate lawyer" },
       { value: "in-house-counsel", label: "In-house counsel" },
-      { value: "company-secretary", label: "Company Secretary" },
-      { value: "chartered-accountant", label: "Chartered Accountant" },
+      { value: "company-secretary", label: "Company Secretary (CS)" },
+      {
+        value: "practising-company-secretary",
+        label: "Practising Company Secretary (PCS)",
+      },
+      { value: "chartered-accountant", label: "Chartered Accountant (CA)" },
+      { value: "cost-accountant", label: "Cost Accountant (CMA)" },
       { value: "founder-operator", label: "Founder or operator" },
       { value: "other", label: "Another role" },
       { value: "prefer-not-to-say", label: "Prefer not to say" },
@@ -128,6 +137,8 @@ const workflowField = {
   type: "textarea",
   required: true,
   maxLength: 1200,
+  example:
+    "e.g. Confirm whether a private company must hold an AGM this financial year, and return the exact section, the amending instrument, and the operative date — or abstain if it cannot be verified.",
   help: "Describe the compliance review and the evidence you need. Keep this general and non-confidential; do not paste a legal file or a company record.",
   errors: {
     required: "Describe the workflow you want to review.",
@@ -142,7 +153,7 @@ export const formContent = {
   consentVersion: "placedon-prelaunch-consent-v1-draft",
   purposes: {
     waitlist: {
-      label: "Join the waitlist",
+      label: "Register interest",
       heading: "Register interest in future access.",
       description:
         "Provide your email address for access updates. Additional professional context is optional.",
@@ -156,8 +167,8 @@ export const formContent = {
         error:
           "Confirm consent to record your waitlist interest and receive access updates, or leave the form without submitting.",
       },
-      submitLabel: "Join the waitlist",
-      pendingLabel: "Submitting waitlist request",
+      submitLabel: "Register interest",
+      pendingLabel: "Submitting your request",
       success: {
         title: "Waitlist request recorded",
         description:

@@ -49,6 +49,8 @@ export function buildStructuredData(
     "@id": organisationId,
     name: "Placedon",
     url: homeUrl,
+    areaServed: "IN",
+    knowsLanguage: "en-IN",
     description:
       "A pre-launch project developing an evidence record for Indian corporate law. No complete corpus or production performance record is claimed.",
     ...logo,
@@ -92,6 +94,8 @@ export function buildStructuredData(
     name: "Placedon",
     url: productUrl,
     applicationCategory: "BusinessApplication",
+    inLanguage: "en-IN",
+    countriesSupported: "IN",
     creativeWorkStatus: "In development",
     description:
       "Pre-launch product concept for Companies Act, 2013 evidence records. Intended answers identify the provision, instrument, and operative date, or abstain. Not a live service or legal advice.",

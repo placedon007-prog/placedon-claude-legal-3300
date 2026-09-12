@@ -59,7 +59,7 @@ export const routeMetadata = {
     indexable: true,
   },
   "/waitlist": {
-    title: "Join the Waitlist or Request a Pilot | Placedon",
+    title: "Register Interest or Request a Pilot | Placedon",
     description:
       "Register interest in Placedon or describe a corporate compliance workflow for pilot review. Pre-launch; no access or launch date is promised.",
     canonicalPath: "/waitlist",

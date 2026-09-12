@@ -11,7 +11,7 @@ export const pilotCta = {
 } as const satisfies ContentLink;
 
 export const waitlistCta = {
-  label: "Join the waitlist",
+  label: "Register interest",
   href: "/waitlist",
 } as const satisfies ContentLink;
 
@@ -50,7 +50,7 @@ export const sharedStates = {
   empty: {
     title: "No further information published",
     description:
-      "This page contains the current pre-launch information. Join the waitlist for access updates.",
+      "This page contains the current pre-launch information. Register your interest for access updates.",
     action: waitlistCta,
   },
   error: {

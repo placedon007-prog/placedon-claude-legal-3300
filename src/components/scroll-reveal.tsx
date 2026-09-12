@@ -40,26 +40,29 @@ export function ScrollReveal({
     if (reduce || !("IntersectionObserver" in window)) return;
 
     const viewportH = window.innerHeight;
-    const below = targets.filter((el) => {
+
+    // Anti-flash: only blocks below the fold on load start hidden. Everything
+    // already in view stays visible so legal copy never flashes on load.
+    targets.forEach((el) => {
       const rect = el.getBoundingClientRect();
-      return rect.top >= viewportH; // strictly below the fold on load
+      el.setAttribute("data-reveal", rect.top >= viewportH ? "out" : "in");
     });
-    if (below.length === 0) return;
 
-    below.forEach((el) => el.setAttribute("data-reveal", "out"));
-
+    // Replay: toggle in/out as blocks enter and leave, so the reveal plays
+    // again each time the reader scrolls back to a section — never unobserved.
+    // The reveal floors at 0.55 opacity, so a re-hidden block stays readable.
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.setAttribute("data-reveal", "in");
-            observer.unobserve(entry.target);
-          }
+          entry.target.setAttribute(
+            "data-reveal",
+            entry.isIntersecting ? "in" : "out",
+          );
         }
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
     );
-    below.forEach((el) => observer.observe(el));
+    targets.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
   }, [selector]);

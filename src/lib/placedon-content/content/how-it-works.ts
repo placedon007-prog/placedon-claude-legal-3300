@@ -12,7 +12,7 @@ export const howItWorksContent = {
   eyebrow: "The intended method · Pre-launch",
   headline: "Ask. Verify. Cite. Or abstain.",
   subhead:
-    "Placedon's proposed method tests a compliance question against the statutory record before presenting an answer. The source, the applicable version, and the limits of the result must remain visible.",
+    "Placedon's proposed method tests a compliance question against the Indian statutory record — the Companies Act, 2013 and its amending instruments — before presenting an answer. The source, the applicable version, and the limits of the result must remain visible.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [

@@ -95,6 +95,8 @@ export interface FormFieldCopy {
   readonly type: "email" | "text" | "select" | "textarea";
   readonly required: boolean;
   readonly help: string;
+  /** Dimmed example shown as a placeholder; must read as a hint, never as a value. */
+  readonly example?: string;
   readonly autocomplete?: "email" | "name" | "organization";
   readonly maxLength?: number;
   readonly options?: readonly {

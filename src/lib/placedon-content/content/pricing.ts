@@ -6,7 +6,7 @@ export const pricingContent = {
   eyebrow: "Participation · Pre-launch",
   headline: "Scope first. Terms before access.",
   subhead:
-    "Pricing is being finalised with design partners. Placedon has no published subscription tariff or committed public launch date.",
+    "Pricing for Indian corporate-law teams is being finalised with design partners. Placedon has no published subscription tariff or committed public launch date. Any figures would be in Indian rupees.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [
@@ -72,7 +72,7 @@ export const pricingContent = {
     empty: {
       title: "Subscription pricing is not published",
       description:
-        "Request a pilot discussion or join the waitlist for future access updates.",
+        "Request a pilot discussion or register your interest for future access updates.",
       action: pilotCta,
     },
   },

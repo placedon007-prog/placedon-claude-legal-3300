@@ -19,7 +19,7 @@ export const faqEntries = [
     answer: [
       "This site presents a pre-launch product concept, not a live legal-answer service.",
       "The answer record, statutory currency view, and company-standing view describe intended behaviour rather than available checks.",
-      "You can request a pilot discussion or join the waitlist, but neither confirms access.",
+      "You can request a pilot discussion or register your interest, but neither confirms access.",
     ],
   },
   {
@@ -27,7 +27,7 @@ export const faqEntries = [
     category: "scope",
     question: "Who is Placedon for?",
     answer: [
-      "Placedon is intended first for corporate lawyers, in-house counsel, Company Secretaries, and Chartered Accountants who review corporate compliance.",
+      "Placedon is intended first for advocates, corporate lawyers, in-house counsel, Company Secretaries (ICSI), and Chartered Accountants (ICAI) who review corporate compliance — including the Practising Company Secretary carrying a book of client companies.",
       "It is also intended to help founders and operators understand the evidence to take to those professionals.",
       "The proposed record separates the statutory basis from supplied company facts and the judgment still required.",
     ],

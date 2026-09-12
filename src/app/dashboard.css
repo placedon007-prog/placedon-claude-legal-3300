@@ -270,6 +270,37 @@
   background: var(--cream);
 }
 
+/* Mobile disclosure menu (hidden on desktop; revealed by the burger) */
+.dnav-mobile {
+  display: none;
+  border-top: 1px solid var(--line);
+}
+.dnav-mobile nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 20px 20px;
+}
+.dnav-mobile nav a {
+  font-size: 16px;
+  color: var(--muted);
+  padding: 12px 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  transition: color 0.16s ease;
+}
+.dnav-mobile nav a:hover {
+  color: var(--cream);
+}
+.dnav-mobile nav a.dbtn-solid {
+  justify-content: center;
+  border-bottom: 0;
+  margin-top: 12px;
+  color: var(--ink);
+}
+
 /* breadcrumb strip */
 .dcrumb {
   border-bottom: 1px solid var(--line);
@@ -307,6 +338,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+}
+/* Headings inside a centred block must center their own wrapped lines rather
+   than shrink-wrap to max-content (which left-shifts a two-line heading). */
+.dcenter h2 {
+  max-width: 20ch;
+  margin-inline: auto;
+  text-align: center;
+}
+.dcenter .lead {
+  max-width: 52ch;
+  margin-inline: auto;
+}
+.ddemo-caption {
+  max-width: 46ch;
+  margin: 16px auto 0;
+  font-size: 13px;
+  color: var(--muted-2);
+  line-height: 1.6;
 }
 .dsec-icon {
   color: var(--cream);
@@ -318,9 +368,18 @@
    HERO
    ============================================================ */
 .dhero {
-  padding-top: clamp(60px, 8vw, 104px);
-  padding-bottom: 0;
+  /* Fill the first screen (viewport minus the 68px nav and ~44px breadcrumb)
+     so the landing shows the line alone; the video sits below the fold. */
+  min-height: calc(100svh - 112px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
   text-align: center;
+}
+.dhero-media {
+  padding-top: clamp(24px, 4vw, 48px);
 }
 .dhero .eyebrow {
   display: block;
@@ -561,7 +620,8 @@
   color: #3a352d;
   max-width: none;
 }
-.ddoc-p .dcite {
+.ddoc-p .dcite,
+.ddoc-note .dcite {
   color: #171512;
   border-color: rgba(0, 0, 0, 0.28);
 }
@@ -862,31 +922,16 @@
   grid-template-columns: 340px 1fr;
   gap: 48px;
 }
-.dfoot-ask {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 26px;
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
-  padding: 12px 12px 12px 18px;
+.dfoot-note {
+  margin-top: 22px;
   max-width: 320px;
   color: var(--muted);
   font-size: 14px;
-}
-.dfoot-ask span {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--cream);
-  color: var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  line-height: 1.55;
 }
 .dfoot-cols {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 28px;
 }
 .dfoot-col-label {
@@ -925,11 +970,15 @@
     width: calc(100% - 40px);
   }
   .dnav-links,
-  .dnav-login {
+  .dnav-login,
+  .dnav-actions .dbtn-solid {
     display: none;
   }
   .dnav-burger {
     display: flex;
+  }
+  .dnav[data-open="true"] .dnav-mobile {
+    display: block;
   }
   .dfeature-row {
     grid-template-columns: 1fr;
@@ -1264,7 +1313,7 @@
 /* hero video */
 .dhero-video {
   position: relative;
-  margin-top: clamp(48px, 6vw, 88px);
+  margin-top: 0;
   aspect-ratio: 16 / 8.4;
   width: 100%;
   border-radius: 16px;
