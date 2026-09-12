@@ -13,7 +13,9 @@ import { useEffect, useSyncExternalStore } from "react";
  * The Measurement ID is public (it ships in client JS); override with
  * NEXT_PUBLIC_GA_ID or set it empty to disable.
  */
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "G-DE8BMPJRVL";
+// `||` (not `??`) so an empty NEXT_PUBLIC_GA_ID env var still falls back to the
+// real ID rather than disabling analytics with a blank string.
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-DE8BMPJRVL";
 const CONSENT_KEY = "placedon-analytics-consent";
 
 const listeners = new Set<() => void>();
