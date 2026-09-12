@@ -1,18 +1,21 @@
 import Script from "next/script";
 
 /**
- * Google Analytics 4 — loads only when NEXT_PUBLIC_GA_ID is set.
+ * Google Analytics 4.
  *
- * Set the Measurement ID (G-XXXXXXXXXX) as an environment variable on the host
- * (Vercel → Settings → Environment Variables). Until it is set, nothing loads
- * and no analytics cookies are placed — so the pre-launch site ships clean.
+ * The Measurement ID is public (it ships in client JS), so it is baked in as a
+ * default and works on any production deploy with no extra config. Override or
+ * disable it by setting NEXT_PUBLIC_GA_ID (set it to an empty value to turn off).
  *
- * SPA route changes: enable "Enhanced measurement" in the GA4 property so
- * client-side navigations are captured via browser-history events.
+ * Loads in PRODUCTION only, so local `npm run dev` traffic never reaches GA and
+ * your reports stay clean. SPA route changes are captured when "Enhanced
+ * measurement" is enabled in the GA4 property (on by default).
  */
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "G-DE8BMPJRVL";
+
 export function Analytics() {
-  const id = process.env.NEXT_PUBLIC_GA_ID;
-  if (!id) return null;
+  const id = GA_ID;
+  if (!id || process.env.NODE_ENV !== "production") return null;
   return (
     <>
       <Script
