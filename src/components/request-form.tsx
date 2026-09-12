@@ -10,7 +10,7 @@ type Intent = "waitlist" | "pilot";
  * Change this to your pilot inbox. Note: an address in page source can be
  * scraped, so prefer a dedicated address over a personal one.
  */
-const REQUEST_EMAIL = "heshjain123@gmail.com";
+const REQUEST_EMAIL = "placedon007@gmail.com";
 export function RequestForm({
   initialIntent,
   enabled,

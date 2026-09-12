@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
 import {
   motion,
@@ -606,17 +607,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* HERO — first screen: the line only, no video */}
-      <section className="dash-container dsection dhero dsection-flush">
-        <Reveal>
-          <span className="eyebrow">Placedon · Indian corporate law</span>
-          <h1>Every answer carries its evidence.</h1>
-          <p className="lead">
-            Placedon answers Indian corporate-law questions with the exact
-            provision, the amending instrument, and the operative date — and
-            abstains when it cannot verify.
-          </p>
-          <div className="dhero-actions">
+      {/* HERO — image backdrop, text left, actions top-right */}
+      <section className="dhero-img dsection-flush">
+        <Image
+          className="dhero-img-photo"
+          src="/media/hero-chamber.jpg"
+          alt="A grand, empty classical legislative chamber — the seat of the record."
+          fill
+          priority
+          sizes="100vw"
+        />
+        <div className="dhero-img-scrim" aria-hidden="true" />
+        <div className="dash-container dhero-img-inner">
+          <div className="dhero-img-actions">
             <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
               Request a pilot
             </Link>
@@ -624,7 +627,16 @@ export default function DashboardPage() {
               See the evidence
             </Link>
           </div>
-        </Reveal>
+          <Reveal className="dhero-img-text">
+            <span className="eyebrow">Placedon · Indian corporate law</span>
+            <h1>Every answer carries its evidence.</h1>
+            <p className="lead">
+              Placedon answers Indian corporate-law questions with the exact
+              provision, the amending instrument, and the operative date — and
+              abstains when it cannot verify.
+            </p>
+          </Reveal>
+        </div>
       </section>
 
       {/* HERO VIDEO — reveals on scroll, below the first screen */}

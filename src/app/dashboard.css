@@ -423,6 +423,89 @@
 .dhero-media {
   padding-top: clamp(24px, 4vw, 48px);
 }
+
+/* Image hero — full-bleed photo, left-to-right dark scrim, text left,
+   actions pinned top-right. */
+.dhero-img {
+  position: relative;
+  min-height: calc(100svh - 68px);
+  display: flex;
+  overflow: hidden;
+  border: none;
+}
+.dhero-img-photo {
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+.dhero-img-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(12, 12, 13, 0.94) 0%,
+      rgba(12, 12, 13, 0.78) 38%,
+      rgba(12, 12, 13, 0.42) 72%,
+      rgba(12, 12, 13, 0.35) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(12, 12, 13, 0.55) 0%,
+      rgba(12, 12, 13, 0) 26%,
+      rgba(12, 12, 13, 0) 70%,
+      rgba(12, 12, 13, 0.55) 100%
+    );
+}
+.dhero-img-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: min(1240px, calc(100% - 112px));
+  padding-block: 32px;
+}
+.dhero-img-actions {
+  align-self: flex-end;
+  display: flex;
+  gap: 12px;
+}
+.dhero-img-text {
+  margin-block: auto;
+  max-width: 760px;
+  text-align: left;
+}
+.dhero-img-text .eyebrow {
+  display: block;
+  margin-bottom: 22px;
+}
+.dhero-img-text h1 {
+  font-size: clamp(44px, 6.4vw, 96px);
+  line-height: 1.0;
+  letter-spacing: -0.01em;
+  margin: 0;
+  max-width: 15ch;
+}
+.dhero-img-text .lead {
+  color: var(--muted);
+  font-size: clamp(16px, 1.5vw, 20px);
+  margin-top: 26px;
+  max-width: 46ch;
+}
+@media (max-width: 760px) {
+  .dhero-img-inner {
+    padding-block: 20px;
+  }
+  .dhero-img-actions {
+    align-self: stretch;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .dhero-img-text h1 {
+    font-size: clamp(38px, 12vw, 60px);
+  }
+}
 .dhero .eyebrow {
   display: block;
   margin-bottom: 26px;
