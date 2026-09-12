@@ -619,14 +619,6 @@ export default function DashboardPage() {
         />
         <div className="dhero-img-scrim" aria-hidden="true" />
         <div className="dash-container dhero-img-inner">
-          <div className="dhero-img-actions">
-            <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
-              Request a pilot
-            </Link>
-            <Link href="#evidence" className="dbtn dbtn-ghost">
-              See the evidence
-            </Link>
-          </div>
           <Reveal className="dhero-img-text">
             <span className="eyebrow">Placedon · Indian corporate law</span>
             <h1>Every answer carries its evidence.</h1>
@@ -635,6 +627,14 @@ export default function DashboardPage() {
               provision, the amending instrument, and the operative date — and
               abstains when it cannot verify.
             </p>
+            <div className="dhero-img-actions">
+              <Link href="/waitlist?intent=pilot" className="dbtn dbtn-solid">
+                Request a pilot
+              </Link>
+              <Link href="#evidence" className="dbtn dbtn-ghost">
+                See the evidence
+              </Link>
+            </div>
           </Reveal>
         </div>
       </section>

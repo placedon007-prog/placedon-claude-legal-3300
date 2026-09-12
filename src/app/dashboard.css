@@ -463,16 +463,16 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   width: min(1240px, calc(100% - 112px));
   padding-block: 32px;
 }
 .dhero-img-actions {
-  align-self: flex-end;
   display: flex;
   gap: 12px;
+  margin-top: 36px;
 }
 .dhero-img-text {
-  margin-block: auto;
   max-width: 760px;
   text-align: left;
 }
