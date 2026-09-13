@@ -1,80 +1,134 @@
-# Placedon web
+# Placedon — website (frontend)
 
-Pre-launch marketing site with eight content routes, legal notices, evidence concepts, and closed-by-default registration. No live legal answers, analytics, payment collection, or invented statutory values are presented.
+**Read this whole file first. It is the single source of truth for continuing
+this project — a fresh Claude on any machine/account should be productive from
+this file alone, without re-analysing the codebase.**
+
+Placedon is an evidence-first legal-intelligence product for **Indian corporate
+law (Companies Act, 2013)**. Voice: *"a witness, not a tool."* Golden rule:
+*"the model explains, the code decides, the record verifies."* Every answer
+carries its provision, amending instrument, and operative date — or it abstains.
+
+This repo is the **marketing + product-concept website**. The deterministic
+legal engine and the (to-be-trained) narration model are a **separate backend**
+(see "Architecture").
+
+---
+
+## Status: LIVE (pilot)
+
+| Thing | Value |
+|---|---|
+| **Production URL** | https://placedon.com (and www.placedon.com) |
+| **Host** | Vercel (auto-deploys on every push to `main`) |
+| **Vercel URL** | https://placedon-claude-legal-3300.vercel.app |
+| **GitHub** | github.com/placedon007-prog/placedon-claude-legal-3300 (private, branch `main`) |
+| **Domain/DNS** | Registered + DNS managed at **Squarespace** → points to Vercel (A `@`→`76.76.21.21`, CNAME `www`→`…vercel-dns-017.com`, TXT `_vercel` verify) |
+| **Indexing** | `noindex` (pre-launch). Do NOT enable indexing until legal review is done. |
+
+## Stack
+Next.js 16 (App Router, Turbopack) · React 19 · TypeScript strict · Tailwind v4
+· framer-motion 13 · zod v4. Node 20.
 
 ## Run locally
-
-Use the dependencies already installed in this project. The existing Next.js 16.3.4 installation was retained instead of downgrading to the version in the original brief.
-
-```sh
-npm run dev
+```bash
+npm install
+npm run dev          # http://localhost:3300
+npm run build        # production build (also verifies it compiles)
+npm run start:local  # run the production build on :3300
+npx tsc --noEmit && npx eslint . && node tests/contracts.mjs   # full check
 ```
 
-Production verification:
+---
 
-```sh
-npm run lint
-npm run build
-npm run start -- --port 3100
-node tests/contracts.mjs
-```
+## Architecture (why this matters for backend work)
+- **Frontend (this repo)** → Vercel. Cheap/free, purpose-built for Next.js.
+- **Backend (separate)** → the deterministic engine + narration model. Host on a
+  cloud with GPU credits (Azure/AWS/GCP) — that's where the money/compute goes,
+  NOT the frontend.
+- **They connect via one env var:** `PLACEDON_API_ORIGIN`. Unset → the app uses
+  the built-in **Mock engine** (real Companies-Act fixtures, deterministic). Set
+  it to the backend URL → the product surfaces show live answers. No rebuild.
+- **The engine is server-only** (`src/lib/engine/*`). Never import a provider
+  into a `"use client"` module (it would leak the token/origin into the browser
+  bundle). `getEngine()` picks Mock vs Http at call time.
+- **Contract: the backend has exactly SIX routes** (see `AGENTS.md` and
+  `src/lib/engine/types.ts`). `/v1/company/{cin}/standing` and `/v1/ask` do NOT
+  exist. A transport error must NEVER render as an abstention (`EngineResult<T>`
+  enforces this).
 
-Contract tests require Node 22.15 or later and use the installed TypeScript compiler. They mock outbound requests and never submit data to a provider. Browser tests use an available Playwright installation, not a runtime dependency of this site:
+## Where things live
+- **Pages:** `src/app/*/page.tsx` (home, product, how-it-works, pricing, about,
+  security, faq, waitlist, privacy, terms, cookies, + 4 product surfaces under
+  `src/app/product/*`).
+- **Shared UI:** `src/components/*` (site-chrome nav/footer, marketing-page
+  scaffold, sections, faq-accordion, legal-page/-toc, request-form, analytics,
+  surfaces/*).
+- **All copy is real content** in `src/lib/placedon-content/content/*` — do not
+  hardcode marketing copy in components; edit the content modules.
+- **Legal pages** (`src/lib/placedon-content/legal/*.md`) are FILLED with real
+  operator details (Placedon Technologies Private Limited; DPC/Grievance =
+  Hardik Singh Rajpurohit + Nishant Singh; privacy/security email
+  placedonsecurity@gmail.com; grievance/legal email placedon007@gmail.com;
+  effective 14 Sep 2026; v1.0). Still marked "for counsel review" — a real lawyer
+  must review before enabling indexing.
 
-```sh
-PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node tests/browser.mjs
-```
+## Integrations (and where the keys are)
+- **Lead form → Web3Forms.** Key in `src/components/request-form.tsx`
+  (`WEB3FORMS_ACCESS_KEY`). Submissions email to `placedon007@gmail.com`.
+  Web3Forms free tier only accepts **client-side** submissions (a server-side
+  test returns "method not allowed" — that's expected).
+- **Google Analytics 4** (`G-DE8BMPJRVL`) in `src/components/analytics.tsx`.
+  **Consent-gated**: loads only after the visitor clicks "Accept analytics"
+  (matches the privacy policy). ID is baked in with a `||` fallback; override via
+  `NEXT_PUBLIC_GA_ID`. Funnel events fire via `src/lib/track.ts`
+  (request_pilot_click, see_evidence_click, demo_tab_view, form_start,
+  generate_lead). Enhanced Measurement (GA) covers page views/scroll/outbound.
 
-Set `TEST_ORIGIN` for a different preview port. Browser tests expect closed registration. Screenshots go to the ignored `verification-artifacts` directory.
+## Deployment
+- **Vercel**: push to `main` → auto-deploy. No config needed; no env vars
+  required for the pilot (mock data, Web3Forms, GA all work on defaults).
+- **Azure (optional)**: `docs/AZURE-DEPLOY.md` — App Service via Deployment
+  Center. `next.config.ts` has `output: "standalone"` for this. Only if you
+  choose Azure over Vercel for the frontend (not recommended — save cloud credits
+  for the model). Point `placedon.com` at ONE host, not both.
 
-## Pages and content
+---
 
-| Route                                                          | Implementation                                                              |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `/`                                                            | Editorial home with an explicitly unresolved evidence record                |
-| `/product`, `/how-it-works`, `/pricing`, `/security`, `/about` | Typed content with route-specific introductions and sections                |
-| `/faq`                                                         | All 18 Q&As, native disclosure controls, matching schema when configured    |
-| `/waitlist`                                                    | Waitlist form; `?intent=pilot` selects pilot fields and consent             |
-| `/privacy`, `/terms`, `/cookies`                               | Counsel-review templates; cookies page describes this implementation        |
-| `/thank-you`                                                   | Unconfirmed direct-visit state; actual submission success stays in the form |
-| Unknown routes                                                 | Real 404 response                                                           |
-| `/og/placedon.png`, `/icon.svg`                                | Generated share image and brand icon                                        |
+## ⚠️ CRITICAL gotchas (save yourself hours)
+1. **Git author email must be valid** or Vercel silently BLOCKS the deploy.
+   Set it before committing: `git config user.email "placedon007@gmail.com"`.
+   (A `…@Macbook.local` author = Blocked deploy, site serves the old build.)
+2. **You cannot push `.github/workflows/*`** with the current token (no
+   `workflow` OAuth scope). Use Vercel's auto-deploy or Azure Deployment Center
+   instead — do not add CI workflow files to the repo.
+3. **Verify with `npm run build` + a real browser, NOT curl.** Curl-based
+   fetching of the deployed JS chunks is unreliable in this environment and gives
+   false negatives. Trust the Vercel dashboard + browser DevTools.
+4. **Brave (and ad-blockers) block Google Analytics.** When testing GA, use
+   Chrome with extensions off, check GA **Realtime** (not the lagging Home page),
+   and look for a `google-analytics.com/g/collect` request in DevTools → Network.
+5. **AGENTS.md is binding** (re-read it every session): near-monochrome brand +
+   one gold accent; IBM Plex Mono on every statute ref/figure/date; **banned
+   words** (streamline, empower, solution/Solutions, seamless, easy, smart,
+   revolutionary, unlock, supercharge, effortless, game-changer, cutting-edge,
+   "Join the waitlist"); never invent a statutory figure/section/date (abstain);
+   never claim an accuracy rate; a11y AA; respect prefers-reduced-motion.
+6. **India-first**: ₹ lakh/crore, MCA21/ROC/Gazette/CIN, DPDP Act 2023,
+   ICSI/ICAI, IST timestamps, Indian number grouping (`src/lib/format.ts`).
 
-`src/lib/placedon-content` is a local snapshot of the separate content package. Components import its typed copy and metadata without requiring the sibling folder at runtime. Update the snapshot intentionally when its source changes. The original cookie template is retained for future configuration; the rendered page describes the current no-analytics build rather than exposing builder instructions.
+## What's left / next steps
+1. **Legal review** of the templates by a real lawyer → then set `SITE_ORIGIN`
+   + `SITE_PUBLICATION_READY=true` (Vercel env) to allow Google indexing.
+2. **Backend**: train the narration/description model + host the engine on a
+   credit-backed cloud; then set `PLACEDON_API_ORIGIN` so product surfaces go
+   live instead of mock.
+3. **GA**: mark `generate_lead` as a key event (GA Admin → Events).
+4. Optional: make `placedon.com` (non-www) the primary in Vercel → Domains;
+   grade/replace the white hero video below the fold.
 
-Typography uses local Fraunces, Inter, and IBM Plex Mono. The share-image renderer uses a static Fraunces instance because its parser cannot render the supplied variable font reliably. Additional fonts retain OFL licences. Colours live in the CSS token block and server-image palette; components do not specify colour literals.
-
-## Configuration and launch gates
-
-See `.env.example`. Never commit real secrets.
-
-- Set a confirmed HTTPS `SITE_ORIGIN` before building canonical URLs and structured data. Without it, pages remain noindex and schema URLs are omitted.
-- Set `SITE_PUBLICATION_READY=true` only after publication review; rebuild after changing these build-time metadata settings. Draft legal documents remain noindex.
-- Intake requires `WAITLIST_ENABLED=true`, an HTTPS sink, `LEGAL_REVIEW_CONFIRMED=true`, every legal template token in `LEGAL_DETAILS_JSON`, and current non-draft consent and privacy notice versions. `PRIVACY_NOTICE_VERSION` must match the rendered legal details.
-- Identity, privacy contact, retention, processors, locations, and applicable terms require factual completion and counsel review. Configuration is not a substitute for review. Templates remain labelled as such.
-- Missing configuration makes registration unavailable. The server validates consent, purpose, field lengths, honeypot, same-origin requests, and an 8 KiB body limit.
-- Optional analytics is absent. Preferences do not request permission for a nonexistent tracker. Local storage only remembers appearance.
-
-## Storage and confirmation contracts
-
-The sink receives validated fields, request UUID, separate consent flags, notice versions, and server receipt time. It must persist before returning a successful receipt:
-
-```json
-{ "stored": true, "requestId": "the-same-request-UUID", "duplicate": false }
-```
-
-It must enforce `Idempotency-Key`, deduplicate retries, and reject reuse with conflicting data. Retries retain their UUID only while the payload is unchanged. A timeout is uncertain: the form does not assert that nothing was stored. No local fallback holds contact records.
-
-An optional confirmation hook receives only UUID, email, and purpose after storage confirmation. It must honour the same idempotency key and return JSON with `sent: true` and the same `requestId` only after dispatch. A generic HTTP success is insufficient and dispatch is not proof of inbox delivery. No email is sent by this repository itself.
-
-The in-process throttle is a development safeguard, not distributed abuse protection. Before opening intake, enforce rate, body, and time limits at the trusted hosting edge. Strip or replace client-supplied forwarding headers. Configure access-log retention and redaction; this route does not log form bodies or provider errors.
-
-## Product API boundary
-
-`src/lib/api.ts` provides `MockProvider` and `HttpProvider` for `/v1/compliance-pack`, `/v1/company/{cin}/standing`, `/v1/company/{cin}/events`, and a provisional `/v1/health` check. No live provider is enabled in the marketing experience. Mock answers abstain; mock event lists are fixtures, not statements about an official record.
-
-The brief supplies endpoint paths and answer classes but no OpenAPI definition. Wire envelopes are provisional: reconcile them with the actual backend before connecting. Runtime checks validate response shape, not legal truth or source authenticity. Malformed pack/standing evidence becomes abstention; event failures throw instead of masquerading as an empty history. Backend verification, authorisation, and source controls remain required before live use.
-
-## Publication checklist
-
-Complete counsel and privacy review; test real sink deduplication and deletion; verify confirmation semantics; add trusted-edge abuse protection; review domain and indexing; reconcile the backend contract before introducing live data. Perform assistive-technology and deployed-host checks in addition to automated tests. This task did not deploy or push the site.
+## Reference docs (historical — read only if you need the detail)
+- `AGENTS.md` — binding brand/voice/engineering rules (authoritative).
+- `docs/AZURE-DEPLOY.md`, `DEPLOY.md` — deployment guides.
+- `docs/specs/backend-architecture-dossier.md` — backend contract detail.
+- `docs/specs/*` — redesign analysis dossiers (background, not required reading).
