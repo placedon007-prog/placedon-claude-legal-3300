@@ -69,8 +69,13 @@ function SocialGlyph({ name }: { name: SocialIcon }) {
   );
 }
 
-/* Add X here as soon as the handle/URL is provided. */
 const socialLinks: { name: SocialIcon; label: string; handle: string; href: string }[] = [
+  {
+    name: "x",
+    label: "X",
+    handle: "@placedonAI",
+    href: "https://x.com/placedonAI",
+  },
   {
     name: "linkedin",
     label: "LinkedIn",
