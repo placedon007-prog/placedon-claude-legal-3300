@@ -201,9 +201,9 @@ export const faqEntries = [
 export const faqContent = {
   route: "/faq",
   eyebrow: "Questions and limits · Pre-launch",
-  headline: "What is proposed. What is not established.",
+  headline: "What we're building, and what we don't claim yet.",
   subhead:
-    "These answers set out Placedon's intended scope, evidence standard, and access arrangements. Product behaviour remains a design commitment until verified in a working service.",
+    "These answers cover what Placedon is meant to do, the evidence standard it holds to, and how to get access. Until it runs as a live service, this describes intent, not proven behaviour.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [

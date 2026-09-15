@@ -4,9 +4,9 @@ import type { PageContent } from "./types";
 export const aboutContent = {
   route: "/about",
   eyebrow: "Purpose and accountability · Pre-launch",
-  headline: "The standard is a citable basis.",
+  headline: "An answer should point to its source.",
   subhead:
-    "Placedon is being built around a narrow requirement: an Indian corporate law answer must carry the provision, instrument, and operative date that support it. When the record cannot be verified, the answer must stop.",
+    "Placedon is built around one requirement: an answer about Indian corporate law should name the provision, the instrument, and the operative date behind it. When the record cannot be verified, Placedon stops instead of guessing.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [

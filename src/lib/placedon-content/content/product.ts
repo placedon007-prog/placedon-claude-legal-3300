@@ -13,7 +13,7 @@ export const productContent = {
   eyebrow: "Product concept · Pre-launch",
   headline: "The answer. Its authority. Its limits.",
   subhead:
-    "Placedon is being designed around an inspectable evidence record for Indian corporate law. These views describe the intended product; they are not live compliance checks.",
+    "Placedon is built around an evidence record you can inspect for Indian corporate law. The views here show the intended product, not live compliance checks.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [

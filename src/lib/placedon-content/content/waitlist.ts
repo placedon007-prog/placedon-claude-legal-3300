@@ -4,9 +4,9 @@ import type { FormFieldCopy, PageContent, StateCopy } from "./types";
 export const waitlistContent = {
   route: "/waitlist",
   eyebrow: "Register interest · Pre-launch",
-  headline: "Leave a contact. State the work.",
+  headline: "Tell us who you are and what you'd use it for.",
   subhead:
-    "Register your interest for future access updates, or request a pilot discussion about a defined corporate compliance workflow. Neither request confirms access or creates a payment obligation.",
+    "Register your interest to hear about access, or ask for a pilot conversation about a specific corporate-compliance workflow. Neither one confirms access or creates any payment obligation.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [

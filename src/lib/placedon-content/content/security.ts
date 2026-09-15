@@ -6,7 +6,7 @@ export const securityContent = {
   eyebrow: "Data handling and source discipline · Pre-launch",
   headline: "Security claims require evidence too.",
   subhead:
-    "Placedon's data-handling requirements are being defined before pilot use, oriented to India's Digital Personal Data Protection Act, 2023. This page states the proposed standard; it does not certify a deployed environment.",
+    "We are defining how Placedon handles data before any pilot, guided by India's Digital Personal Data Protection Act, 2023. This page states the standard we intend to meet, not a certified live system.",
   primaryCta: pilotCta,
   secondaryCta: waitlistCta,
   sections: [
