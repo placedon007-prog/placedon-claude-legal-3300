@@ -74,7 +74,7 @@ export function RequestForm({
       const label = intent === "pilot" ? "Pilot request" : "Register interest";
       const payload: Record<string, string> = {
         access_key: WEB3FORMS_ACCESS_KEY,
-        subject: `Placedon — ${label}`,
+        subject: `Placedon: ${label}`,
         from_name: "Placedon website",
         request_type: label,
         email: String(data.get("email") ?? ""),

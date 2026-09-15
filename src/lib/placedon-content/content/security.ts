@@ -77,12 +77,12 @@ export const securityContent = {
     },
   ],
   microcopy: {
-    postureLabel: "Proposed requirements — verification pending",
+    postureLabel: "Proposed requirements; verification pending",
     sensitiveData: sharedCopy.sensitiveDataNotice,
     securityContactLabel: "Report a security concern",
     securityContactHelp:
       "Describe the affected page and the issue without passwords, personal data, or confidential files.",
-    sourceUnavailable: "Source unavailable — no legal result supplied",
+    sourceUnavailable: "Source unavailable: no legal result supplied",
     disclaimer: sharedCopy.legalDisclaimer,
   },
   states: {

@@ -111,7 +111,7 @@ export const homeContent = {
     previewLabel: sharedCopy.conceptLabel,
     previewCaption: evidencePreview.caption,
     currencyLabel:
-      "Intended evidence sequence — no statutory timeline asserted",
+      "Intended evidence sequence; no statutory timeline asserted",
     access: sharedCopy.accessNotice,
     disclaimer: sharedCopy.legalDisclaimer,
   },

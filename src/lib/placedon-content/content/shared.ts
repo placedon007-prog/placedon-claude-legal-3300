@@ -20,11 +20,11 @@ export const sharedCopy = {
   thesis: "A witness, not a tool.",
   positioning: "Indian corporate law. Provision, instrument, operative date.",
   launchStatus: "Pre-launch",
-  conceptLabel: "Product concept — not a live answer",
+  conceptLabel: "Product concept: not a live answer",
   conceptDescription:
     "This preview describes the intended product. It does not report a verified legal result.",
   legalDisclaimer: "Not legal advice.",
-  templateNotice: "Template — for review by counsel; not legal advice.",
+  templateNotice: "Template for review by counsel; not legal advice.",
   pricingStatus: "Pricing finalised with design partners.",
   timingStatus: "No public launch date has been announced.",
   accessNotice:
@@ -60,7 +60,7 @@ export const sharedStates = {
     action: { label: "Return home", href: "/" },
   },
   abstained: {
-    title: "Abstained — evidence incomplete",
+    title: "Abstained: evidence incomplete",
     description:
       "Placedon cannot verify the provision, instrument, and operative date for this question. No legal answer is supplied; check the official record with a qualified professional.",
     action: { label: "Read the verification standard", href: "/how-it-works" },

@@ -50,8 +50,8 @@ export function SurfaceShell({
             <LegalText>{intro}</LegalText>
           </p>
           <p className="surface-concept" role="note">
-            Product concept — shown on fixed sample data, not a live answer for a
-            real company. Registration is not open.
+            Product concept, shown on fixed sample data. It is not a live answer
+            for a real company, and registration is not open.
           </p>
           <nav className="surface-nav" aria-label="Product surfaces">
             {SURFACES.map((s) => (
@@ -97,7 +97,7 @@ const CLASS_META: Record<
     ),
   },
   predictive_signal: {
-    label: "Signal — not asserted",
+    label: "Signal, not asserted",
     note: "Shown for awareness; it is not a verified answer.",
     icon: (
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
@@ -107,7 +107,7 @@ const CLASS_META: Record<
   },
   abstained: {
     label: "Abstained",
-    note: "No verified answer yet — here is what is missing.",
+    note: "No verified answer yet. Here is what is missing.",
     icon: (
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
         <circle cx="12" cy="12" r="8" />
@@ -180,7 +180,7 @@ export function EngineErrorPanel({ error }: { error: EngineError }) {
       <p className="eyebrow">Service unavailable</p>
       <h2>The record could not be reached.</h2>
       <p>
-        This is a connection or service problem — not a legal finding. No
+        This is a connection or service problem, not a legal finding. No
         answer, and no abstention, is implied. Nothing about the company&rsquo;s
         obligations has been established here. Try again.
       </p>

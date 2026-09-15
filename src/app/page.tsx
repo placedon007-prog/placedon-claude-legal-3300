@@ -316,7 +316,7 @@ const features = [
   {
     icon: I.plug,
     title: "Connected to your filings",
-    body: "Placedon is built to read from MCA21 filings, board minutes, and your statutory registers — no re-keying, no copy-paste, no re-explaining the company each time you open a question.",
+    body: "Placedon is built to read from your MCA21 filings, board minutes, and statutory registers, so you do not re-key data or re-explain the company every time you open a question.",
   },
   {
     icon: I.checks,
@@ -346,7 +346,7 @@ const principles = [
     icon: I.cpu,
     step: "02 · Decide",
     title: "Code decides",
-    body: "Applicability is pure, deterministic code — testable without a network, the same every time.",
+    body: "Whether a duty applies is decided by plain, deterministic code. You can test it without a network, and it gives the same result every time.",
   },
   {
     icon: I.shield,
@@ -445,8 +445,8 @@ const demos: Demo[] = [
         h: "2. For this company",
         p: (
           <>
-            Placedon does not answer this one — and it will not guess. It only
-            confirms a status it can prove.
+            Placedon does not answer this one, and it will not guess. It
+            confirms a status only when it can prove it.
           </>
         ),
         note: (
@@ -471,9 +471,9 @@ const demos: Demo[] = [
         p: (
           <>
             A company&rsquo;s yearly Board&rsquo;s Report must include a set of
-            disclosures listed in Rule 8. One of them — a statement on preventing
-            sexual harassment at work, under{" "}
-            <span className="dcite">Rule 8(5)(x)</span> — applies to every
+            disclosures listed in Rule 8. One of them, a statement on preventing
+            sexual harassment at work under{" "}
+            <span className="dcite">Rule 8(5)(x)</span>, applies to every
             company except One Person Companies and small companies.
           </>
         ),
@@ -500,9 +500,10 @@ const demos: Demo[] = [
         h: "1. The rule",
         p: (
           <>
-            Every company has to keep certain official registers — of its
-            members, debenture-holders, and other security holders — at its
-            registered office. This is required by <span className="dcite">s.88</span>.
+            Every company has to keep certain official registers at its
+            registered office, covering its members, debenture-holders, and
+            other security holders. This is required by{" "}
+            <span className="dcite">s.88</span>.
           </>
         ),
       },
@@ -511,7 +512,7 @@ const demos: Demo[] = [
         p: (
           <>
             The register of members is in place. The register of charges,
-            required by <span className="dcite">s.85</span>, could not be found —
+            required by <span className="dcite">s.85</span>, could not be found,
             so it is flagged for review.
           </>
         ),
@@ -532,19 +533,19 @@ const tools = [
   {
     icon: I.checks,
     title: "Placedon Matrix",
-    body: "Hand off a company and get back the full obligation matrix — one row per duty, marked attaches, met, or missing.",
+    body: "Hand off a company and get back the full obligation matrix, with one row per duty, marked attaches, met, or missing.",
     href: "/product/compliance-pack",
   },
   {
     icon: I.bag,
     title: "Plugins",
-    body: "Practice packs for corporate-secretarial work and MCA annual filings — AOC-4, MGT-7, DIR-3 KYC — configured to your registers and ROC calendar.",
+    body: "Practice packs for corporate-secretarial work and MCA annual filings (AOC-4, MGT-7, DIR-3 KYC), configured to your registers and ROC calendar.",
     href: "/product",
   },
   {
     icon: I.network,
     title: "Platform",
-    body: "Integrate Placedon into your secretarial or GRC stack through the API and the evidence contract — built for Indian corporate-law workflows.",
+    body: "Integrate Placedon into your secretarial or GRC stack through the API and the evidence contract. It is built for Indian corporate-law workflows.",
     href: "/how-it-works",
   },
 ];
@@ -602,7 +603,7 @@ export default function DashboardPage() {
           <span>
             Placedon <span className="sep">/</span> Indian corporate law
           </span>
-          <a href="#product" className="dcrumb-here" aria-label="Explore — scroll to the product overview">
+          <a href="#product" className="dcrumb-here" aria-label="Explore: scroll to the product overview">
             Explore here <Icon d={<path d="m6 9 6 6 6-6" />} size={16} />
           </a>
         </div>
@@ -613,7 +614,7 @@ export default function DashboardPage() {
         <Image
           className="dhero-img-photo"
           src="/media/hero-chamber.jpg"
-          alt="A grand, empty classical legislative chamber — the seat of the record."
+          alt="A grand, empty classical legislative chamber, the seat of the record."
           fill
           priority
           sizes="100vw"
@@ -624,9 +625,9 @@ export default function DashboardPage() {
             <span className="eyebrow">Placedon · Indian corporate law</span>
             <h1>Every answer carries its evidence.</h1>
             <p className="lead">
-              Placedon answers Indian corporate-law questions with the exact
-              provision, the amending instrument, and the operative date — and
-              abstains when it cannot verify.
+              Ask an Indian corporate-law question and you get the exact
+              provision, the instrument that amended it, and the date it took
+              effect. When Placedon cannot verify the answer, it says so.
             </p>
             <div className="dhero-img-actions">
               <Link
@@ -663,10 +664,10 @@ export default function DashboardPage() {
             <Index n="01" label="The record" />
             <AnimatedH2>Built for the record</AnimatedH2>
             <p className="lead">
-              Placedon reads the Companies Act, 2013, traces every answer to its
-              source, and works inside the tools your compliance team already
-              uses. Every output carries its citation and its operative date — or
-              it abstains.
+              Placedon reads the Companies Act, 2013, traces every answer back
+              to its source, and works inside the tools your compliance team
+              already uses. Every answer shows its citation and its operative
+              date. When it cannot, it abstains.
             </p>
           </div>
         </Reveal>
@@ -716,8 +717,8 @@ export default function DashboardPage() {
             <Index n="02" label="In practice" />
             <AnimatedH2>How compliance teams use Placedon</AnimatedH2>
             <p className="ddemo-caption">
-              Illustrative example — sample data shown to demonstrate the format.
-              Not a live answer for a real company.
+              Illustrative example. The sample data shows the format, not a live
+              answer for a real company.
             </p>
           </div>
         </Reveal>

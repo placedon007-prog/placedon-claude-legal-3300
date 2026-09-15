@@ -9,7 +9,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
   if (kind === "cookies")
     source = `## Analytics
 
-This site uses **Google Analytics 4** (provided by Google LLC) to understand, in aggregate, how the site is used — which pages are visited and where visitors arrive from. It is **off by default**: nothing loads and no analytics cookies are set until you select **Accept analytics** on the consent banner.
+This site uses **Google Analytics 4** (provided by Google LLC) to understand, in aggregate, how the site is used: which pages are visited and where visitors arrive from. It is **off by default**. Nothing loads and no analytics cookies are set until you select **Accept analytics** on the consent banner.
 
 When you accept, Google Analytics sets first-party cookies (\`_ga\` and \`_ga_*\`) that expire after up to two years. They hold a random identifier, not your name or email. Google may process this data on servers outside India, including the United States, under its own terms. The site does not use advertising, cross-site tracking, or session recording, and analytics never receives your email address, a workflow description, or URL query parameters.
 

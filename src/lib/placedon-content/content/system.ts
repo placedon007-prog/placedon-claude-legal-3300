@@ -72,7 +72,7 @@ export const systemContent = {
   },
   email: {
     waitlist: {
-      subject: "Placedon — waitlist request recorded",
+      subject: "Placedon: waitlist request recorded",
       paragraphs: [
         "Your waitlist request has been recorded for future access updates.",
         "Placedon is pre-launch. Access, a queue position, and a launch date are not confirmed.",
@@ -80,7 +80,7 @@ export const systemContent = {
       ],
     },
     pilot: {
-      subject: "Placedon — pilot request recorded",
+      subject: "Placedon: pilot request recorded",
       paragraphs: [
         "Your pilot enquiry has been recorded for review.",
         "Scope, data handling, and any fee must be agreed before participation. This message does not confirm access or a response deadline.",

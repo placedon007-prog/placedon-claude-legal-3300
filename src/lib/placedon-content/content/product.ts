@@ -92,7 +92,7 @@ export const productContent = {
   ],
   microcopy: {
     previewLabel: sharedCopy.conceptLabel,
-    plannedLabel: "Planned — not available on this site",
+    plannedLabel: "Planned: not available on this site",
     answerTab: "Answer record",
     currencyTab: "Statutory currency",
     standingTab: "Company standing",

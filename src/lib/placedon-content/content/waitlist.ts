@@ -138,7 +138,7 @@ const workflowField = {
   required: true,
   maxLength: 1200,
   example:
-    "e.g. Confirm whether a private company must hold an AGM this financial year, and return the exact section, the amending instrument, and the operative date — or abstain if it cannot be verified.",
+    "e.g. Confirm whether a private company must hold an AGM this financial year, and return the exact section, the amending instrument, and the operative date. Abstain if it cannot be verified.",
   help: "Describe the compliance review and the evidence you need. Keep this general and non-confidential; do not paste a legal file or a company record.",
   errors: {
     required: "Describe the workflow you want to review.",

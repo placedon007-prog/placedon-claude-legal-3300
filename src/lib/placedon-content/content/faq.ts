@@ -27,7 +27,7 @@ export const faqEntries = [
     category: "scope",
     question: "Who is Placedon for?",
     answer: [
-      "Placedon is intended first for advocates, corporate lawyers, in-house counsel, Company Secretaries (ICSI), and Chartered Accountants (ICAI) who review corporate compliance — including the Practising Company Secretary carrying a book of client companies.",
+      "Placedon is intended first for advocates, corporate lawyers, in-house counsel, Company Secretaries (ICSI), and Chartered Accountants (ICAI) who review corporate compliance. That includes the Practising Company Secretary who carries a book of client companies.",
       "It is also intended to help founders and operators understand the evidence to take to those professionals.",
       "The proposed record separates the statutory basis from supplied company facts and the judgment still required.",
     ],
@@ -88,7 +88,7 @@ export const faqEntries = [
     category: "scope",
     question: "Is this legal advice, or a replacement for my adviser?",
     answer: [
-      "No; the site and product concept are not legal advice and do not establish an attorney–client relationship.",
+      "No. The site and product concept are not legal advice and do not establish an attorney-client relationship.",
       "The intended product supplies an evidence record for review, while a qualified adviser assesses the facts, applicability, and matters outside the stated scope.",
       "Using Placedon does not transfer filing responsibility or professional liability to the product.",
     ],
