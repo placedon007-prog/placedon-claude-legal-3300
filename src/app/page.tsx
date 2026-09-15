@@ -623,15 +623,15 @@ export default function DashboardPage() {
         <div className="dash-container dhero-img-inner">
           <Reveal className="dhero-img-text">
             <span className="eyebrow">
-              Research · Compliance · Currency · Drafting
+              Research · Compliance · Monitoring · Drafting
             </span>
             <h1>The evidence-first workspace for Indian corporate law.</h1>
             <p className="lead">
-              Placedon brings research, compliance, currency, and drafting into
-              one place for corporate teams and their lawyers. Every answer and
-              every clause traces back to the exact provision, the instrument
-              that changed it, and the date it took effect. When Placedon cannot
-              verify something, it abstains.
+              Placedon brings research, compliance, monitoring, and drafting
+              into one place for corporate teams and their lawyers. Every answer
+              and every clause traces back to the exact provision, the
+              instrument that changed it, and the date it took effect. When
+              Placedon cannot verify something, it abstains.
             </p>
             <div className="dhero-img-actions">
               <Link
