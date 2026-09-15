@@ -13,9 +13,9 @@ export const pricingContent = {
     {
       id: "pilot",
       heading: "Pilot participation",
-      claim: "Request a discussion about a defined compliance workflow.",
+      claim: "Ask for a conversation about a specific compliance workflow.",
       basis:
-        "Proposed scope, evaluation criteria, data handling, duration, and any fee must be agreed before access. Sending a request does not reserve a place.",
+        "We agree the scope, how it will be evaluated, data handling, duration, and any fee before access. Sending a request does not reserve a place.",
       items: [
         {
           id: "fit",
@@ -23,21 +23,21 @@ export const pricingContent = {
           claim:
             "Professionals and operators with a specific Companies Act workflow to review.",
           basis:
-            "A request should explain the question, the review process, and what evidence the team needs.",
+            "In your request, describe the question, how you review it, and the evidence your team needs.",
         },
         {
           id: "evaluation",
           heading: "Evaluation basis",
           claim: "Examine the evidence record and its limits.",
           basis:
-            "A pilot discussion can define how cited results, input dependencies, and abstentions will be assessed.",
+            "In the pilot conversation we can agree how to assess cited results, input dependencies, and abstentions.",
         },
         {
           id: "commercial",
           heading: "Commercial position",
           claim: "No pilot fee is quoted on this site.",
           basis:
-            "Any proposed charge and cancellation terms must be stated in the pilot agreement before acceptance.",
+            "Any charge and cancellation terms are set out in the pilot agreement before you accept.",
         },
       ],
       action: pilotCta,
@@ -47,15 +47,15 @@ export const pricingContent = {
       heading: "Waitlist",
       claim: "Register interest in future access.",
       basis:
-        "The form collects contact details for access updates. Joining the waitlist is free and does not purchase a subscription or guarantee admission.",
+        "The form collects your contact details for access updates. Registering is free, and it does not buy a subscription or guarantee admission.",
       action: waitlistCta,
     },
     {
       id: "not-a-plan-table",
-      heading: "No implied entitlement",
-      claim: "The product concepts are not a list of included features.",
+      heading: "Nothing here is a promise of features",
+      claim: "The product concepts are not a list of what you would get.",
       basis:
-        "Coverage, usage limits, support, and access conditions remain subject to an agreed scope. Future pricing and availability will be stated when established.",
+        "Coverage, usage limits, support, and access all depend on an agreed scope. We will state pricing and availability once they are set.",
       action: { label: "Read the current product scope", href: "/product" },
     },
   ],

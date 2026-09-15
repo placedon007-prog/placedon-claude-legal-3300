@@ -14,9 +14,9 @@ export const securityContent = {
       id: "source-discipline",
       heading: "Official sources. Traceable authority.",
       claim:
-        "The intended statutory record is restricted to official publications.",
+        "The statutory record is limited to official publications.",
       basis:
-        "No scraping is proposed; statutory material must be obtained through permitted official channels. A third-party explanation cannot substitute for the operative provision.",
+        "We do not scrape. Statutory material comes only through permitted official channels, and a third-party summary never stands in for the operative provision.",
     },
     {
       id: "data-minimisation",
@@ -24,23 +24,23 @@ export const securityContent = {
       claim:
         "A pilot enquiry needs a description of the workflow, not a client file.",
       basis:
-        "The proposed forms collect contact details and optional professional context. Confidential documents, identity records, and filing credentials should not be submitted.",
+        "The forms collect your contact details and, if you choose, some professional context. Please do not submit confidential documents, identity records, or filing credentials.",
       action: { label: "Read the data-collection notice", href: "/cookies" },
     },
     {
       id: "training",
-      heading: "No training on submitted data: the proposed policy.",
+      heading: "We do not train on your submitted data.",
       claim:
-        "The proposed policy excludes submitted form and pilot data from model training.",
+        "Our policy keeps submitted form and pilot data out of model training.",
       basis:
-        "Before any pilot data is accepted, provider terms and account settings must be checked against that policy. This is a requirement for deployment, not a claim about an audited system.",
+        "Before we accept any pilot data, we check provider terms and account settings against that policy. This is a condition for going live, not a claim about an audited system.",
     },
     {
       id: "pilot-review",
       heading: "Agree the data boundaries before a pilot.",
-      claim: "A pilot must have a stated data-handling scope.",
+      claim: "A pilot needs a written data-handling scope.",
       basis:
-        "The proposed review covers data categories, authorised access, processors, storage locations, retention, deletion, and incident contacts.",
+        "That review covers the data categories, who can access them, the processors involved, where data is stored, how long it is kept, how it is deleted, and who to contact about incidents.",
       items: [
         {
           id: "access",
@@ -48,22 +48,22 @@ export const securityContent = {
           claim:
             "Access should be limited to the people and services needed for the agreed purpose.",
           basis:
-            "Authentication, permissions, transport protection, and storage controls require verification in the actual environment.",
+            "Authentication, permissions, transport protection, and storage controls all have to be verified in the real environment.",
         },
         {
           id: "providers",
           heading: "Processors and transfers",
           claim:
-            "Provider names and processing locations must be disclosed before intake.",
+            "We disclose provider names and processing locations before any intake.",
           basis:
             "Hosting, mail, storage, and any model provider may have different retention and international-transfer arrangements.",
         },
         {
           id: "incidents",
           heading: "Incident handling",
-          claim: "Reporting and response responsibilities must be assigned.",
+          claim: "Someone is assigned to report and respond to incidents.",
           basis:
-            "The pilot agreement should identify a monitored contact and the process for assessing and notifying relevant incidents.",
+            "The pilot agreement names a monitored contact and sets out how incidents are assessed and reported.",
         },
       ],
     },
@@ -72,7 +72,7 @@ export const securityContent = {
       heading: "What this site does not establish",
       claim: "No security certification or independent audit is claimed.",
       basis:
-        "An India-only hosting guarantee, a service-level commitment, and production security controls have not been established by the information published here.",
+        "Nothing published here establishes an India-only hosting guarantee, a service-level commitment, or production security controls.",
       action: { label: "Read the privacy template", href: "/privacy" },
     },
   ],

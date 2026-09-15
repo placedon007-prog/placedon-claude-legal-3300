@@ -12,40 +12,40 @@ export const aboutContent = {
   sections: [
     {
       id: "purpose",
-      heading: "Authority is something a reviewer must be able to inspect.",
-      claim: "An authoritative tone cannot establish a legal proposition.",
+      heading: "A reviewer should be able to inspect the authority behind an answer.",
+      claim: "A confident tone does not make a legal point true.",
       basis:
-        "Placedon's proposed record makes the underlying words, source, date, and unresolved conditions visible to the professional reviewing them.",
+        "Placedon shows the underlying words, the source, the date, and anything still unresolved, so the professional reviewing it can check the work.",
     },
     {
       id: "witness",
       heading: "A witness, not a tool.",
-      claim: "The witness model confines an answer to its evidence.",
+      claim: "A witness answers only from the evidence.",
       basis:
-        "Placedon is intended to report what the statutory record supports and to identify what it cannot establish. The phrase describes a product standard, not legal witness status or court approval.",
+        "Placedon reports what the statutory record supports, and it flags what it cannot establish. The phrase is a product standard, not a claim of legal witness status or court approval.",
     },
     {
       id: "building-in-the-open",
-      heading: "Building in the open begins with stating the limits.",
-      claim: "Placedon is pre-launch and the corpus is not complete.",
+      heading: "Building in the open means stating the limits first.",
+      claim: "Placedon is pre-launch, and the corpus is not complete.",
       basis:
-        "This site presents intended workflows and invites pilot requests. It does not claim live customers, validated accuracy results, or complete statutory coverage.",
+        "This site shows the workflows we intend to build and invites pilot requests. It does not claim live customers, proven accuracy results, or complete coverage of the law.",
     },
     {
       id: "team-contact",
       heading: "Contact the team about the work.",
       claim:
-        "The pilot form is the route for discussing a compliance workflow.",
+        "The pilot form is how you start a conversation about a compliance workflow.",
       basis:
-        "State your role, the review you carry out, and the evidence you need. Individual biographies and professional credentials are not asserted on this site.",
+        "Tell us your role, the review you handle, and the evidence you need. We do not publish individual biographies or credentials on this site.",
       action: pilotCta,
     },
     {
       id: "accountability",
-      heading: "Questions about data have a separate purpose.",
-      claim: "A privacy request does not require a waitlist subscription.",
+      heading: "Questions about your data go through a separate channel.",
+      claim: "You do not need to register interest to make a privacy request.",
       basis:
-        "Use the privacy contact identified in the published policy to ask about access, correction, withdrawal, or deletion.",
+        "Use the privacy contact in the published policy to ask about access, correction, withdrawal, or deletion.",
       action: { label: "Read the privacy policy", href: "/privacy" },
     },
   ],

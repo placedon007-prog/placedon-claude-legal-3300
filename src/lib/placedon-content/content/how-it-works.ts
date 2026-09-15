@@ -21,21 +21,21 @@ export const howItWorksContent = {
       heading: "State the question and the relevant date.",
       claim: "An assessment begins with its facts.",
       basis:
-        "The intended workflow records the company context, the period under review, and the question to be answered. Missing inputs must remain marked as missing.",
+        "The workflow records the company context, the period under review, and the question you want answered. Anything missing stays marked as missing.",
     },
     {
       id: "verify",
-      heading: "Establish the authority and the operative version.",
-      claim: "The answer must be supported by official material.",
+      heading: "Find the authority and the version in force.",
+      claim: "Every answer is backed by official material.",
       basis:
-        "The proposed verification record connects the provision to its amending or commencement instrument and separates the operative date from the date of publication.",
+        "The verification record links the provision to the instrument that amended or commenced it, and it keeps the operative date separate from the date of publication.",
       items: [
         {
           id: "source",
           heading: "Source",
           claim: "Identify the official publication.",
           basis:
-            "The intended record retains its reference and the exact text used.",
+            "The record keeps the reference and the exact text used.",
         },
         {
           id: "version",
@@ -49,7 +49,7 @@ export const howItWorksContent = {
           heading: "Applicability",
           claim: "Make the conditions explicit.",
           basis:
-            "A conclusion must state the inputs and exclusions considered; unresolved applicability requires review or abstention.",
+            "A conclusion states the inputs and exclusions it considered. When applicability is unresolved, Placedon sends it for review or abstains.",
         },
       ],
     },
@@ -57,24 +57,24 @@ export const howItWorksContent = {
       id: "answer-classes",
       heading: "Three classes. Different kinds of evidence.",
       claim:
-        "A statutory fact, a derived conclusion, and an estimate must not be interchangeable.",
+        "A statutory fact, a derived conclusion, and an estimate are not the same thing.",
       basis:
-        "Each intended answer class has a written label, a stated basis, and a boundary on what it establishes. Predictive signals remain a planned class.",
+        "Each answer class has a written label, a stated basis, and a limit on what it establishes. Predictive signals are still a planned class.",
     },
     {
       id: "abstain",
-      heading: "An unresolved record is an abstention.",
-      claim: "Placedon is designed to withhold an answer it cannot verify.",
+      heading: "When the record is unresolved, Placedon abstains.",
+      claim: "Placedon holds back any answer it cannot verify.",
       basis:
-        "Missing text, uncertain commencement, conflicting sources, or insufficient company facts must be identified. An abstention does not mean that no obligation exists.",
+        "It identifies the reason: missing text, uncertain commencement, conflicting sources, or not enough company facts. An abstention does not mean there is no obligation.",
     },
     {
       id: "review",
       heading: "The professional decision remains yours.",
       claim:
-        "An evidence record supports review; it does not assume professional responsibility.",
+        "An evidence record supports your review; it does not take on professional responsibility.",
       basis:
-        "A qualified adviser must assess the company's facts, relevant law, and any material outside the stated scope before a filing or other action.",
+        "A qualified adviser should weigh the company's facts, the relevant law, and anything outside the stated scope before a filing or any other action.",
       action: { label: "Read questions and limits", href: "/faq" },
     },
   ],
