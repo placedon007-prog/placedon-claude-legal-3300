@@ -622,12 +622,16 @@ export default function DashboardPage() {
         <div className="dhero-img-scrim" aria-hidden="true" />
         <div className="dash-container dhero-img-inner">
           <Reveal className="dhero-img-text">
-            <span className="eyebrow">Placedon · Indian corporate law</span>
-            <h1>Every answer carries its evidence.</h1>
+            <span className="eyebrow">
+              Research · Compliance · Currency · Drafting
+            </span>
+            <h1>The evidence-first workspace for Indian corporate law.</h1>
             <p className="lead">
-              Ask an Indian corporate-law question and you get the exact
-              provision, the instrument that amended it, and the date it took
-              effect. When Placedon cannot verify the answer, it says so.
+              Placedon brings research, compliance, currency, and drafting into
+              one place for corporate teams and their lawyers. Every answer and
+              every clause traces back to the exact provision, the instrument
+              that changed it, and the date it took effect. When Placedon cannot
+              verify something, it abstains.
             </p>
             <div className="dhero-img-actions">
               <Link

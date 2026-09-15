@@ -502,17 +502,17 @@
   margin-bottom: 22px;
 }
 .dhero-img-text h1 {
-  font-size: clamp(44px, 6.4vw, 96px);
-  line-height: 1.0;
-  letter-spacing: -0.01em;
+  font-size: clamp(40px, 5.2vw, 74px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
   margin: 0;
-  max-width: 15ch;
+  max-width: 17ch;
 }
 .dhero-img-text .lead {
   color: var(--muted);
   font-size: clamp(16px, 1.5vw, 20px);
   margin-top: 26px;
-  max-width: 46ch;
+  max-width: 52ch;
 }
 @media (max-width: 760px) {
   .dhero-img-inner {
@@ -524,7 +524,7 @@
     flex-wrap: wrap;
   }
   .dhero-img-text h1 {
-    font-size: clamp(38px, 12vw, 60px);
+    font-size: clamp(34px, 9.5vw, 52px);
   }
 }
 .dhero .eyebrow {
