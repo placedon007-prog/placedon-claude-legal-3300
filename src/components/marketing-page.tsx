@@ -30,8 +30,8 @@ export function MarketingPage({
       <main id="main-content" className="marketing-main">
         <ScrollReveal selector=".page-hero > *, .reading-section, [data-reveal-block]">
           <PageHero page={page} />
-          {page.sections.map((section, index) => (
-            <ReadingSection key={section.id} section={section} index={index} />
+          {page.sections.map((section) => (
+            <ReadingSection key={section.id} section={section} />
           ))}
           {children}
         </ScrollReveal>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Mark } from "./brand";
 import {
   answerClasses,
   evidencePreview,
@@ -23,7 +22,7 @@ export function EvidenceCard({ animate = false }: { animate?: boolean }) {
       <div className="evidence-card">
         <div className="evidence-toolbar">
           <span className="evidence-title">
-            <Mark name="instrument" /> Evidence record
+            Evidence record
           </span>
           <span className="record-tag">Concept</span>
         </div>
@@ -32,9 +31,6 @@ export function EvidenceCard({ animate = false }: { animate?: boolean }) {
           <p>{evidencePreview.question}</p>
         </div>
         <div className="evidence-verdict">
-          <div className="abstain-sign">
-            <Mark name="abstained" />
-          </div>
           <span className="mono state-label">Abstained</span>
           <h2>No verified answer.</h2>
           <p>
@@ -116,17 +112,6 @@ export function AnswerExplorer() {
         tabIndex={0}
         className={`answer-panel ${!answer ? "answer-abstained" : ""}`}
       >
-        <Mark
-          name={
-            !answer
-              ? "abstained"
-              : active === "verified_fact"
-                ? "verified"
-                : active === "deterministic_conclusion"
-                  ? "provision"
-                  : "currency"
-          }
-        />
         <div>
           <span className="small mono">
             {answer?.shortLabel ?? "No legal answer supplied"}
