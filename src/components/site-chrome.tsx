@@ -35,39 +35,7 @@ const navLinks = [
   { label: "Pricing", href: "/pricing" },
 ];
 
-/* Custom monoline social icons (1.5px stroke, matching the brand icon set) —
-   deliberately not the bright colour logos, which would break the monochrome
-   brand. */
 type SocialIcon = "instagram" | "x" | "linkedin";
-function SocialGlyph({ name }: { name: SocialIcon }) {
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: "0 0 24 24",
-    "aria-hidden": true as const,
-  };
-  if (name === "instagram")
-    return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-        <rect x="3" y="3" width="18" height="18" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
-      </svg>
-    );
-  if (name === "x")
-    return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4l16 16M20 4L4 20" />
-      </svg>
-    );
-  // linkedin
-  return (
-    <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="M7 10v7M7 7v.01M11 17v-4a2 2 0 0 1 4 0v4M11 17v-7" />
-    </svg>
-  );
-}
 
 const socialLinks: { name: SocialIcon; label: string; handle: string; href: string }[] = [
   {
@@ -221,9 +189,6 @@ export function SiteFooter() {
                   aria-label={`Placedon on ${s.label} (opens in a new tab)`}
                   onClick={() => track("social_click", { network: s.name })}
                 >
-                  <span className="dfoot-social-icon">
-                    <SocialGlyph name={s.name} />
-                  </span>
                   <span className="dfoot-social-text">
                     <span className="dfoot-social-net">{s.label}</span>
                     <span className="dfoot-social-handle mono">{s.handle}</span>
