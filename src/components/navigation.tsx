@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Brand, Arrow } from "./brand";
+import { Brand } from "./brand";
 import { globalContent } from "@/lib/placedon-content/content/shared";
 
 function themeSnapshot() {
@@ -90,7 +90,7 @@ export function Navigation() {
             className="button button-gold nav-pilot"
             href="/waitlist?intent=pilot"
           >
-            Request a pilot <Arrow />
+            Request a pilot
           </Link>
           <button
             ref={toggle}
@@ -129,7 +129,6 @@ export function Navigation() {
                 onClick={close}
               >
                 {link.label}
-                <Arrow />
               </Link>
             ))}
           </nav>
