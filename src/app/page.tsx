@@ -315,8 +315,8 @@ function Reveal({
 const features = [
   {
     icon: I.plug,
-    title: "Connected to your filings",
-    body: "Placedon is built to read from your MCA21 filings, board minutes, and statutory registers, so you do not re-key data or re-explain the company every time you open a question.",
+    title: "Works from the registers you give it",
+    body: "Placedon reads the registers and documents you supply. Reading MCA21 directly requires a contracted, MCA-sanctioned aggregator; Placedon does not scrape MCA21, and no aggregator is connected yet.",
   },
   {
     icon: I.checks,
@@ -527,7 +527,7 @@ const tools = [
   {
     icon: I.pen,
     title: "Placedon for Word",
-    body: "Draft board resolutions, notices, and Board's-report extracts inside Word, each clause carrying its section and operative date.",
+    body: "Check the document open in Word against the law held for its date, clause by clause, with each section and operative date shown. The add-in reads: it never edits your text or formatting.",
     href: "/product",
   },
   {
@@ -538,8 +538,8 @@ const tools = [
   },
   {
     icon: I.bag,
-    title: "Plugins",
-    body: "Practice packs for corporate-secretarial work and MCA annual filings (AOC-4, MGT-7, DIR-3 KYC), configured to your registers and ROC calendar.",
+    title: "Annual filing checks",
+    body: "Whether the financial statements (AOC-4, s.137) and the annual return (MGT-7, s.92) were filed in time, decided from the filing dates you supply.",
     href: "/product",
   },
   {
@@ -554,7 +554,7 @@ const build = [
   {
     icon: I.network,
     title: "MCP for statutory data",
-    body: "Connect your registers, MCA21 filings, and minute books to Placedon through the open Model Context Protocol.",
+    body: "Thirteen read-only tools over Placedon's engine through the open Model Context Protocol, so an agent receives the same answers, and the same refusals, as the API. No tool writes anything.",
   },
   {
     icon: I.cpu,
