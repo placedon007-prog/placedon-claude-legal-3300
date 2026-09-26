@@ -45,12 +45,23 @@ const { requestSchema, intakeConfiguration, storeRequest, secureEndpoint } =
   await import("../src/lib/intake.ts");
 const { MockProvider, HttpProvider } = await import("../src/lib/api.ts");
 const { legalSource } = await import("../src/lib/legal.ts");
+const { formatProvisionReference } = await import("../src/lib/format.ts");
 const { POST } = await import("../src/app/api/waitlist/route.ts");
 let assertions = 0;
 function check(value, message) {
   assert.ok(value, message);
   assertions++;
 }
+check(
+  formatProvisionReference("Companies Act 2013, s.173(1)") ===
+    "Companies Act, 2013, Section 173(1)",
+  "Compact engine citations become lawyer-facing references",
+);
+check(
+  formatProvisionReference("s.2(85) and ss. 96(1)") ===
+    "Section 2(85) and Sections 96(1)",
+  "Singular and plural section shorthand are normalised for display",
+);
 const valid = {
   intent: "waitlist",
   requestId: "d3c57a74-9b3b-4f45-a22f-08dbde73c4df",

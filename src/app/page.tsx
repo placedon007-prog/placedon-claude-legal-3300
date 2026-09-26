@@ -221,7 +221,7 @@ const features: Feature[] = [
     ],
     example: (
       <>
-        Asked what <span className="dcite">s.96(1)</span> required for the year
+        Asked what <strong className="dcite section-reference">Section 96(1)</strong> required for the year
         ending <span className="dcite">2026-03-31</span>, Placedon answers: an
         AGM within six months of the year&rsquo;s end, and no more than fifteen
         months after the last one. The section and its operative date sit
@@ -241,13 +241,13 @@ const features: Feature[] = [
     ],
     example: (
       <>
-        Board meetings under <span className="dcite">s.173(1)</span>: at least
+        Board meetings under <strong className="dcite section-reference">Section 173(1)</strong>: at least
         four a year, no more than 120 days apart. Three held so far,{" "}
         <span className="dcite">96 days</span> since the last. The next one is
         due before <span className="dcite">2026-10-14</span>.
       </>
     ),
-    status: "In development · first duties include s.96 and s.173",
+    status: "In development · first duties include Section 96 and Section 173",
   },
   {
     n: "03",
@@ -279,7 +279,7 @@ const features: Feature[] = [
     example: (
       <>
         <span className="dcite">G.S.R. 880(E)</span> revised the small-company
-        limits under <span className="dcite">s.2(85)</span> from{" "}
+        limits under <strong className="dcite section-reference">Section 2(85)</strong> from{" "}
         <span className="dcite">2025-12-01</span>. Placedon records the
         notification and links it to every duty that turns on small-company
         status.
@@ -299,7 +299,7 @@ const features: Feature[] = [
     example: (
       <>
         A Board&rsquo;s report drafted under{" "}
-        <span className="dcite">s.134</span>, where each disclosure shows the
+        <strong className="dcite section-reference">Section 134</strong>, where each disclosure shows the
         provision it answers to and the date that provision took its current
         form.
       </>
@@ -318,7 +318,7 @@ const features: Feature[] = [
     example: (
       <>
         Does the company have a director resident in India under{" "}
-        <span className="dcite">s.149(3)</span>? Not answered. That turns on
+        <strong className="dcite section-reference">Section 149(3)</strong>? Not answered. That turns on
         the days each director spent in India, and those are not on record.
       </>
     ),
@@ -364,7 +364,7 @@ const demos: Demo[] = [
           <>
             Almost every company must hold an Annual General Meeting each year,
             and no more than fifteen months can pass between two of them. This
-            comes from <span className="dcite">s.96(1)</span>.
+            comes from <strong className="dcite section-reference">Section 96(1)</strong>.
           </>
         ),
       },
@@ -396,7 +396,7 @@ const demos: Demo[] = [
           <>
             A company must hold at least four board meetings a year, and no more
             than 120 days can pass between any two of them. This comes from{" "}
-            <span className="dcite">s.173(1)</span>.
+            <strong className="dcite section-reference">Section 173(1)</strong>.
           </>
         ),
       },
@@ -411,7 +411,7 @@ const demos: Demo[] = [
         ),
       },
     ],
-    prompt: "Are we on track for the s.173 board-meeting cadence this year?",
+    prompt: "Are we on track for the Section 173 board-meeting cadence this year?",
     connectors: ["Board minutes", "Secretarial software"],
   },
   {
@@ -424,7 +424,7 @@ const demos: Demo[] = [
         p: (
           <>
             A &ldquo;small company&rdquo; is one whose capital and turnover stay
-            under the limits set in <span className="dcite">s.2(85)</span>.
+            under the limits set in <strong className="dcite section-reference">Section 2(85)</strong>.
             Being small means lighter rules apply, so the status matters.
           </>
         ),
@@ -493,7 +493,7 @@ const demos: Demo[] = [
             Every company has to keep certain official registers at its
             registered office, covering its members, debenture-holders, and
             other security holders. This is required by{" "}
-            <span className="dcite">s.88</span>.
+            <strong className="dcite section-reference">Section 88</strong>.
           </>
         ),
       },
@@ -502,7 +502,7 @@ const demos: Demo[] = [
         p: (
           <>
             The register of members is in place. The register of charges,
-            required by <span className="dcite">s.85</span>, could not be found,
+            required by <strong className="dcite section-reference">Section 85</strong>, could not be found,
             so it is flagged for review.
           </>
         ),

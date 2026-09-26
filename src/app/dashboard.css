@@ -117,6 +117,12 @@
   padding-bottom: 1px;
   white-space: nowrap;
 }
+.dash .dcite.section-reference {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 1em;
+  letter-spacing: 0.005em;
+}
 
 /* ---- buttons ---- */
 .dbtn {

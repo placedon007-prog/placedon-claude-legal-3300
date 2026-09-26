@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { LegalText } from "@/components/brand";
 import type { ProductClass, EngineError } from "@/lib/engine";
-import { formatIST } from "@/lib/format";
+import { formatIST, formatProvisionReference } from "@/lib/format";
 import "./surfaces.css";
 
 /*
@@ -110,9 +110,9 @@ export function classNote(kind: ProductClass): string {
 
 export function Citation({ provision }: { provision: string }) {
   return (
-    <span className="cite mono" title="Statutory provision">
-      {provision}
-    </span>
+    <strong className="cite section-reference" title="Statutory provision">
+      {formatProvisionReference(provision)}
+    </strong>
   );
 }
 

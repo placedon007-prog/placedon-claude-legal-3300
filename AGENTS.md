@@ -13,9 +13,12 @@ change — check them before you consider any task done.
   a neutral warm-grey scale. **Accent = Brass Gold `#C9A24B`, ≤10% of any screen, ONE accent element
   per view.** `--gold-muted #9F743B` for citations only. Cool Grey `#5B6472` is reserved **only** for
   the "abstained / unknown" state — never decorative. No navy-dominant, no second accent colour.
-- **Fonts (self-hosted from `brand-kit/fonts/` via `next/font/local`):** Fraunces (display serif) ·
-  IBM Plex Mono (every section reference `s.96(1)`, figure `₹10,00,00,000`, instrument `G.S.R. 880(E)`,
-  and date) · Inter/Archivo (body). Mono citations are the brand signature — never paraphrase a section.
+- **Fonts:** Fraunces (display serif) · Inter/Archivo (body) · IBM Plex Mono for figures,
+  instruments, dates and record identifiers. Reader-facing statutory references use the familiar
+  legal-document form **Section 96(1)** in bold Georgia/Times-style serif. The engine may keep
+  `s.96(1)` as data and accept `s.96`, `u/s 96` and `Section 96` as input; the UI always normalises
+  display copy to **Section 96**. Use *Companies Act, 2013* in italics in prose. Underlining is for
+  links or an expressly highlighted source passage, never decoration.
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
 
@@ -24,7 +27,7 @@ change — check them before you consider any task done.
   *would this appear in a judgment?* If it reads like advocacy or sales copy, cut it.
 - **Banned words (any = failure):** streamline, empower, solution, easy, smart, seamless, revolutionary,
   unlock, supercharge, effortless, game-changer, cutting-edge.
-- **Words in:** provision, verified, section [number] (mono), abstains, liability, instrument, operative.
+- **Words in:** provision, verified, Section [number] (bold serif), abstains, liability, instrument, operative.
 - Register: ~80% formal, calm/confident; humility appears once — in abstention.
 
 ## Honesty — do not overclaim

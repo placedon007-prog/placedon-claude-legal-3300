@@ -34,3 +34,14 @@ export function formatIndianNumber(value: number): string {
 export function formatIndianRupees(rupees: number): string {
   return `₹${rupees.toLocaleString("en-IN")}`;
 }
+
+/**
+ * Translate compact engine citations into the form used in Indian legal work.
+ * This is display-only: stable engine values such as `s.173(1)` stay unchanged.
+ */
+export function formatProvisionReference(value: string): string {
+  return value
+    .replace(/\bss\.\s*(\d+(?:\([a-z0-9]+\))*)/gi, "Sections $1")
+    .replace(/\bs\.\s*(\d+(?:\([a-z0-9]+\))*)/gi, "Section $1")
+    .replace(/\bCompanies Act 2013\b/g, "Companies Act, 2013");
+}
