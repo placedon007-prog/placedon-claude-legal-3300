@@ -625,7 +625,20 @@
 }
 .dfeature-head {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
+}
+.dfeature-area {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.dfeature-lead {
+  color: var(--cream);
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: 34ch;
 }
 .dfeature-head svg {
   flex: none;
@@ -646,7 +659,35 @@
 .dfeature-body {
   color: var(--muted);
   font-size: 17px;
-  line-height: 1.55;
+  line-height: 1.6;
+}
+.dfeature-body + .dfeature-body {
+  margin-top: 14px;
+}
+.dfeature-example {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ink-2);
+}
+.dfeature-example-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.dfeature-example p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.dfeature-status {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted-2);
 }
 .dfeature-learn {
   margin-top: 20px;
@@ -1096,8 +1137,9 @@
   color: var(--cream);
 }
 
-/* Connect column — monoline social links with mono handles + gold-accent hover */
-.dfoot-social {
+/* Connect column — official single-colour marks with mono handles + gold-accent hover.
+   Qualified with .dfoot-col so it outranks the block display on footer links. */
+.dfoot-col a.dfoot-social {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1113,7 +1155,7 @@
   width: 34px;
   height: 34px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--muted);
   transition:
     color 0.16s ease,
