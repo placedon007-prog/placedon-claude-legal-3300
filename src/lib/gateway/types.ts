@@ -87,6 +87,76 @@ export const reviewResponseSchema = z.object({
 });
 export type ReviewResponse = z.infer<typeof reviewResponseSchema>;
 
+
+/* ── review_document ──────────────────────────────────────────────────────── */
+
+/**
+ * SS-1/SS-2 statuses. `N/A` is not a pass: it means the check does not apply to this
+ * document type, which is the whole reason minutes checks stopped firing on notices.
+ * `NEEDS_BOOK` is this intent's NEEDS_LAWYER — code looked and cannot decide, because the
+ * fact lives in the physical minutes book.
+ */
+export const documentStatusSchema = z.enum(["PASS", "DEFECT", "NEEDS_BOOK", "N/A"]);
+export type DocumentStatus = z.infer<typeof documentStatusSchema>;
+
+export const documentFindingSchema = z.object({
+  rule_id: z.string(),
+  status: documentStatusSchema,
+  /** The Secretarial Standard the rule comes from. */
+  source: z.string(),
+  defect: z.string(),
+  /** Verbatim from the document, or the reason it is absent. Never empty. */
+  quoted_span: z.string(),
+  /** A real ROC adjudication order that penalised this. */
+  precedent: z.string(),
+  applies: z.boolean(),
+  advisory_only: z.boolean(),
+  /** True for NEEDS_BOOK: a person must resolve it. */
+  needs_human: z.boolean(),
+});
+export type DocumentFinding = z.infer<typeof documentFindingSchema>;
+
+export const documentResponseSchema = z.object({
+  doc_type: z.string(),
+  /** `ANSWERED`, or `UNCLASSIFIED` when the type could not be determined. */
+  status: z.string(),
+  code: z.string().nullable().optional(),
+  note: z.string(),
+  meeting_kind: z.string().optional(),
+  requires_review: z.boolean(),
+  checks_run: z.number().int().nonnegative(),
+  defect_count: z.number().int().nonnegative(),
+  needs_human_count: z.number().int().nonnegative(),
+  findings: z.array(documentFindingSchema),
+  run_id: z.string().nullable().optional(),
+});
+export type DocumentResponse = z.infer<typeof documentResponseSchema>;
+
+/* ── the human gate ───────────────────────────────────────────────────────── */
+
+/**
+ * The shortest reason the gateway will accept, and a `CHECK` in migration 005 besides.
+ *
+ * It lives here, in the wire contract, rather than in `actions.ts`: a `"use server"` module
+ * may only export async functions, so a constant exported from one cannot be imported by a
+ * Client Component. `tsc` does not enforce that rule — only the build does, which is how
+ * this was found.
+ */
+export const MIN_REASON_CHARS = 10;
+
+export const decisionSchema = z.object({
+  status: z.string(),
+  decision_id: z.string(),
+  run_id: z.string(),
+  item_ref: z.string(),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  reason: z.string(),
+  quoted_span: z.string(),
+  actor_id: z.string(),
+  decided_at: z.string(),
+});
+export type Decision = z.infer<typeof decisionSchema>;
+
 /* ── runs ─────────────────────────────────────────────────────────────────── */
 
 export const runStepSchema = z.object({

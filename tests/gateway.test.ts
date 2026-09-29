@@ -141,6 +141,119 @@ test("law this corpus does not hold travels WITH the findings", async () => {
   assert.deepEqual(bodies.sort(), ["ARBITRATION1996", "CONTRACT1872", "STAMP"]);
 });
 
+
+/* ── review_document ──────────────────────────────────────────────────────── */
+
+const MINUTES = "Minutes of the 14th Meeting of the Board of Directors. Meeting No: 14. " +
+  "The Meeting commenced at 11:00 a.m. and concluded at 12:30 p.m. Chairman signed.";
+const NOTICE = "NOTICE OF THE 14th ANNUAL GENERAL MEETING. Notice is hereby given that " +
+  "the meeting will be held. An explanatory statement is annexed and a proxy form is " +
+  "enclosed.";
+const NEITHER = "Dear Sir, please find the cheque enclosed. Kindly acknowledge receipt " +
+  "at your earliest convenience. Yours faithfully.";
+
+test("a filing is classified before it is checked", async () => {
+  const r = await new MockGateway().reviewDocument({ text: MINUTES });
+  assert.ok(r.ok);
+  assert.equal(r.data.doc_type, "minutes");
+  assert.equal(r.data.status, "ANSWERED");
+});
+
+test("NO minutes check fires on a notice", async () => {
+  const r = await new MockGateway().reviewDocument({ text: NOTICE });
+  assert.ok(r.ok);
+  assert.equal(r.data.doc_type, "notice");
+  // The failure this classifier exists to stop: minutes checks on a notice produced
+  // 80-93% false positives against genuinely compliant filings.
+  const defects = r.data.findings.filter((f) => f.status === "DEFECT");
+  assert.deepEqual(defects, [], "a notice cannot record what a meeting did");
+  const applied = r.data.findings.filter((f) => f.applies);
+  assert.ok(applied.length > 0, "the checks that DO apply to a notice still run");
+  assert.ok(
+    r.data.findings.some((f) => !f.applies),
+    "and the rest are marked as not applying, rather than silently passing",
+  );
+});
+
+test("an unidentified document returns uncertainty, NOT a clean bill", async () => {
+  const r = await new MockGateway().reviewDocument({ text: NEITHER });
+  assert.ok(r.ok);
+  assert.equal(r.data.status, "UNCLASSIFIED");
+  assert.equal(r.data.code, "CLASSIFICATION_UNCERTAIN");
+  // No findings at all. A page of rows saying nothing is wrong, about a document nobody
+  // identified, is the most dangerous screen this could draw.
+  assert.deepEqual(r.data.findings, []);
+  assert.equal(r.data.defect_count, 0);
+  assert.equal(r.data.requires_review, true, "0 defects must not read as a pass");
+});
+
+test("every document finding carries a rule id, a source and a quoted span", async () => {
+  const r = await new MockGateway().reviewDocument({ text: MINUTES });
+  assert.ok(r.ok);
+  for (const f of r.data.findings) {
+    assert.ok(f.rule_id.trim(), "rule id");
+    assert.ok(f.source.trim(), `${f.rule_id} source`);
+    assert.ok(f.quoted_span.trim(), `${f.rule_id} quoted span`);
+    assert.ok(f.precedent.trim(), `${f.rule_id} precedent`);
+  }
+});
+
+test("NEEDS_BOOK is flagged for a person and is neither pass nor defect", async () => {
+  const r = await new MockGateway().reviewDocument({ text: MINUTES });
+  assert.ok(r.ok);
+  const gated = r.data.findings.filter((f) => f.needs_human);
+  assert.ok(gated.length > 0, "the physical-book checks ask for a person");
+  for (const f of gated) assert.equal(f.status, "NEEDS_BOOK");
+});
+
+/* ── the human gate ───────────────────────────────────────────────────────── */
+
+const DECISION = {
+  runId: "run-1",
+  itemRef: "ss:T1.2",
+  verdict: "APPROVED" as const,
+  reason: "Inspected the book; the Chairman initialled every page.",
+  quotedSpan: "physical minutes book not inspected",
+};
+
+test("a decision with a real reason is recorded as labelled data", async () => {
+  const r = await new MockGateway().decide(DECISION);
+  assert.ok(r.ok);
+  assert.equal(r.data.decision, "APPROVED");
+  // The four things PLAN_23 rule 5 requires: decision, actor, time, and the span.
+  assert.equal(r.data.reason, DECISION.reason);
+  assert.equal(r.data.quoted_span, DECISION.quotedSpan);
+  assert.ok(r.data.actor_id);
+  assert.ok(r.data.decided_at);
+});
+
+test("a one-word reason is REFUSED, not recorded", async () => {
+  const r = await new MockGateway().decide({ ...DECISION, reason: "ok" });
+  assert.equal(r.ok, false);
+  // A decision with no reason records that somebody clicked, which is the automation bias
+  // the gate exists to prevent.
+  if (!r.ok) assert.match(r.error.message, /at least 10 characters/);
+});
+
+test("a decision with no quoted span is REFUSED", async () => {
+  const r = await new MockGateway().decide({ ...DECISION, quotedSpan: "   " });
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error.message, /the text the reviewer was looking at/);
+});
+
+test("the same item cannot be decided twice", async () => {
+  const g = new MockGateway();
+  assert.ok((await g.decide(DECISION)).ok);
+  const again = await g.decide({ ...DECISION, reason: "I have changed my mind on this." });
+  assert.equal(again.ok, false, "overwriting would destroy the label");
+});
+
+test("a refused decision is a failure, never a recorded one", async () => {
+  const r = await new MockGateway().decide({ ...DECISION, reason: "no" });
+  // The whole point of EngineResult: a refusal cannot be read as a stored decision.
+  assert.equal(r.ok, false);
+});
+
 /* ── UNPRICED is not zero ─────────────────────────────────────────────────── */
 
 test("a trace step with no model reports null cost WITH a reason, never 0", async () => {

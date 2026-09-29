@@ -4,6 +4,8 @@ import { GATEWAY_ROUTES } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import type {
   AskResponse,
+  Decision,
+  DocumentResponse,
   ReviewResponse,
   Run,
   RunTrace,
@@ -31,8 +33,163 @@ const ANSWER_S96 = `[1 of 4 sentence(s) the model wrote did not trace to admitte
 const RUN_ASK = "5e0bd4d5-e114-49a8-8f76-ee348d5f3dd9";
 const RUN_REVIEW = "142ca24e-6960-4a5f-a6b8-272a5e964301";
 
+
+/**
+ * A REAL `review_document` reply, recorded 2026-09-30 by running the ICSI specimen minutes
+ * through `gateway/verbs._review_document` with a 49-day entry lag. Not composed: the ROC
+ * orders in `precedent` are real adjudications and inventing one would put a fabricated
+ * penalty on a screen.
+ */
+const DOCUMENT_MINUTES: DocumentResponse = {
+    doc_type: "minutes",
+    status: "ANSWERED",
+    code: null,
+    note: "Every finding cites Secretarial Standards and a real ROC adjudication order. A NEEDS_BOOK item is not a defect and not a pass: it is a property of the physical minutes book that no reader of a file can decide.",
+    meeting_kind: "board",
+    requires_review: true,
+    checks_run: 12,
+    defect_count: 1,
+    needs_human_count: 3,
+    findings: [
+      {
+        rule_id: "T1.6a",
+        status: "PASS",
+        source: "SS-1 7.1.x / SS-2 17.2.2.1",
+        defect: "Serial number of the meeting not stated in the minutes",
+        quoted_span: "Meeting No: 14",
+        precedent: "Sunima Trading P Ltd, ROC UP-I, 13.07.2026 — Rs 45,000; Merino Shelters, 15.05.2026",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.6b",
+        status: "PASS",
+        source: "SS-2 17.2.2.1(o) / SS-1 equivalent",
+        defect: "Time of commencement of the meeting not recorded",
+        quoted_span: "The Meeting commenced at 11:00 a.m.",
+        precedent: "Rashi Steel and Power, ROC Chhattisgarh, 24.03.2026 & 07.04.2026; Triveni Nidhi, 04.09.2024",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.6c",
+        status: "PASS",
+        source: "SS-2 17.2.2.1(o) / SS-1 equivalent",
+        defect: "Time of conclusion of the meeting not recorded",
+        quoted_span: "The Meeting concluded at 12:30 p.m.",
+        precedent: "Rashi Steel and Power, ROC Chhattisgarh, 24.03.2026 & 07.04.2026; Triveni Nidhi, 04.09.2024",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.7",
+        status: "PASS",
+        source: "SS-1 7.6",
+        defect: "Place at which the minutes were signed not recorded",
+        quoted_span: "Place: Bengaluru",
+        precedent: "Wind World (India) Ltd, ROC Goa/Daman & Diu, 2024; Sany Heavy Industry, 17.05.2024",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.4a",
+        status: "PASS",
+        source: "SS-1 7.5.2 / SS-2 17.4.2 r/w R.25(1)(b)",
+        defect: "Date of entry of the minutes in the Minutes Book not recorded",
+        quoted_span: "entered in",
+        precedent: "Harsh Gathani Enterprise, ROC Ahmedabad, 24.06.2025; Sen Hon Lee, 13.10.2025",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.4b",
+        status: "DEFECT",
+        source: "R.25(1)(b), SS-1 7.5.2 / SS-2 17.4.2",
+        defect: "Minutes entered 49 days after the meeting (limit 30)",
+        quoted_span: "meeting 2026-04-01 -> entry 2026-05-20",
+        precedent: "Trouw Nutrition India, 22.10.2024 — Rs 21.35 lakh; Tamilnad Mercantile Bank, 182-day delay",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.5",
+        status: "PASS",
+        source: "SS-1 7.6",
+        defect: "Minutes signed by another director on behalf of the Chairman",
+        quoted_span: "no 'on behalf of' signature found",
+        precedent: "Landomus Realty Ventures, ROC Bangalore, 31.03.2026; Dystar India, 09.09.2025",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "C.quorum",
+        status: "PASS",
+        source: "SS-1 7.2.2.1(e)",
+        defect: "Presence of quorum not recorded",
+        quoted_span: "quorum",
+        precedent: "Mandatory enumerated content; SS-1 7.2.2.1",
+        applies: true,
+        advisory_only: false,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.8",
+        status: "PASS",
+        source: "SS-1 7.3.2 / SS-2 17.3.2",
+        defect: "Minutes not written in the third person",
+        quoted_span: "no first-person usage found",
+        precedent: "No penalty order found for tense alone — advisory",
+        applies: true,
+        advisory_only: true,
+        needs_human: false
+      },
+      {
+        rule_id: "T1.1",
+        status: "NEEDS_BOOK",
+        source: "SS-1 7.1.4 / SS-2 17.1.4",
+        defect: "Minutes book pages not consecutively numbered across the whole book",
+        quoted_span: "physical minutes book not inspected",
+        precedent: "Rosmerta Technologies, ROC Delhi, 07.10.2025 — numbering restarted each FY; ~24 of 68 orders",
+        applies: true,
+        advisory_only: false,
+        needs_human: true
+      },
+      {
+        rule_id: "T1.2",
+        status: "NEEDS_BOOK",
+        source: "SS-1 7.6.2",
+        defect: "Chairman did not initial every page of the minutes",
+        quoted_span: "physical minutes book not inspected",
+        precedent: "Chartered Mercantile Mutual Benefits, ROC Kanpur, 10.02.2026; Rashi Steel, 24.03.2026",
+        applies: true,
+        advisory_only: false,
+        needs_human: true
+      },
+      {
+        rule_id: "T1.3",
+        status: "NEEDS_BOOK",
+        source: "SS-1 7.1.4",
+        defect: "Blank pages not scored out and not initialled by the Chairman",
+        quoted_span: "physical minutes book not inspected",
+        precedent: "Madhyam Agrivet Industries, ROC Pune, 30.06.2023; Rosmerta Autotech, 09.10.2025",
+        applies: true,
+        advisory_only: false,
+        needs_human: true
+      }
+    ],
+};
+
 export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
+  /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
+  private readonly decided = new Set<string>();
 
   async ask(question: string): Promise<EngineResult<AskResponse>> {
     const q = question.toLowerCase();
@@ -233,6 +390,120 @@ export class MockGateway implements GatewayProvider {
       bytes: new TextEncoder().encode(input.text).length,
       stored: "memory",
       note: "held in this process only. Nothing here survives a restart.",
+    });
+  }
+
+  async reviewDocument(input: {
+    text: string;
+    name?: string;
+    meetingKind?: "board" | "general";
+    meetingDate?: string;
+    entryDate?: string;
+  }): Promise<EngineResult<DocumentResponse>> {
+    // The classifier's real behaviour, reproduced: a notice and an unidentifiable document
+    // take different paths, and the mock must not make every document look like minutes.
+    const t = input.text.toLowerCase();
+    const isNotice =
+      /notice is hereby given|notice of the|explanatory statement|proxy form|e-voting/.test(t);
+    const isMinutes = /minutes of the|the meeting (commenced|concluded)|chairman/.test(t);
+
+    if (!isNotice && !isMinutes) {
+      return engineOk({
+        doc_type: "unknown",
+        status: "UNCLASSIFIED",
+        code: "CLASSIFICATION_UNCERTAIN",
+        note:
+          "This document could not be identified as minutes, a notice or an outcome " +
+          "filing, so no check was run against it. That is uncertainty about the " +
+          "document, NOT a finding that it is free of defects: every check here is " +
+          "written for a particular document type, and one run against a document " +
+          "nobody has identified would be a claim about a thing we cannot name.",
+        meeting_kind: input.meetingKind ?? "board",
+        requires_review: true,
+        checks_run: 0,
+        defect_count: 0,
+        needs_human_count: 0,
+        findings: [],
+        run_id: "mock-doc-unclassified",
+      });
+    }
+    if (isNotice) {
+      // Every minutes-only check marked not applicable, which is what the backend does.
+      // A mock that let one fire would hide the bug this classifier exists to prevent.
+      const findings = DOCUMENT_MINUTES.findings.map((f) =>
+        f.rule_id === "T1.6a"
+          ? { ...f }
+          : {
+              ...f,
+              status: "N/A" as const,
+              quoted_span: "not applicable to a document of type 'notice'",
+              applies: false,
+              needs_human: false,
+            },
+      );
+      return engineOk({
+        ...DOCUMENT_MINUTES,
+        doc_type: "notice",
+        defect_count: 0,
+        needs_human_count: 0,
+        findings,
+        run_id: "mock-doc-notice",
+      });
+    }
+    return engineOk({ ...DOCUMENT_MINUTES, run_id: "mock-doc-minutes" });
+  }
+
+  async decide(input: {
+    runId: string;
+    itemRef: string;
+    verdict: "APPROVED" | "REJECTED";
+    reason: string;
+    quotedSpan: string;
+  }): Promise<EngineResult<Decision>> {
+    // The gateway's refusals, reproduced. A mock that accepted a one-word reason would let
+    // the anti-automation-bias gate pass its tests while the real thing refused.
+    const reason = input.reason.trim();
+    if (reason.length < 10) {
+      return engineFail({
+        kind: "bad_request",
+        route: GATEWAY_ROUTES.runApprove,
+        status: 400,
+        message:
+          "a written reason of at least 10 characters is required. A decision with no " +
+          "reason records that somebody clicked.",
+      });
+    }
+    if (!input.quotedSpan.trim()) {
+      return engineFail({
+        kind: "bad_request",
+        route: GATEWAY_ROUTES.runApprove,
+        status: 400,
+        message:
+          "quoted_span is required: it is the text the reviewer was looking at when they " +
+          "decided.",
+      });
+    }
+    if (this.decided.has(`${input.runId}:${input.itemRef}`)) {
+      return engineFail({
+        kind: "bad_request",
+        route: GATEWAY_ROUTES.runApprove,
+        status: 409,
+        message:
+          `${input.itemRef} already has a decision. A reviewer changing their mind writes ` +
+          "a new one against a new run; overwriting would destroy the label.",
+      });
+    }
+    this.decided.add(`${input.runId}:${input.itemRef}`);
+    return engineOk({
+      status: "RECORDED",
+      decision_id: `mock-${this.decided.size}`,
+      run_id: input.runId,
+      item_ref: input.itemRef,
+      decision: input.verdict,
+      reason,
+      quoted_span: input.quotedSpan,
+      actor_id: "00000000-0000-0000-0000-0000000000a1",
+      decided_at: "2026-09-30T10:00:00+00:00",
     });
   }
 }

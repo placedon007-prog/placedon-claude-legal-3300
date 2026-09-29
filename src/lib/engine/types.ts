@@ -35,6 +35,12 @@ export const GATEWAY_ROUTES = {
   runGet: "/v2/runs/{run_id}",
   runTrace: "/v2/runs/{run_id}/trace",
   documentUpload: "/v2/documents/upload",
+  reviewDocument: "/v2/review-document",
+  // `runs.approve` -> head `runs/approve`, then the path field. NOT
+  // `/v2/runs/{run_id}/approve`, which is the shape a REST habit reaches for and which
+  // the gateway does not serve. Read from rest_spec() rather than assumed.
+  runApprove: "/v2/runs/approve/{run_id}",
+  runReject: "/v2/runs/reject/{run_id}",
 } as const;
 
 export type EngineV1Route = (typeof ENGINE_ROUTES)[keyof typeof ENGINE_ROUTES];

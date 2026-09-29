@@ -5,12 +5,16 @@ import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
+  decisionSchema,
+  documentResponseSchema,
   refusalSchema,
   reviewResponseSchema,
   runSchema,
   runTraceSchema,
   uploadResponseSchema,
   type AskResponse,
+  type Decision,
+  type DocumentResponse,
   type ReviewResponse,
   type Run,
   type RunTrace,
@@ -191,6 +195,58 @@ export class HttpGateway implements GatewayProvider {
       GATEWAY_ROUTES.documentUpload,
       uploadResponseSchema,
       { method: "POST", body: { text: input.text, name: input.name ?? "document" } },
+    );
+  }
+
+  reviewDocument(input: {
+    text: string;
+    name?: string;
+    meetingKind?: "board" | "general";
+    meetingDate?: string;
+    entryDate?: string;
+  }): Promise<EngineResult<DocumentResponse>> {
+    return this.call(
+      GATEWAY_ROUTES.reviewDocument,
+      GATEWAY_ROUTES.reviewDocument,
+      documentResponseSchema,
+      {
+        method: "POST",
+        body: {
+          text: input.text,
+          name: input.name ?? "document",
+          meeting_kind: input.meetingKind ?? "board",
+          // Omitted rather than sent empty: absent leaves the 30-day entry check
+          // NEEDS_BOOK, and an empty string is a date the backend would refuse.
+          ...(input.meetingDate ? { meeting_date: input.meetingDate } : {}),
+          ...(input.entryDate ? { entry_date: input.entryDate } : {}),
+        },
+      },
+    );
+  }
+
+  decide(input: {
+    runId: string;
+    itemRef: string;
+    verdict: "APPROVED" | "REJECTED";
+    reason: string;
+    quotedSpan: string;
+  }): Promise<EngineResult<Decision>> {
+    // `runs.approve` generates `/v2/runs/approve/{run_id}` — head first, path field after.
+    // NOT `/v2/runs/{run_id}/approve`, which is the shape a REST habit reaches for.
+    const template =
+      input.verdict === "APPROVED" ? GATEWAY_ROUTES.runApprove : GATEWAY_ROUTES.runReject;
+    return this.call(
+      template,
+      template.replace("{run_id}", encodeURIComponent(input.runId)),
+      decisionSchema,
+      {
+        method: "POST",
+        body: {
+          item_ref: input.itemRef,
+          reason: input.reason,
+          quoted_span: input.quotedSpan,
+        },
+      },
     );
   }
 }

@@ -2,6 +2,8 @@ import "../engine/server-guard";
 import type { EngineResult } from "../engine/errors";
 import type {
   AskResponse,
+  Decision,
+  DocumentResponse,
   ReviewResponse,
   Run,
   RunTrace,
@@ -30,6 +32,33 @@ export interface GatewayProvider {
   run(runId: string): Promise<EngineResult<Run>>;
   trace(runId: string): Promise<EngineResult<RunTrace>>;
   upload(input: { text: string; name?: string }): Promise<EngineResult<UploadResponse>>;
+  /**
+   * SS-1/SS-2 checks over a filing. **No `testData` flag**, and the absence is the point:
+   * this intent calls no model, so nothing leaves the process and there is no residency
+   * question to tick a box about.
+   *
+   * There is no `docType` either. The backend classifies in code, because a caller who
+   * could declare "this is minutes" could turn every minutes check back on over a notice.
+   */
+  reviewDocument(input: {
+    text: string;
+    name?: string;
+    meetingKind?: "board" | "general";
+    meetingDate?: string;
+    entryDate?: string;
+  }): Promise<EngineResult<DocumentResponse>>;
+  /**
+   * Record one human decision on one finding. The gateway refuses a reason under 10
+   * characters and refuses an empty quote — so this method cannot be used to clear a
+   * review without a person having read something and said why.
+   */
+  decide(input: {
+    runId: string;
+    itemRef: string;
+    verdict: "APPROVED" | "REJECTED";
+    reason: string;
+    quotedSpan: string;
+  }): Promise<EngineResult<Decision>>;
 }
 
 /**

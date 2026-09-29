@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { reviewAction, type ReviewState } from "../actions";
+import { ReviewGate } from "../review-gate";
 import type { Finding, FindingStatus } from "@/lib/gateway/types";
 
 const initial: ReviewState = { phase: "idle" };
@@ -146,7 +147,7 @@ function Findings({
         </thead>
         <tbody>
           {sorted.map((f) => (
-            <Row key={f.rule_id} finding={f} />
+            <Row key={f.rule_id} finding={f} runId={data.run_id} />
           ))}
         </tbody>
       </table>
@@ -188,7 +189,7 @@ function Findings({
   );
 }
 
-function Row({ finding }: { finding: Finding }) {
+function Row({ finding, runId }: { finding: Finding; runId: string | null | undefined }) {
   const s = STATUS[finding.status];
   return (
     <tr>
@@ -207,6 +208,16 @@ function Row({ finding }: { finding: Finding }) {
       </td>
       <td>
         <p className="quoted">{finding.detail}</p>
+        {/* Only on the rows a person must resolve. A control offering to approve a MATCHES
+            is how a reviewer learns to click through the ones that matter. */}
+        {finding.status === "NEEDS_LAWYER" ? (
+          <ReviewGate
+            runId={runId}
+            itemRef={`playbook:${finding.rule_id}`}
+            quotedSpan={finding.detail}
+            label={`${finding.rule_id} (${finding.clause})`}
+          />
+        ) : null}
       </td>
       <td>
         {finding.standard_text ? (

@@ -226,6 +226,17 @@
 .status-matches .glyph, .status-matches .status-word {
   color: color-mix(in srgb, var(--cream) 58%, transparent);
 }
+/* Document checks. Gold is the one accent this view is allowed, so it marks the DEFECT
+   row and nothing else; the glyph and the word carry the rest without colour. */
+.status-defect .glyph, .status-defect .status-word { color: var(--gold); }
+.status-needs_book .glyph, .status-needs_book .status-word { color: var(--cream); }
+.status-pass .glyph, .status-pass .status-word {
+  color: color-mix(in srgb, var(--cream) 58%, transparent);
+}
+/* N/A is the one most easily misread as a pass, so it is the quietest thing on the row. */
+.status-na .glyph, .status-na .status-word {
+  color: color-mix(in srgb, var(--cream) 42%, transparent);
+}
 
 /* The company position. Set in the body face, not mono: it is a sentence a person wrote
    for another person to read, unlike the quoted comparison beside it, which is machine
@@ -276,3 +287,56 @@
   .findings td, .steps td { border: 0; padding: 0; }
   .findings tr { border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent); }
 }
+
+/* ── the human gate ───────────────────────────────────────────────────────── */
+/* Sits inside the row it decides, not in a toolbar: a control that floats above a table
+   is a control that acts on the table, and there is deliberately no such thing here. */
+.gate {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--cream) 16%, transparent);
+  border-radius: 4px;
+  display: grid;
+  gap: 0.45rem;
+}
+.gate-quote summary {
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+}
+.gate-quote summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.gate-quote[open] summary { color: color-mix(in srgb, var(--cream) 88%, transparent); }
+.gate-quote .quoted { margin-top: 0.5rem; }
+.gate label { font-size: 0.75rem; }
+.gate textarea { min-height: 3.2rem; font-size: 0.8125rem; }
+.gate-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.gate-actions button { font-size: 0.8125rem; padding: 0.4rem 0.9rem; }
+/* Disabled is a real state here, not a hint: the buttons do nothing until the quote has
+   been opened and a reason typed. */
+.gate-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.gate-actions .secondary {
+  background: transparent;
+  color: color-mix(in srgb, var(--cream) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cream) 28%, transparent);
+}
+.gate-error { font-size: 0.8125rem; color: var(--abstain); margin: 0; }
+.gate-note { margin-top: 0.7rem; }
+.gate-done {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--gold-muted);
+}
+
+/* Documents: three short fields on one line, stacking on a phone. */
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.1rem;
+}
+.field-row label { display: block; }
+.result-head { margin: 0 0 0.5rem; }
+.lede-sm { margin: 0.6rem 0 0; }
