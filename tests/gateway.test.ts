@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseAnswer } from "../src/lib/gateway/types";
+import { findingSchema, parseAnswer } from "../src/lib/gateway/types";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { mintToken, tokenIsValid, MAX_AGE_SECONDS } from "../src/lib/auth/token";
 
@@ -104,6 +104,34 @@ test("review of a five-year NDA DEVIATES on the term rule", async () => {
   for (const s of ["MATCHES", "DEVIATES", "MISSING", "NEEDS_LAWYER"]) {
     assert.ok(statuses.has(s as never), `${s} must be reachable`);
   }
+});
+
+test("every finding carries the standard it was judged against", async () => {
+  const r = await new MockGateway().reviewContract({
+    text: "This Agreement continues for five years from the date above.",
+    testData: true,
+  });
+  assert.ok(r.ok);
+  // The column was blank on every live run until the gateway started sending these:
+  // a DEVIATES with no standard beside it is a deviation from nothing.
+  for (const f of r.data.findings) {
+    assert.ok(f.standard_text?.trim(), `${f.rule_id} has no standard_text`);
+    assert.ok(f.rationale?.trim(), `${f.rule_id} has no rationale`);
+    assert.notEqual(f.standard_text, f.detail, "the standard is not the comparison");
+  }
+});
+
+test("a finding with no standard still parses, so an older gateway is not a crash", () => {
+  const parsed = findingSchema.safeParse({
+    rule_id: "NDA-01",
+    clause: "Term",
+    status: "DEVIATES",
+    kind: "POTENTIAL_ISSUE",
+    detail: "'five years' (5) against the standard maximum '3 years' (3)",
+  });
+  assert.equal(parsed.success, true);
+  // …and the console renders a sentence saying so rather than an empty cell.
+  assert.equal(parsed.success && parsed.data.standard_text, undefined);
 });
 
 test("law this corpus does not hold travels WITH the findings", async () => {

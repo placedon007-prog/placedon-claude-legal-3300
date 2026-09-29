@@ -227,6 +227,17 @@
   color: color-mix(in srgb, var(--cream) 58%, transparent);
 }
 
+/* The company position. Set in the body face, not mono: it is a sentence a person wrote
+   for another person to read, unlike the quoted comparison beside it, which is machine
+   output. `.standard-rationale` inherits `.meta` and sits under it as the reason. */
+.standard-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--cream) 88%, transparent);
+}
+.standard-rationale { margin: 0.35rem 0 0; line-height: 1.5; }
+
 .quoted {
   font-family: var(--font-code);
   font-size: 0.8125rem;

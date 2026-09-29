@@ -1,9 +1,11 @@
 # /app screenshots — LIVE
 
-Every image in this directory is a **live capture**, taken 2026-09-29 against the real
-backend gateway on this laptop: PostgreSQL 18.6 (`store: postgres, degraded: false`),
-`azure/llama-3-3-70b` deployed in **UAE North**, corpus
-`sha256:6809b8c8…`, checker commit `6d3ac4a4`. No fixtures, no mock provider.
+Every image in this directory is a **live capture** against the real backend gateway on
+this laptop: PostgreSQL 18.6 (`store: postgres, degraded: false`), `azure/llama-3-3-70b`
+deployed in **UAE North**, corpus `sha256:6809b8c8…`. No fixtures, no mock provider.
+
+Four were taken 2026-09-29 at checker commit `6d3ac4a4`. `contracts-findings.png` was
+re-taken 2026-09-30 at `4235e94`, after the standard column was filled — difference 4.
 
 They replace an earlier set taken against `MockProvider`. The mock set is not kept: a
 screenshot of a fixture in a directory called `app-screens` is the kind of thing that
@@ -13,7 +15,7 @@ gets cited later as evidence the product did something it has never done.
 |---|---|---|
 | `ask-answer.png` | Ask — a cited answer | `d3830a4c` |
 | `ask-refusal.png` | Ask — a named abstention | `568282e1` |
-| `contracts-findings.png` | Contracts — `nda_N02.docx` uploaded and reviewed | `d540c3c3` |
+| `contracts-findings.png` | Contracts — `nda_N02.docx` uploaded and reviewed | `a366579e` |
 | `runs-list.png` | Runs — the three runs this browser started | — |
 | `run-trace.png` | Run — steps, models, region, cost | `d540c3c3` |
 
@@ -55,13 +57,23 @@ is the standard"* — absence as compliance, a case the mock never showed. The t
 are still implemented and still distinguishable without colour; this fixture does not
 produce them.
 
-### 4. "THE STANDARD" column is empty on every live row
+### 4. "THE STANDARD" column was empty on every live row — now CLOSED
 
 The mock filled it with rationale prose (*"Confidentiality obligations running longer than
-three years are hard to administer…"*). The real `playbooks/nda_v1.json` carries no such
-field, so the column renders with a header and nothing under it. **The prose in the mock
-was written for the screenshot and does not exist in the product.** Either the playbook
-gains a `rationale` per rule or the column goes — an open item, not a resolved one.
+three years are hard to administer…"*). The real `playbooks/nda_v1.json` carried no such
+field, so the column rendered with a header and nothing under it. The prose in the mock was
+written for the screenshot and did not exist in the product.
+
+**Fixed 2026-09-29** (backend PR #20, `4235e94`): every rule now states a `standard_text` —
+the company position in one plain sentence — and a `rationale`, `review_contract` sends
+both, and the console renders the position in body type with the reason beneath it. Both
+are DRAFT, marked by the `playbook_status` already on the response. `why`, the engineering
+note on the rule's shape, is deliberately NOT sent: NDA-02's is a changelog about a
+false-alarm rate, which is not what a lawyer's column is for.
+
+`contracts-findings.png` was re-captured live after the fix and shows all ten cells filled.
+The mock fixtures were updated to the playbook's real sentences at the same time, so the
+mock stops being a more flattering description of the product than the product.
 
 ### 5. The trace is a different pipeline
 
@@ -94,9 +106,15 @@ dependency, and the gateway's `documents.upload` verb returned the digest.
 ### 8. The live answer is thinner than the mock's
 
 Mock: 3 cited sentences from s.96 (spans 226–348, 409–524, 845–1043), 1 of 4 untraced.
-Live: **1** cited sentence (span 826–1044), 1 of 2 untraced — both runs of the same
-question returned the same single sentence. The header reads **Partial answer** in both
-cases, which is the honest label; what differs is how much survives grounding.
+Live, in `ask-answer.png`: **1** cited sentence (span 826–1044), 1 of 2 untraced.
+
+**The counts are not stable, and this entry originally said they were.** It read "both runs
+of the same question returned the same single sentence", which was true of the two browser
+runs behind that screenshot and false in general: two further runs the same day returned
+3 traced and 1 dropped on the identical question. The model writes a different number of
+sentences each time, so a different number survive grounding. What is stable is the STATUS
+— `PARTIAL` on every run — and that the dropped ones are counted rather than dropped
+quietly. Never quote the traced/dropped numbers as a figure.
 
 Note the span for the same sentence: mock `845–1043`, live `826–1044`. Fixture offsets
 were approximations of real ones.

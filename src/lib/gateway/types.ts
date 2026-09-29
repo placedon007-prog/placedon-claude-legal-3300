@@ -53,7 +53,22 @@ export const findingSchema = z.object({
   status: findingStatusSchema,
   /** Always `POTENTIAL_ISSUE`. The backend has exactly one kind, deliberately. */
   kind: z.string(),
-  /** The company standard, in the playbook author's words. */
+  /**
+   * The company position, in one sentence, and why it is taken. Both are DRAFT — the
+   * `playbook_status` on the response is what marks them, and there is deliberately no
+   * second status for them to fall out of step with.
+   *
+   * Optional because a response from an older gateway does not carry them. When they are
+   * absent the cell says so rather than rendering blank: an empty standard beside a
+   * DEVIATES reads as "nothing to deviate from", which is not what happened.
+   */
+  standard_text: z.string().optional(),
+  rationale: z.string().optional(),
+  /**
+   * The engineering note on the rule's shape. The gateway no longer sends it — NDA-02's
+   * is a changelog about a false-alarm rate — and it is kept optional only so an older
+   * response still parses.
+   */
   why: z.string().optional(),
   /** What was compared against what. */
   detail: z.string(),

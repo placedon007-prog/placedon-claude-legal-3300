@@ -208,7 +208,21 @@ function Row({ finding }: { finding: Finding }) {
       <td>
         <p className="quoted">{finding.detail}</p>
       </td>
-      <td>{finding.why ? <span className="meta">{finding.why}</span> : null}</td>
+      <td>
+        {finding.standard_text ? (
+          <>
+            <p className="standard-text">{finding.standard_text}</p>
+            {finding.rationale ? (
+              <p className="meta standard-rationale">{finding.rationale}</p>
+            ) : null}
+          </>
+        ) : (
+          // Not a blank cell. A standard the backend did not send is a finding whose
+          // basis is missing, and saying so is the honest render — silence here reads
+          // as "no standard applies", which is the opposite of what a finding means.
+          <span className="meta">The playbook sent no standard for this rule.</span>
+        )}
+      </td>
     </tr>
   );
 }

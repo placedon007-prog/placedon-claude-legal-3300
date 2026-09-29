@@ -108,7 +108,10 @@ export class MockGateway implements GatewayProvider {
           clause: "Term",
           status: fiveYears ? "DEVIATES" : "MATCHES",
           kind: "POTENTIAL_ISSUE",
-          why: "Confidentiality obligations running longer than three years are hard to administer and are usually negotiated down.",
+          standard_text:
+            "Confidentiality lasts no more than 3 years from signature.",
+          rationale:
+            "A longer obligation costs more to administer than it is usually worth, and is the term most often negotiated down.",
           detail: fiveYears
             ? "'five years' (5) against the standard maximum '3 years' (3)"
             : "'three years' (3) against the standard maximum '3 years' (3)",
@@ -118,7 +121,10 @@ export class MockGateway implements GatewayProvider {
           clause: "Governing Law",
           status: "MATCHES",
           kind: "POTENTIAL_ISSUE",
-          why: "An Indian counterparty agreement governed by foreign law makes enforcement slower and more expensive.",
+          standard_text:
+            "The agreement is governed by Indian law.",
+          rationale:
+            "A foreign governing law makes any dispute slower and more expensive to run.",
           detail: "'India' against the accepted list ['India', 'laws of India', …]",
         },
         {
@@ -126,7 +132,10 @@ export class MockGateway implements GatewayProvider {
           clause: "Definition of Confidential Information",
           status: "MISSING",
           kind: "POTENTIAL_ISSUE",
-          why: "An NDA with no definition of what is confidential protects nothing in particular.",
+          standard_text:
+            "The agreement defines what counts as confidential information.",
+          rationale:
+            "Without a definition there is nothing in particular being protected.",
           detail: "the standard expects this clause and none was extracted",
         },
         {
@@ -134,7 +143,10 @@ export class MockGateway implements GatewayProvider {
           clause: "Non-Compete",
           status: "NEEDS_LAWYER",
           kind: "POTENTIAL_ISSUE",
-          why: "A non-compete inside an NDA is out of place and is frequently missed because nobody expects to find one there.",
+          standard_text:
+            "The agreement contains no non-compete.",
+          rationale:
+            "A non-compete changes what an NDA does and is easy to miss inside one; whether a particular form is acceptable is a person's call, not code's.",
           detail: "present, and not in the approved list. Code cannot decide whether this form is acceptable; a person has to look",
         },
       ],
