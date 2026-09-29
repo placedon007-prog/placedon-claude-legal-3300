@@ -8,6 +8,7 @@ import type { AskResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { endSession, passcodeAccepted, startSession } from "@/lib/auth/session";
 import { rememberRun } from "@/lib/auth/recent-runs";
+import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 
 /**
  * Server Actions for `/app`.
@@ -62,9 +63,21 @@ export async function askAction(
   return { phase: "answered", data, parsed: parseAnswer(data.answer ?? "") };
 }
 
+export interface SourceDoc {
+  readonly name: string;
+  readonly kind: "docx" | "pdf" | "text" | "pasted";
+  readonly bytes: number;
+  /** The sha256 the gateway stored it under. Null when only pasted text was reviewed. */
+  readonly sha256: string | null;
+}
+
 export type ReviewState =
   | { readonly phase: "idle" }
-  | { readonly phase: "reviewed"; readonly data: ReviewResponse }
+  | {
+      readonly phase: "reviewed";
+      readonly data: ReviewResponse;
+      readonly source: SourceDoc;
+    }
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
@@ -78,7 +91,32 @@ export async function reviewAction(
   _prev: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  const text = contractSchema.safeParse(formData.get("text"));
+  // A FILE wins over the textarea when both are present: someone who attached a document
+  // meant that document, and silently reviewing the box instead would review the wrong
+  // thing while looking like it worked.
+  const file = formData.get("file");
+  let source: SourceDoc | null = null;
+  let raw: unknown = formData.get("text");
+
+  if (file instanceof File && file.size > 0) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return {
+        phase: "invalid",
+        message: `That file is larger than ${MAX_UPLOAD_BYTES / 1_048_576} MB.`,
+      };
+    }
+    const extracted = extractText(file.name, new Uint8Array(await file.arrayBuffer()));
+    if (!extracted.ok) return { phase: "invalid", message: extracted.reason };
+    raw = extracted.text;
+    source = {
+      name: file.name,
+      kind: extracted.kind,
+      bytes: file.size,
+      sha256: null,
+    };
+  }
+
+  const text = contractSchema.safeParse(raw);
   if (!text.success) {
     return { phase: "invalid", message: text.error.issues[0].message };
   }
@@ -92,9 +130,20 @@ export async function reviewAction(
         "Confirm this is a test document. The model is hosted in UAE North and no client contract may be sent there (PLAN_22 D3).",
     };
   }
-  const name = String(formData.get("name") ?? "contract").slice(0, 80) || "contract";
+  const name =
+    (String(formData.get("name") ?? "").trim() || source?.name || "contract").slice(0, 80);
 
   const gateway = await getGateway();
+
+  // Record the document FIRST, so the review has something to point at. The gateway
+  // identifies a document by its sha256, so uploading the same bytes twice is one
+  // document. An upload failure does not stop the review — the review is the answer the
+  // lawyer came for, and the id is provenance.
+  if (source) {
+    const stored = await gateway.upload({ text: text.data, name: source.name });
+    if (stored.ok) source = { ...source, sha256: stored.data.sha256 };
+  }
+
   const result = await gateway.reviewContract({ text: text.data, name, testData: true });
   if (!result.ok) return { phase: "failed", error: result.error };
   if (result.data.run_id) {
@@ -105,7 +154,13 @@ export async function reviewAction(
       label: name,
     });
   }
-  return { phase: "reviewed", data: result.data };
+  return {
+    phase: "reviewed",
+    data: result.data,
+    source:
+      source ??
+      { name, kind: "pasted", bytes: new TextEncoder().encode(text.data).length, sha256: null },
+  };
 }
 
 export type LoginState = { readonly error: string | null };

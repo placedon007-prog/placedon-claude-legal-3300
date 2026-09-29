@@ -14,8 +14,15 @@ change — check them before you consider any task done.
   per view.** `--gold-muted #9F743B` for citations only. Cool Grey `#5B6472` is reserved **only** for
   the "abstained / unknown" state — never decorative. No navy-dominant, no second accent colour.
 - **Fonts (self-hosted from `brand-kit/fonts/` via `next/font/local`):** Fraunces (display serif) ·
-  IBM Plex Mono (every section reference `s.96(1)`, figure `₹10,00,00,000`, instrument `G.S.R. 880(E)`,
-  and date) · Inter/Archivo (body). Mono citations are the brand signature — never paraphrase a section.
+  IBM Plex Mono · Inter/Archivo (body).
+- **Statute references split by AUDIENCE, and the split is the rule.** A reference a reader is meant
+  to *read* — **"Section 96"** — is **Fraunces, bold**: it is the claim, and it should carry the weight
+  of one. The **evidence metadata beneath it** — `s.96(1)`, `chars 226–348`, the instrument
+  `G.S.R. 880(E)`, the figure `₹10,00,00,000`, the as-of date — stays **IBM Plex Mono**: it is the
+  basis, it is machine-exact, and mono is what says so.
+  This corrects an earlier rule that put *every* section reference in mono. Claim, then evidence —
+  the same split §Voice already requires of every sentence, now carried by the type.
+  **Never paraphrase a section either way.**
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
 
@@ -24,7 +31,8 @@ change — check them before you consider any task done.
   *would this appear in a judgment?* If it reads like advocacy or sales copy, cut it.
 - **Banned words (any = failure):** streamline, empower, solution, easy, smart, seamless, revolutionary,
   unlock, supercharge, effortless, game-changer, cutting-edge.
-- **Words in:** provision, verified, section [number] (mono), abstains, liability, instrument, operative.
+- **Words in:** provision, verified, Section [number] (bold serif when read; mono in the evidence
+  line), abstains, liability, instrument, operative.
 - Register: ~80% formal, calm/confident; humility appears once — in abstention.
 
 ## Honesty — do not overclaim
@@ -70,6 +78,11 @@ change — check them before you consider any task done.
   revision of this file said it did not, which was true then and is not now.
   - The key maps to a **tenant**; every call writes a metadata-only audit row. It lives in
     `PLACEDON_GATEWAY_KEY`, a server env var, and `GATEWAY_URL` selects Http over Mock.
+    `scripts/local-gateway.py` starts the real gateway and writes a fresh key into
+    `.env.local` **without printing it**; `docs/RUN_LOCALLY.md` is the runbook. The
+    screenshots in `docs/app-screens/` are LIVE captures against it, and its README
+    records every way the live system behaved differently from the mock — read it before
+    trusting a fixture to describe the product.
     **Never import `@/lib/gateway` into a `"use client"` module** — the key would be inlined
     into the public bundle, and `server-guard` throws rather than let it.
   - **There is no list-runs verb.** Runs are fetched by id. Any "past runs" list is only
@@ -97,7 +110,8 @@ change — check them before you consider any task done.
 
 ## Before you call anything done
 Run the checklist: monochrome + ≤10% gold held on every screen · abstain-grey used only for abstention ·
-mono on every statute reference · brand fonts self-hosted · custom brand icons present · copy real,
+reader-facing "Section N" in bold serif and its evidence line in mono ·
+brand fonts self-hosted · custom brand icons present · copy real,
 grammatical, on-voice, no banned words, self-explanatory · a11y AA · reduced-motion respected ·
 responsive to 360px · no overclaiming · no invented figures.
 

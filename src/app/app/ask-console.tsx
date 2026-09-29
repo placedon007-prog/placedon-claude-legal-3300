@@ -95,9 +95,9 @@ function Answer({ state }: { state: Extract<AskState, { phase: "answered" }> }) 
             <li key={s.n}>
               <p className="claim">{s.text}</p>
               <p className="basis">
-                {s.section ? (
-                  <span className="section mono">Section {s.section}</span>
-                ) : null}
+                {/* The claim, in serif. `mono` is deliberately NOT applied here — the
+                    evidence that follows carries it. */}
+                {s.section ? <span className="section">Section {s.section}</span> : null}
                 <span>{s.source}</span>
                 {s.span ? (
                   <span>

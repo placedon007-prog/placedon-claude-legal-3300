@@ -25,15 +25,33 @@ export function ContractConsole() {
   return (
     <>
       <form action={action}>
+        <label htmlFor="file">Upload a contract</label>
+        <input
+          id="file"
+          name="file"
+          type="file"
+          accept=".docx,.pdf,.txt,.md"
+          aria-describedby="file-help"
+        />
+        <p className="meta" id="file-help">
+          .docx, or a .pdf that has a real text layer. A scan has no text layer and is
+          refused rather than half-read. Nothing is stored beyond this deployment.
+        </p>
+
+        <div style={{ height: "1.1rem" }} />
         <label htmlFor="name">Document name</label>
-        <input id="name" name="name" type="text" defaultValue="nda.txt" />
+        <input
+          id="name"
+          name="name"
+          type="text"
+          placeholder="taken from the file when you upload one"
+        />
         <div style={{ height: "0.9rem" }} />
-        <label htmlFor="text">Contract text</label>
+        <label htmlFor="text">…or paste the text</label>
         <textarea
           id="text"
           name="text"
-          required
-          placeholder="Paste the full text of the NDA."
+          placeholder="Paste the full text of the NDA. Ignored when a file is attached."
           aria-describedby={state.phase === "invalid" ? "text-error" : undefined}
         />
         <div className="row">
@@ -58,7 +76,9 @@ export function ContractConsole() {
         ) : null}
       </form>
 
-      {state.phase === "reviewed" ? <Findings data={state.data} /> : null}
+      {state.phase === "reviewed" ? (
+        <Findings phase="reviewed" data={state.data} source={state.source} />
+      ) : null}
       {state.phase === "failed" ? (
         <section className="panel register-failure" role="alert" aria-label="Engine failure">
           <div className="panel-head">
@@ -79,7 +99,10 @@ export function ContractConsole() {
   );
 }
 
-function Findings({ data }: { data: Extract<ReviewState, { phase: "reviewed" }>["data"] }) {
+function Findings({
+  data,
+  source,
+}: Extract<ReviewState, { phase: "reviewed" }>) {
   const sorted = [...data.findings].sort(
     (a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status),
   );
@@ -92,6 +115,8 @@ function Findings({ data }: { data: Extract<ReviewState, { phase: "reviewed" }>[
           {open} of {sorted.length} rules need a look
         </h3>
         <p className="meta">
+          {source.kind === "pasted" ? "pasted text" : `${source.name} · ${source.kind}`}
+          {source.sha256 ? ` · sha256 ${source.sha256.slice(0, 12)}…` : null} ·{" "}
           playbook {data.playbook_status}
           {data.model ? ` · model ${data.model}` : null}
           {typeof data.clauses_in_contract === "number"
