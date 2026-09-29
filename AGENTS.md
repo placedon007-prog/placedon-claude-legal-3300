@@ -51,14 +51,40 @@ change — check them before you consider any task done.
 - Product data behind a typed engine client (`src/lib/engine/*`) with a `MockProvider` now and an
   `HttpProvider` matching the real backend. Output classes
   `verified_fact | deterministic_conclusion | predictive_signal` + `abstained`.
-  **The backend has exactly SIX routes** (verified against `checker/api.py`):
+  **The backend now serves TWO surfaces, and this app calls the second.**
+
+  **`/v1` — the engine, unauthenticated, six routes** (verified against `checker/api.py`):
   `GET /v1/health` · `POST /v1/compliance-pack` · `POST /v1/document-check` ·
   `GET /v1/company/{cin}/events` · `GET /v1/company/{cin}/events/{event_id}` ·
-  `GET /v1/instruments/{fragment}/affected`.
-  ⚠ **`/v1/company/{cin}/standing` DOES NOT EXIST** — nor does `/v1/ask`. Earlier revisions of this file
-  documented `/standing`; that was wrong. Do not call it.
-  ⚠ `/events` is **not** per-company: `cin` is echoed back but never used to filter. No UI may promise
-  "this company's events."
+  `GET /v1/instruments/{fragment}/affected`. The gateway forwards these **byte for byte**
+  and its own suite asserts it, so anything parsed from them is what the engine produced.
+  ⚠ `/v1/company/{cin}/standing` still **DOES NOT EXIST**. Do not call it.
+  ⚠ `/events` is **not** per-company: `cin` is echoed back but never used to filter. No UI
+  may promise "this company's events."
+
+  **`/v2` — the gateway verbs, API-key authenticated** (`gateway/verbs.py`, generated from
+  ONE verb table that also produces the MCP tools and the CLI, with a parity test):
+  `POST /v2/ask` · `POST /v2/review-contract` · `GET /v2/runs/{run_id}` ·
+  `GET /v2/runs/{run_id}/trace` · `POST /v2/documents/upload`.
+  **`/v1/ask` now EXISTS** and is served through the gateway as the `ask` verb — an earlier
+  revision of this file said it did not, which was true then and is not now.
+  - The key maps to a **tenant**; every call writes a metadata-only audit row. It lives in
+    `PLACEDON_GATEWAY_KEY`, a server env var, and `GATEWAY_URL` selects Http over Mock.
+    **Never import `@/lib/gateway` into a `"use client"` module** — the key would be inlined
+    into the public bundle, and `server-guard` throws rather than let it.
+  - **There is no list-runs verb.** Runs are fetched by id. Any "past runs" list is only
+    what this browser started, and must say so rather than look complete.
+  - **`cost_inr: null` is UNPRICED and must never render as 0.** The backend refuses to
+    record 0.0 for a billed provider at all — in Python and again as a database CHECK — so
+    a zero would mean a free provider, not a free call. Show `UNPRICED` and its reason.
+  - Every review carries **`playbook_status: DRAFT`** until a lawyer approves the rules, and
+    the model is hosted in **UAE North**: a client contract may not be sent there, and the
+    `test_data` input is the caller stating this document is a fixture. Both facts belong on
+    screen, on every result.
+  - A finding is a **POTENTIAL_ISSUE against a company standard, never a statement of law**.
+    Statuses `MATCHES · DEVIATES · MISSING · NEEDS_LAWYER` must be distinguishable without
+    colour.
+
   ⚠ **A transport failure must NEVER render as an abstention.** Abstention is a verified product state;
   a network/DNS/5xx error is a separate, visibly distinct state. Use `EngineResult<T>`, never
   `catch { return abstention }`.

@@ -1,0 +1,258 @@
+/* /app — the in-house lawyer's console.
+   Tokens only (--ink, --cream, --gold, --gold-muted, --abstain, --font-*).
+   No hard-coded hex. Corners <=6px. Motion <=250ms and reduced-motion honoured. */
+
+.console {
+  min-height: 100dvh;
+  background: var(--ink);
+  color: var(--cream);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.console-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 1rem clamp(1rem, 4vw, 2.5rem);
+  border-bottom: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+}
+.console-bar h1 {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.console-nav { display: flex; gap: 1.25rem; margin-left: auto; flex-wrap: wrap; }
+.console-nav a,
+.console-bar form button {
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+.console-nav a[aria-current="page"] { color: var(--cream); border-bottom-color: var(--gold); }
+.console-nav a:hover, .console-bar form button:hover { color: var(--cream); }
+.console-nav a:focus-visible,
+.console-bar form button:focus-visible,
+.console a:focus-visible, .console button:focus-visible,
+.console input:focus-visible, .console textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Standing notices. Not decorative: each states a limit of this deployment. */
+.console-notices { border-bottom: 1px solid color-mix(in srgb, var(--cream) 14%, transparent); }
+.notice {
+  /* globals.css puts a reading measure on every <p>. A standing notice is a band across
+     the screen, not prose in a column, so it opts out explicitly. */
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
+  border-top: 1px solid color-mix(in srgb, var(--cream) 10%, transparent);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--cream) 80%, transparent);
+  display: flex;
+  gap: 0.65rem;
+  align-items: baseline;
+}
+.console-notices .notice:first-child { border-top: 0; }
+.notice strong { color: var(--cream); font-weight: 600; }
+.notice .notice-key {
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-muted);
+  white-space: nowrap;
+}
+
+.console-main { padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2.5rem) 4rem; }
+.console-main > * { max-width: 62rem; }
+.console h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5rem;
+}
+.console .lede {
+  color: color-mix(in srgb, var(--cream) 70%, transparent);
+  max-width: 44rem;
+  margin: 0 0 1.75rem;
+  line-height: 1.6;
+}
+
+/* Forms */
+.console label { display: block; font-size: 0.8125rem; margin-bottom: 0.45rem; }
+.console textarea, .console input[type="text"], .console input[type="password"] {
+  width: 100%;
+  background: color-mix(in srgb, var(--cream) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cream) 22%, transparent);
+  border-radius: 4px;
+  color: var(--cream);
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+}
+.console textarea { min-height: 9rem; resize: vertical; font-size: 0.9375rem; line-height: 1.55; }
+.console .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
+.console-main button[type="submit"] {
+  min-height: 44px;
+  padding: 0 1.15rem;
+  border-radius: 4px;
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: opacity 180ms ease;
+}
+.console-main button[type="submit"]:disabled { opacity: 0.55; cursor: progress; }
+/* Sign out is navigation, not an action worth the one accent this view is allowed. */
+.console-bar form button[type="submit"] {
+  background: none;
+  border: 0;
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+  font-weight: inherit;
+  min-height: 44px;
+}
+.console .checkline { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.8125rem; }
+.console .checkline input { margin-top: 0.15rem; width: 18px; height: 18px; }
+
+/* Panels */
+.panel {
+  border: 1px solid color-mix(in srgb, var(--cream) 16%, transparent);
+  border-radius: 6px;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.5rem;
+  background: color-mix(in srgb, var(--cream) 4%, transparent);
+}
+.panel-head {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: baseline;
+  margin-bottom: 0.9rem;
+}
+.panel-head h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.0625rem; margin: 0; }
+.mono { font-family: var(--font-code); }
+.meta {
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--cream) 62%, transparent);
+  letter-spacing: 0.02em;
+}
+
+/* A cited sentence: the claim, then its basis. */
+.cited { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
+.cited li { display: grid; gap: 0.35rem; }
+.cited .claim { line-height: 1.6; }
+.cited .basis {
+  font-family: var(--font-code);
+  font-size: 0.8125rem;
+  color: var(--gold-muted);
+  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline;
+}
+.cited .section { font-weight: 500; color: var(--gold); }
+
+/* The three result registers, and they must never be confused.
+   - answer: ordinary cream
+   - abstain: cool grey, RESERVED for a refusal the pipeline decided on
+   - failure: a hatched edge + FAILURE label, never grey, never gold */
+.register-abstain {
+  border-left: 3px solid var(--abstain);
+  background: color-mix(in srgb, var(--abstain) 16%, transparent);
+}
+.register-failure {
+  border-left: 3px solid color-mix(in srgb, var(--cream) 55%, transparent);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in srgb, var(--cream) 7%, transparent) 6px 12px
+  );
+}
+.register-label {
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.register-abstain .register-label { color: color-mix(in srgb, var(--cream) 78%, transparent); }
+.register-failure .register-label { color: var(--cream); }
+
+/* Findings table. Status is readable without colour: a glyph AND a word. */
+.findings { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.875rem; }
+.findings caption { text-align: left; padding-bottom: 0.6rem; }
+.findings th, .findings td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.7rem 0.75rem 0.7rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+}
+.findings th {
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--cream) 62%, transparent);
+  font-weight: 500;
+}
+.status { display: inline-flex; gap: 0.45rem; align-items: baseline; white-space: nowrap; }
+.status .glyph { font-family: var(--font-code); font-weight: 500; }
+.status-word { font-family: var(--font-code); font-size: 0.75rem; letter-spacing: 0.04em; }
+.status-deviates .glyph, .status-deviates .status-word { color: var(--gold); }
+.status-needs_lawyer .glyph, .status-needs_lawyer .status-word { color: var(--cream); }
+.status-missing .glyph, .status-missing .status-word {
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+}
+.status-matches .glyph, .status-matches .status-word {
+  color: color-mix(in srgb, var(--cream) 58%, transparent);
+}
+
+.quoted {
+  font-family: var(--font-code);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--cream) 82%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--cream) 22%, transparent);
+  padding-left: 0.6rem;
+  margin: 0;
+}
+
+/* Runs */
+.runs { list-style: none; padding: 0; margin: 1.25rem 0 0; display: grid; gap: 1px;
+  background: color-mix(in srgb, var(--cream) 12%, transparent); border-radius: 6px; overflow: hidden; }
+.runs li { background: var(--ink); }
+.runs a { display: grid; gap: 0.3rem; padding: 0.9rem 1rem; text-decoration: none; color: inherit; }
+.runs a:hover { background: color-mix(in srgb, var(--cream) 5%, transparent); }
+.steps { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.steps th, .steps td {
+  text-align: left; padding: 0.65rem 0.75rem 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+  vertical-align: top;
+}
+.steps th { font-family: var(--font-code); font-size: 0.6875rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: color-mix(in srgb, var(--cream) 62%, transparent); font-weight: 500; }
+.unpriced { font-family: var(--font-code); color: var(--abstain); }
+
+.empty { color: color-mix(in srgb, var(--cream) 62%, transparent); }
+.field-error { color: var(--gold); font-size: 0.8125rem; margin-top: 0.6rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .console * { transition: none !important; animation: none !important; }
+}
+@media (max-width: 40rem) {
+  .findings thead, .steps thead { display: none; }
+  .findings tr, .steps tr { display: grid; gap: 0.3rem; padding: 0.8rem 0; }
+  .findings td, .steps td { border: 0; padding: 0; }
+  .findings tr { border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent); }
+}
