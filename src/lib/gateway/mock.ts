@@ -4,6 +4,7 @@ import { GATEWAY_ROUTES } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import type {
   AskResponse,
+  CancelAck,
   Decision,
   DocumentResponse,
   ReviewResponse,
@@ -451,6 +452,33 @@ export class MockGateway implements GatewayProvider {
       });
     }
     return engineOk({ ...DOCUMENT_MINUTES, run_id: "mock-doc-minutes" });
+  }
+
+  /** Runs this mock reports as still moving, so the poller has something to poll. */
+  private readonly cancelled = new Set<string>();
+
+  async cancel(runId: string): Promise<EngineResult<CancelAck>> {
+    // The gateway refuses a second cancel and an unknown run with the SAME code, so that
+    // the answer does not leak which run ids exist. The mock must refuse them the same way
+    // or the screen is tested against a kinder backend than the real one.
+    if (this.cancelled.has(runId)) {
+      return engineFail({
+        kind: "bad_request",
+        route: GATEWAY_ROUTES.runCancel,
+        status: 409,
+        message:
+          `run ${runId} has no job that is still running. A finished run is not cancelled ` +
+          "retroactively — its trace is what happened.",
+      });
+    }
+    this.cancelled.add(runId);
+    return engineOk({
+      status: "CANCEL_REQUESTED",
+      run_id: runId,
+      note:
+        "the run will stop at its next step boundary. Everything already done stays in " +
+        "the trace, marked CANCELLED where it stopped.",
+    });
   }
 
   async decide(input: {

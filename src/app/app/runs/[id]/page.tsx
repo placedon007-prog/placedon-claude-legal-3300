@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getGateway } from "@/lib/gateway";
 import type { RunStep } from "@/lib/gateway/types";
+import { isLive } from "@/lib/gateway/types";
+import { RunWatch } from "../run-watch";
 
 export const metadata: Metadata = { title: "Run trace", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -23,10 +25,28 @@ export default async function RunPage({
       </p>
 
       {run.ok ? (
-        <p className="lede">
-          {run.data.intent} — {run.data.status}
-          {run.data.refusal_code ? ` (${run.data.refusal_code})` : null}
-        </p>
+        <>
+          <p className="lede" style={{ marginBottom: "0.4rem" }}>
+            {run.data.intent}
+          </p>
+          {/* The status, the poll and Cancel live in a client component: a run no longer
+              finishes inside the request that started it, so the page has to ask. */}
+          <RunWatch
+            initial={{
+              id,
+              status: run.data.status,
+              refusalCode: run.data.refusal_code ?? null,
+              live: isLive(run.data.status),
+              steps: trace.ok
+                ? trace.data.steps.map((s) => ({
+                    capability: s.capability,
+                    status: s.status,
+                  }))
+                : [],
+              unreachable: null,
+            }}
+          />
+        </>
       ) : (
         <section className="panel register-failure" role="alert" aria-label="Engine failure">
           <span className="register-label">Engine failure · {run.error.kind}</span>

@@ -340,3 +340,35 @@
 .field-row label { display: block; }
 .result-head { margin: 0 0 0.5rem; }
 .lede-sm { margin: 0.6rem 0 0; }
+
+/* ── watching a run that is still moving ──────────────────────────────────── */
+.watch { margin-bottom: 1.5rem; display: grid; gap: 0.5rem; }
+.watch .lede { margin: 0; }
+/* The one moving thing on the page, and it moves slowly. Reduced motion stops it dead
+   rather than slowing it: a pulse is information here, not decoration, so the static
+   state has to read as "watching" on its own — which the words beside it do. */
+.watch-live::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: watch-pulse 2s ease-in-out infinite;
+}
+@keyframes watch-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .watch-live::before { animation: none; }
+}
+.watch-cancel { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.watch-cancel button {
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 4px;
+  background: transparent;
+  color: color-mix(in srgb, var(--cream) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cream) 28%, transparent);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.watch-cancel button:disabled { opacity: 0.5; cursor: progress; }

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { parseAnswer, type ParsedAnswer, type ReviewResponse } from "@/lib/gateway/types";
-import { MIN_REASON_CHARS } from "@/lib/gateway/types";
+import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { AskResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
@@ -301,6 +301,69 @@ export async function decideAction(
   const result = await gateway.decide({ runId, itemRef, verdict, reason, quotedSpan });
   if (!result.ok) return { phase: "failed", error: result.error };
   return { phase: "recorded", data: result.data };
+}
+
+/* ── the durable executor: polling and cancelling ─────────────────────────── */
+
+export interface RunSnapshot {
+  readonly id: string;
+  readonly status: string;
+  readonly refusalCode: string | null;
+  readonly live: boolean;
+  readonly steps: readonly { capability: string; status: string }[];
+  /** Set when the run could not be READ. Never confused with a run that refused. */
+  readonly unreachable: string | null;
+}
+
+/**
+ * One poll. Returns a snapshot, never throws, and says `unreachable` when the gateway could
+ * not be reached — which is a different thing from a run that finished REFUSED, and the
+ * screen renders them differently.
+ */
+export async function pollRun(runId: string): Promise<RunSnapshot> {
+  const gateway = await getGateway();
+  const [run, trace] = await Promise.all([gateway.run(runId), gateway.trace(runId)]);
+  if (!run.ok) {
+    return {
+      id: runId, status: "UNKNOWN", refusalCode: null, live: false, steps: [],
+      unreachable: `${run.error.kind}: ${run.error.message}`,
+    };
+  }
+  return {
+    id: runId,
+    status: run.data.status,
+    refusalCode: run.data.refusal_code ?? null,
+    live: isLive(run.data.status),
+    steps: trace.ok
+      ? trace.data.steps.map((s) => ({ capability: s.capability, status: s.status }))
+      : [],
+    unreachable: null,
+  };
+}
+
+export type CancelState =
+  | { readonly phase: "idle" }
+  | { readonly phase: "requested"; readonly note: string }
+  | { readonly phase: "refused"; readonly message: string }
+  | { readonly phase: "failed"; readonly error: EngineError };
+
+export async function cancelRunAction(
+  _prev: CancelState,
+  formData: FormData,
+): Promise<CancelState> {
+  const runId = String(formData.get("run_id") ?? "").trim();
+  if (!runId) return { phase: "refused", message: "This run cannot be identified." };
+  const gateway = await getGateway();
+  const r = await gateway.cancel(runId);
+  if (r.ok) {
+    return { phase: "requested", note: r.data.note ?? "Cancellation requested." };
+  }
+  // The gateway answers "already finished" and "no such run" with ONE code, so the screen
+  // must not invent a distinction it deliberately does not have.
+  if (r.error.status === 409 || r.error.status === 400) {
+    return { phase: "refused", message: r.error.detail ?? r.error.message };
+  }
+  return { phase: "failed", error: r.error };
 }
 
 export type LoginState = { readonly error: string | null };

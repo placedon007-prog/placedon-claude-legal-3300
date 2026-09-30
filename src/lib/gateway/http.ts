@@ -5,6 +5,7 @@ import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
+  cancelSchema,
   decisionSchema,
   documentResponseSchema,
   refusalSchema,
@@ -13,6 +14,7 @@ import {
   runTraceSchema,
   uploadResponseSchema,
   type AskResponse,
+  type CancelAck,
   type Decision,
   type DocumentResponse,
   type ReviewResponse,
@@ -247,6 +249,15 @@ export class HttpGateway implements GatewayProvider {
           quoted_span: input.quotedSpan,
         },
       },
+    );
+  }
+
+  cancel(runId: string): Promise<EngineResult<CancelAck>> {
+    return this.call(
+      GATEWAY_ROUTES.runCancel,
+      GATEWAY_ROUTES.runCancel.replace("{run_id}", encodeURIComponent(runId)),
+      cancelSchema,
+      { method: "POST", body: {} },
     );
   }
 }

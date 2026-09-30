@@ -157,6 +157,22 @@ export const decisionSchema = z.object({
 });
 export type Decision = z.infer<typeof decisionSchema>;
 
+export const cancelSchema = z.object({
+  status: z.string(),
+  run_id: z.string(),
+  note: z.string().optional(),
+});
+export type CancelAck = z.infer<typeof cancelSchema>;
+
+/**
+ * A run still moving. `PLANNED` means a worker has not picked it up; `RUNNING` means one
+ * has. Everything else is terminal and the screen stops polling.
+ */
+export const LIVE_RUN_STATUSES = ["PLANNED", "RUNNING", "AWAITING_HUMAN"] as const;
+export function isLive(status: string): boolean {
+  return (LIVE_RUN_STATUSES as readonly string[]).includes(status);
+}
+
 /* ── runs ─────────────────────────────────────────────────────────────────── */
 
 export const runStepSchema = z.object({

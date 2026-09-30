@@ -2,6 +2,7 @@ import "../engine/server-guard";
 import type { EngineResult } from "../engine/errors";
 import type {
   AskResponse,
+  CancelAck,
   Decision,
   DocumentResponse,
   ReviewResponse,
@@ -59,6 +60,12 @@ export interface GatewayProvider {
     reason: string;
     quotedSpan: string;
   }): Promise<EngineResult<Decision>>;
+  /**
+   * Ask a run to stop at its next step boundary. A REQUEST, not a kill: the work already
+   * done stays in the trace, marked CANCELLED where it stopped. A run that has already
+   * finished is refused — its trace is what happened.
+   */
+  cancel(runId: string): Promise<EngineResult<CancelAck>>;
 }
 
 /**

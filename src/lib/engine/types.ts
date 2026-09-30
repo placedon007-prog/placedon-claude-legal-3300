@@ -41,6 +41,7 @@ export const GATEWAY_ROUTES = {
   // the gateway does not serve. Read from rest_spec() rather than assumed.
   runApprove: "/v2/runs/approve/{run_id}",
   runReject: "/v2/runs/reject/{run_id}",
+  runCancel: "/v2/runs/cancel/{run_id}",
 } as const;
 
 export type EngineV1Route = (typeof ENGINE_ROUTES)[keyof typeof ENGINE_ROUTES];

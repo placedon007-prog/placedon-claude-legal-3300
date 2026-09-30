@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { findingSchema, parseAnswer } from "../src/lib/gateway/types";
+import { findingSchema, isLive, parseAnswer } from "../src/lib/gateway/types";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { mintToken, tokenIsValid, MAX_AGE_SECONDS } from "../src/lib/auth/token";
 
@@ -254,6 +254,45 @@ test("a refused decision is a failure, never a recorded one", async () => {
   assert.equal(r.ok, false);
 });
 
+
+/* ── the durable executor: polling and cancelling ─────────────────────────── */
+
+test("a run is LIVE only while it is still moving", () => {
+  // The poll stops on these, so getting the set wrong is an interval that never ends.
+  assert.equal(isLive("PLANNED"), true, "queued but not picked up");
+  assert.equal(isLive("RUNNING"), true);
+  assert.equal(isLive("AWAITING_HUMAN"), true, "stopped for a person, not finished");
+  for (const s of ["ANSWERED", "PARTIAL", "REFUSED", "FAILED"]) {
+    assert.equal(isLive(s), false, `${s} is terminal; the page must stop asking`);
+  }
+});
+
+test("cancelling a live run is accepted, and says what will happen to the trace", async () => {
+  const r = await new MockGateway().cancel("run-live");
+  assert.ok(r.ok);
+  assert.equal(r.data.status, "CANCEL_REQUESTED");
+  assert.match(r.data.note ?? "", /next step boundary/);
+  // The promise that matters: cancelling does not throw work away.
+  assert.match(r.data.note ?? "", /stays in the trace/);
+});
+
+test("cancelling twice is REFUSED, never silently re-applied", async () => {
+  const g = new MockGateway();
+  assert.ok((await g.cancel("run-x")).ok);
+  const again = await g.cancel("run-x");
+  assert.equal(again.ok, false);
+  // The gateway answers "already finished" and "no such run" with ONE message on purpose,
+  // so the reply cannot be used to discover which run ids exist.
+  if (!again.ok) assert.match(again.error.message, /no job that is still running/);
+});
+
+test("a refused cancel is a failure, never a recorded cancellation", async () => {
+  const g = new MockGateway();
+  await g.cancel("run-y");
+  const r = await g.cancel("run-y");
+  assert.equal(r.ok, false, "EngineResult keeps a refusal out of the success branch");
+});
+
 /* ── UNPRICED is not zero ─────────────────────────────────────────────────── */
 
 test("a trace step with no model reports null cost WITH a reason, never 0", async () => {
@@ -296,12 +335,19 @@ test("uploading identical text twice yields one document id", async () => {
 /* ── the session token ────────────────────────────────────────────────────── */
 
 test("a freshly minted token is valid, and a tampered one is not", () => {
-  const t = mintToken(SECRET);
-  assert.ok(tokenIsValid(t, SECRET));
+  // The issued-at is PINNED. With `mintToken(SECRET)` reading the wall clock, the
+  // substituted `Date.now()` below landed in the same millisecond often enough that the
+  // "tampered" token was byte-identical to the valid one — and validated, correctly. The
+  // test was wrong, not the token: it failed about 4 runs in 6, and a gate that goes red
+  // at random is what teaches people to skip it.
+  const issuedAt = 1_760_000_000_000;
+  const t = mintToken(SECRET, issuedAt);
+  assert.ok(tokenIsValid(t, SECRET, issuedAt + 1000));
   const [issued, nonce, mac] = t.split(".");
-  assert.ok(!tokenIsValid(`${issued}.${nonce}.${mac.slice(0, -1)}x`, SECRET));
-  assert.ok(!tokenIsValid(`${Date.now()}.${nonce}.${mac}`, SECRET), "issued-at is signed");
-  assert.ok(!tokenIsValid(t, "a-different-secret-16ch"));
+  assert.ok(!tokenIsValid(`${issued}.${nonce}.${mac.slice(0, -1)}x`, SECRET, issuedAt + 1000));
+  assert.ok(!tokenIsValid(`${issuedAt + 60_000}.${nonce}.${mac}`, SECRET, issuedAt + 61_000),
+            "issued-at is signed");
+  assert.ok(!tokenIsValid(t, "a-different-secret-16ch", issuedAt + 1000));
   assert.ok(!tokenIsValid(undefined, SECRET));
   assert.ok(!tokenIsValid("not-a-token", SECRET));
 });
