@@ -171,22 +171,6 @@ export const faqEntries = [
     ],
   },
   {
-    id: "harvey",
-    category: "comparison",
-    question: "How is Placedon intended to differ from Harvey?",
-    answer: [
-      "Placedon is a pre-launch concept focused on a specific statutory evidence record. Harvey describes a broader legal-AI platform.",
-      "Harvey's published platform covers legal research, document analysis, and workflows. Placedon's focus is verifying Companies Act, 2013 provisions and their versions.",
-      "No comparative performance test, feature-equivalence claim, or replacement recommendation is made.",
-    ],
-    sources: [
-      {
-        title: "Harvey: platform overview",
-        url: "https://www.harvey.ai/platform",
-      },
-    ],
-  },
-  {
     id: "correction",
     category: "evidence",
     question: "What should I do if a result or source appears wrong?",
