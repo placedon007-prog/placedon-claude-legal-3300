@@ -47,7 +47,7 @@ export const routeMetadata = {
   "/faq": {
     title: "Scope, Abstention, Privacy and Access: FAQ | Placedon",
     description:
-      "Questions about Placedon's scope, abstention, accuracy limits, privacy, pricing, access, and intended differences from ChatGPT and Harvey.",
+      "Questions about Placedon's scope, abstention, accuracy limits, privacy, pricing, access, and and how it differs from general-purpose AI chat tools.",
     canonicalPath: "/faq",
     indexable: true,
   },

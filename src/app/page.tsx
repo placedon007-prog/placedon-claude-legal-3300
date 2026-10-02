@@ -516,7 +516,7 @@ const demos: Demo[] = [
 const tools = [
   {
     title: "Placedon for Word",
-    body: "Draft board resolutions, notices, and Board's-report extracts inside Word, each clause carrying its section and operative date.",
+    body: "Check the document open in Word against the law held for its date, clause by clause, with each section and operative date shown. The add-in reads: it never edits your text or formatting.",
     href: "/product",
   },
   {
@@ -525,8 +525,8 @@ const tools = [
     href: "/product/compliance-pack",
   },
   {
-    title: "Plugins",
-    body: "Practice packs for corporate-secretarial work and MCA annual filings (AOC-4, MGT-7, DIR-3 KYC), configured to your registers and ROC calendar.",
+    title: "Annual filing checks",
+    body: "Whether the financial statements (AOC-4, Section 137) and the annual return (MGT-7, Section 92) were filed in time, decided from the filing dates you supply.",
     href: "/product",
   },
   {
@@ -539,7 +539,7 @@ const tools = [
 const build = [
   {
     title: "MCP for statutory data",
-    body: "Connect your registers, MCA21 filings, and minute books to Placedon through the open Model Context Protocol.",
+    body: "Thirteen read-only tools over Placedon's engine through the open Model Context Protocol, so an agent receives the same answers, and the same refusals, as the API. No tool writes anything.",
   },
   {
     title: "Deterministic engine",
