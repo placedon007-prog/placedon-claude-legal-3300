@@ -13,15 +13,15 @@ change — check them before you consider any task done.
   a neutral warm-grey scale. **Accent = Brass Gold `#C9A24B`, ≤10% of any screen, ONE accent element
   per view.** `--gold-muted #9F743B` for citations only. Cool Grey `#5B6472` is reserved **only** for
   the "abstained / unknown" state — never decorative. No navy-dominant, no second accent colour.
-- **Fonts (self-hosted from `brand-kit/fonts/` via `next/font/local`):** Fraunces (display serif) ·
-  IBM Plex Mono · Inter/Archivo (body).
-- **Statute references split by AUDIENCE, and the split is the rule.** A reference a reader is meant
-  to *read* — **"Section 96"** — is **Fraunces, bold**: it is the claim, and it should carry the weight
-  of one. The **evidence metadata beneath it** — `s.96(1)`, `chars 226–348`, the instrument
-  `G.S.R. 880(E)`, the figure `₹10,00,00,000`, the as-of date — stays **IBM Plex Mono**: it is the
-  basis, it is machine-exact, and mono is what says so.
-  This corrects an earlier rule that put *every* section reference in mono. Claim, then evidence —
-  the same split §Voice already requires of every sentence, now carried by the type.
+- **Fonts:** Fraunces (display serif) · Inter/Archivo (body) · IBM Plex Mono for figures,
+  instruments, dates and record identifiers. Reader-facing statutory references use the familiar
+  legal-document form **Section 96(1)** in bold Georgia/Times-style serif. The engine may keep
+  `s.96(1)` as data and accept `s.96`, `u/s 96` and `Section 96` as input; the UI always normalises
+  display copy to **Section 96**. Use *Companies Act, 2013* in italics in prose. Underlining is for
+  links or an expressly highlighted source passage, never decoration.
+  Fonts are self-hosted from `brand-kit/fonts/` via `next/font/local`. The **evidence line beneath a
+  reference** — `s.96(1)`, `chars 226–348`, the instrument `G.S.R. 880(E)`, the figure
+  `₹10,00,00,000`, the as-of date — stays **IBM Plex Mono**: the claim is serif, its basis is mono.
   **Never paraphrase a section either way.**
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
@@ -31,8 +31,7 @@ change — check them before you consider any task done.
   *would this appear in a judgment?* If it reads like advocacy or sales copy, cut it.
 - **Banned words (any = failure):** streamline, empower, solution, easy, smart, seamless, revolutionary,
   unlock, supercharge, effortless, game-changer, cutting-edge.
-- **Words in:** provision, verified, Section [number] (bold serif when read; mono in the evidence
-  line), abstains, liability, instrument, operative.
+- **Words in:** provision, verified, Section [number] (bold serif), abstains, liability, instrument, operative.
 - Register: ~80% formal, calm/confident; humility appears once — in abstention.
 
 ## Honesty — do not overclaim

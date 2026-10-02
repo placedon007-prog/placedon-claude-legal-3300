@@ -13,120 +13,6 @@ import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
 
-/* ---------------------------------------------------------------- icons */
-const stroke = {
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.5,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-};
-function Icon({ d, size = 30 }: { d: ReactNode; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden>
-      {d}
-    </svg>
-  );
-}
-const I = {
-  plug: <path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v5" />,
-  checks: (
-    <>
-      <path d="M3 6h11M3 12h11M3 18h11" />
-      <path d="m18 5 2 2 3-3" />
-    </>
-  ),
-  pen: <path d="M12 20h9M4 20l8.5-8.5a2.1 2.1 0 0 0-3-3L1 17v3Z" />,
-  lock: (
-    <>
-      <rect x="4" y="10" width="16" height="11" rx="2" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-    </>
-  ),
-  scale: (
-    <>
-      <path d="M12 3v18M7 21h10M5 7h14l-3.5 6a3 3 0 0 1-6 0L5 7ZM3 7l3-3 6 1 6-1 3 3" />
-    </>
-  ),
-  columns: (
-    <>
-      <path d="M12 4c-2-1.4-4.5-1.4-7 0v13c2.5-1.4 5-1.4 7 0M12 4c2-1.4 4.5-1.4 7 0v13c-2.5-1.4-5-1.4-7 0M12 4v14" />
-    </>
-  ),
-  bag: (
-    <>
-      <rect x="3" y="8" width="18" height="12" rx="2" />
-      <path d="M8 8V6a4 4 0 0 1 8 0v2M3 13h18" />
-    </>
-  ),
-  grid: (
-    <>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <path d="M14 17h7M17.5 14v7" />
-    </>
-  ),
-  feather: (
-    <>
-      <path d="M20 4a6 6 0 0 0-8.5 0L4 11.5V20h8.5L20 12.5a6 6 0 0 0 0-8.5ZM4 20 15 9M12 6h4v4" />
-    </>
-  ),
-  network: (
-    <>
-      <circle cx="6" cy="6" r="2.5" />
-      <circle cx="18" cy="6" r="2.5" />
-      <circle cx="12" cy="18" r="2.5" />
-      <path d="M8 7.5 11 16M16 7.5 13 16M8 6h8" />
-    </>
-  ),
-  cpu: (
-    <>
-      <rect x="6" y="6" width="12" height="12" rx="2" />
-      <path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
-    </>
-  ),
-  shield: (
-    <>
-      <path d="M12 3 5 6v5c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6l-7-3Z" />
-      <path d="m9 12 2 2 4-4" />
-    </>
-  ),
-  file: (
-    <>
-      <path d="M6 2h8l4 4v16H6ZM14 2v5h4M9 12h6m-6 4h6" />
-    </>
-  ),
-  book: (
-    <>
-      <path d="M4 4a2 2 0 0 1 2-2h13v18H6a2 2 0 0 0-2 2ZM19 20H6a2 2 0 0 1-2-2" />
-    </>
-  ),
-  arrowR: <path d="M4 12h15m-6-6 6 6-6 6" />,
-  arrowL: <path d="M20 12H5m6 6-6-6 6-6" />,
-};
-
-/* -------------------------------- section icon (draws in on reveal)
-   A purposeful entrance — the mark settles as its section arrives — not the
-   old infinite wiggle. Replays with the section (once:false), reduced-motion
-   renders the settled state. */
-function SecIcon({ d, size = 42 }: { d: ReactNode; size?: number }) {
-  const reduce = useReducedMotion();
-  return (
-    <div className="dsec-icon">
-      <motion.span
-        style={{ display: "inline-flex", transformOrigin: "50% 55%" }}
-        initial={reduce ? false : { opacity: 0, scale: 0.8, rotate: -8 }}
-        whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-        viewport={{ once: false, margin: "-70px" }}
-        transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-      >
-        <Icon d={d} size={size} />
-      </motion.span>
-    </div>
-  );
-}
-
 /* ---------------------------- heading with word-reveal typography
    Words rise from behind a clipped edge rather than fading up. A fade sets
    every word to opacity 0 first, so on a five-word heading the last word was
@@ -312,44 +198,146 @@ function Reveal({
 }
 
 /* ------------------------------------------------------------- content */
-const features = [
+/* Each feature: what it is, why it matters, one worked example, and where it
+   honestly stands. Examples reuse only references already stated on this page. */
+type Feature = {
+  n: string;
+  area: string;
+  title: string;
+  lead: string;
+  body: string[];
+  example: ReactNode;
+  status: string;
+};
+const features: Feature[] = [
   {
-    icon: I.plug,
-    title: "Works from the registers you give it",
-    body: "Placedon reads the registers and documents you supply. Reading MCA21 directly requires a contracted, MCA-sanctioned aggregator; Placedon does not scrape MCA21, and no aggregator is connected yet.",
+    n: "01",
+    area: "Research",
+    title: "Read the law as it stood on the day",
+    lead: "Ask about a section, give a date, and get the wording that was in force on that date.",
+    body: [
+      "Most research tools show you today's text. That works until the question is about last year's board meeting, or a notice sent out before a rule changed. Placedon keeps each version of a provision next to the notification that replaced it, so it can tell you what the law said on the date your file cares about, not the date you happen to be asking.",
+      "Every answer comes back with three things: the provision, the instrument that set its wording, and the date that wording took effect. If you want to check the answer yourself, those three are all you need.",
+    ],
+    example: (
+      <>
+        Asked what <strong className="dcite section-reference">Section 96(1)</strong> required for the year
+        ending <span className="dcite">2026-03-31</span>, Placedon answers: an
+        AGM within six months of the year&rsquo;s end, and no more than fifteen
+        months after the last one. The section and its operative date sit
+        under the answer.
+      </>
+    ),
+    status: "In development · Companies Act, 2013 first",
   },
   {
-    icon: I.checks,
-    title: "Built for your obligations",
-    body: "Matrices for the duties the Act actually imposes: AGM timing under s.96, the board-meeting cadence under s.173, small-company status under s.2(85), and the Board's-report extracts.",
+    n: "02",
+    area: "Compliance",
+    title: "Start from the company, not the paperwork",
+    lead: "Describe the company once. Placedon works out which duties under the Act apply to it.",
+    body: [
+      "You tell it what the company is: its class, when it was incorporated, who its directors are, its capital and its turnover. From that it builds a matrix with a row for each duty the Act places on a company like yours. Each row says whether the duty applies, whether it has been met, or exactly which fact is missing before anyone can say.",
+      "The rows come from the Act, not from whatever happens to be in the folder. A company that has uploaded nothing still gets a full matrix, and the empty rows are usually the ones worth looking at first.",
+    ],
+    example: (
+      <>
+        Board meetings under <strong className="dcite section-reference">Section 173(1)</strong>: at least
+        four a year, no more than 120 days apart. Three held so far,{" "}
+        <span className="dcite">96 days</span> since the last. The next one is
+        due before <span className="dcite">2026-10-14</span>.
+      </>
+    ),
+    status: "In development · first duties include Section 96 and Section 173",
   },
   {
-    icon: I.pen,
-    title: "Works where you file",
-    body: "Use Placedon in Word, in email, and alongside the secretarial software your team already runs. The citation travels with the answer wherever it goes.",
+    n: "03",
+    area: "Document check",
+    title: "A second reader for every draft",
+    lead: "Give it a notice, a set of minutes or a resolution, and it checks the document against the law the document relies on.",
+    body: [
+      "It asks what a careful reviewer would ask. Is this the kind of document it says it is? Does the rule it cites apply to this company on this date? Is that rule still current, or has it been amended since? Is anything the law requires simply not there?",
+      "It also knows what not to flag. A check written for minutes won't fire on a notice, and a document it can't identify comes back marked as uncertain, not covered in defects it made up.",
+    ],
+    example: (
+      <>
+        A notice relies on a provision that was amended after the notice was
+        drafted. Placedon marks the reference as out of date and names the
+        instrument that changed it, so you know what to correct.
+      </>
+    ),
+    status: "In development",
   },
   {
-    icon: I.lock,
-    title: "Abstains by design",
-    body: "When a limb of a provision is undecided, Placedon says so and names the missing instrument. It never renders a fabricated figure to fill a gap.",
+    n: "04",
+    area: "Monitoring",
+    title: "Know when the law moves under you",
+    lead: "When a new notification is published, see which provisions it touches and which of your answers depend on them.",
+    body: [
+      "Indian corporate law mostly changes through rules and notifications, not through headline amendments to the Act. A limit moves in the Gazette, and nobody tells the folder of resolutions that relied on the old one.",
+      "Placedon keeps a dated log of those changes and links each one to the provisions it affects. When something you relied on changes, the record tells you, with the notification and its date attached.",
+    ],
+    example: (
+      <>
+        <span className="dcite">G.S.R. 880(E)</span> revised the small-company
+        limits under <strong className="dcite section-reference">Section 2(85)</strong> from{" "}
+        <span className="dcite">2025-12-01</span>. Placedon records the
+        notification and links it to every duty that turns on small-company
+        status.
+      </>
+    ),
+    status: "Planned",
+  },
+  {
+    n: "05",
+    area: "Drafting",
+    title: "Drafts that carry their authority",
+    lead: "Write board resolutions, notices and Board's report sections in Word, with the source attached to each clause.",
+    body: [
+      "Drafting is where old law gets copied forward. A template written three years ago still cites what it cited then, and nobody checks, because the document looks finished.",
+      "In the Word add-in, each clause keeps its section and the date its wording took effect. If the law under a clause changes, you can see which clause is affected without rereading the whole draft.",
+    ],
+    example: (
+      <>
+        A Board&rsquo;s report drafted under{" "}
+        <strong className="dcite section-reference">Section 134</strong>, where each disclosure shows the
+        provision it answers to and the date that provision took its current
+        form.
+      </>
+    ),
+    status: "Prototype · Microsoft Word",
+  },
+  {
+    n: "06",
+    area: "Abstention",
+    title: "It tells you when it doesn't know",
+    lead: "If Placedon cannot prove an answer, it holds back and tells you what is missing.",
+    body: [
+      "A 2024 Stanford study found that leading legal AI tools produced false or unsupported answers on 17 to 33 percent of queries. A wrong answer that sounds certain does more damage than no answer. So when part of a provision can't be decided, or the instrument that fixes a figure isn't in the record, Placedon stops and says so.",
+      "An abstention still tells you something. It names the missing instrument or fact and the step that would settle it, so you know exactly what to go and get. A blank row never means you are compliant.",
+    ],
+    example: (
+      <>
+        Does the company have a director resident in India under{" "}
+        <strong className="dcite section-reference">Section 149(3)</strong>? Not answered. That turns on
+        the days each director spent in India, and those are not on record.
+      </>
+    ),
+    status: "Built into every answer",
   },
 ];
 
 const principles = [
   {
-    icon: I.pen,
     step: "01 · Explain",
     title: "The model explains",
     body: "It translates a pre-verified packet into plain English. It never makes the decision.",
   },
   {
-    icon: I.cpu,
     step: "02 · Decide",
     title: "Code decides",
     body: "Whether a duty applies is decided by plain, deterministic code. You can test it without a network, and it gives the same result every time.",
   },
   {
-    icon: I.shield,
     step: "03 · Verify",
     title: "The record verifies",
     body: "Nothing reaches you while it is unverified. Abstention is the honest default, not an error.",
@@ -376,7 +364,7 @@ const demos: Demo[] = [
           <>
             Almost every company must hold an Annual General Meeting each year,
             and no more than fifteen months can pass between two of them. This
-            comes from <span className="dcite">s.96(1)</span>.
+            comes from <strong className="dcite section-reference">Section 96(1)</strong>.
           </>
         ),
       },
@@ -408,7 +396,7 @@ const demos: Demo[] = [
           <>
             A company must hold at least four board meetings a year, and no more
             than 120 days can pass between any two of them. This comes from{" "}
-            <span className="dcite">s.173(1)</span>.
+            <strong className="dcite section-reference">Section 173(1)</strong>.
           </>
         ),
       },
@@ -423,7 +411,7 @@ const demos: Demo[] = [
         ),
       },
     ],
-    prompt: "Are we on track for the s.173 board-meeting cadence this year?",
+    prompt: "Are we on track for the Section 173 board-meeting cadence this year?",
     connectors: ["Board minutes", "Secretarial software"],
   },
   {
@@ -436,7 +424,7 @@ const demos: Demo[] = [
         p: (
           <>
             A &ldquo;small company&rdquo; is one whose capital and turnover stay
-            under the limits set in <span className="dcite">s.2(85)</span>.
+            under the limits set in <strong className="dcite section-reference">Section 2(85)</strong>.
             Being small means lighter rules apply, so the status matters.
           </>
         ),
@@ -451,9 +439,11 @@ const demos: Demo[] = [
         ),
         note: (
           <>
-            The size limit was changed by a government notification,{" "}
-            <span className="dcite">G.S.R. 700(E)</span>, that is not in the
-            record yet. Until it is, the small-company status stays unconfirmed.
+            The size limits now come from a government notification,{" "}
+            <span className="dcite">G.S.R. 880(E)</span>, in force from{" "}
+            <span className="dcite">2025-12-01</span>. This company&rsquo;s
+            paid-up capital and turnover are not on record, so its status stays
+            unconfirmed.
           </>
         ),
       },
@@ -503,7 +493,7 @@ const demos: Demo[] = [
             Every company has to keep certain official registers at its
             registered office, covering its members, debenture-holders, and
             other security holders. This is required by{" "}
-            <span className="dcite">s.88</span>.
+            <strong className="dcite section-reference">Section 88</strong>.
           </>
         ),
       },
@@ -512,7 +502,7 @@ const demos: Demo[] = [
         p: (
           <>
             The register of members is in place. The register of charges,
-            required by <span className="dcite">s.85</span>, could not be found,
+            required by <strong className="dcite section-reference">Section 85</strong>, could not be found,
             so it is flagged for review.
           </>
         ),
@@ -525,25 +515,21 @@ const demos: Demo[] = [
 
 const tools = [
   {
-    icon: I.pen,
     title: "Placedon for Word",
     body: "Check the document open in Word against the law held for its date, clause by clause, with each section and operative date shown. The add-in reads: it never edits your text or formatting.",
     href: "/product",
   },
   {
-    icon: I.checks,
     title: "Placedon Matrix",
     body: "Hand off a company and get back the full obligation matrix, with one row per duty, marked attaches, met, or missing.",
     href: "/product/compliance-pack",
   },
   {
-    icon: I.bag,
     title: "Annual filing checks",
-    body: "Whether the financial statements (AOC-4, s.137) and the annual return (MGT-7, s.92) were filed in time, decided from the filing dates you supply.",
+    body: "Whether the financial statements (AOC-4, Section 137) and the annual return (MGT-7, Section 92) were filed in time, decided from the filing dates you supply.",
     href: "/product",
   },
   {
-    icon: I.network,
     title: "Platform",
     body: "Integrate Placedon into your secretarial or GRC stack through the API and the evidence contract. It is built for Indian corporate-law workflows.",
     href: "/how-it-works",
@@ -552,29 +538,26 @@ const tools = [
 
 const build = [
   {
-    icon: I.network,
     title: "MCP for statutory data",
     body: "Thirteen read-only tools over Placedon's engine through the open Model Context Protocol, so an agent receives the same answers, and the same refusals, as the API. No tool writes anything.",
   },
   {
-    icon: I.cpu,
     title: "Deterministic engine",
     body: "Every applicability decision is pure code, testable without a network. The model explains; it never decides.",
   },
   {
-    icon: I.shield,
     title: "Built for India's data law",
     body: "Designed to hold data under India's DPDP Act, 2023: no personal data beyond what a request needs, an audit trail on every answer, and abstention wherever the source is missing.",
   },
 ];
 
 const resources = [
-  { title: "How the record works", kind: "Explainer", icon: I.book },
-  { title: "When Placedon abstains", kind: "Explainer", icon: I.lock },
-  { title: "Source defects, preserved verbatim", kind: "Reference", icon: I.file },
-  { title: "The frozen benchmark", kind: "Reference", icon: I.checks },
-  { title: "AGM timing, end to end", kind: "Walkthrough", icon: I.feather },
-  { title: "Reading the obligation matrix", kind: "Guide", icon: I.grid },
+  { title: "How the record works", kind: "Explainer" },
+  { title: "When Placedon abstains", kind: "Explainer" },
+  { title: "Source defects, preserved verbatim", kind: "Reference" },
+  { title: "The frozen benchmark", kind: "Reference" },
+  { title: "AGM timing, end to end", kind: "Walkthrough" },
+  { title: "Reading the obligation matrix", kind: "Guide" },
 ];
 
 /* small helper: ledger index eyebrow */
@@ -604,7 +587,7 @@ export default function DashboardPage() {
             Placedon <span className="sep">/</span> Indian corporate law
           </span>
           <a href="#product" className="dcrumb-here" aria-label="Explore: scroll to the product overview">
-            Explore here <Icon d={<path d="m6 9 6 6 6-6" />} size={16} />
+            Explore here
           </a>
         </div>
       </div>
@@ -664,7 +647,6 @@ export default function DashboardPage() {
       <section id="product" className="dash-container dsection">
         <Reveal>
           <div className="dstatement">
-            <SecIcon d={I.columns} size={42} />
             <Index n="01" label="The record" />
             <AnimatedH2>Built for the record</AnimatedH2>
             <p className="lead">
@@ -680,13 +662,29 @@ export default function DashboardPage() {
           <div className="dfeatures">
             {features.map((f, i) => (
               <Reveal key={f.title} delay={i * 0.05}>
-                <div className="dfeature-row">
+                <article className="dfeature-row" aria-labelledby={`feature-${f.n}`}>
                   <div className="dfeature-head">
-                    <Icon d={f.icon} size={26} />
-                    <span className="dfeature-title">{f.title}</span>
+                    <span className="dfeature-area mono">
+                      {f.n} · {f.area}
+                    </span>
+                    <h3 className="dfeature-title" id={`feature-${f.n}`}>
+                      {f.title}
+                    </h3>
+                    <p className="dfeature-lead">{f.lead}</p>
                   </div>
-                  <p className="dfeature-body">{f.body}</p>
-                </div>
+                  <div>
+                    {f.body.map((para) => (
+                      <p className="dfeature-body" key={para.slice(0, 24)}>
+                        {para}
+                      </p>
+                    ))}
+                    <div className="dfeature-example">
+                      <span className="dfeature-example-label mono">Example</span>
+                      <p>{f.example}</p>
+                    </div>
+                    <p className="dfeature-status mono">{f.status}</p>
+                  </div>
+                </article>
               </Reveal>
             ))}
           </div>
@@ -704,9 +702,6 @@ export default function DashboardPage() {
               </p>
               <Link href="/how-it-works" className="dbtn dbtn-link">
                 How the record works
-                <span className="dbtn-arrow">
-                  <Icon d={I.arrowR} size={16} />
-                </span>
               </Link>
             </aside>
           </Reveal>
@@ -717,7 +712,6 @@ export default function DashboardPage() {
       <section id="evidence" className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 44 }}>
-            <SecIcon d={I.feather} size={42} />
             <Index n="02" label="In practice" />
             <AnimatedH2>How compliance teams use Placedon</AnimatedH2>
             <p className="ddemo-caption">
@@ -794,7 +788,6 @@ export default function DashboardPage() {
       <section id="tools" className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 20 }}>
-            <SecIcon d={I.bag} size={42} />
             <Index n="03" label="Tools" />
             <AnimatedH2>Tools made for the way you work</AnimatedH2>
           </div>
@@ -804,16 +797,12 @@ export default function DashboardPage() {
             <Reveal key={f.title} delay={i * 0.05}>
               <div className="dfeature-row">
                 <div className="dfeature-head">
-                  <Icon d={f.icon} size={26} />
                   <span className="dfeature-title">{f.title}</span>
                 </div>
                 <div>
                   <p className="dfeature-body">{f.body}</p>
                   <Link href={f.href ?? "/product"} className="dbtn dbtn-link dfeature-learn">
                     Learn more
-                    <span className="dbtn-arrow">
-                      <Icon d={I.arrowR} size={16} />
-                    </span>
                   </Link>
                 </div>
               </div>
@@ -826,7 +815,6 @@ export default function DashboardPage() {
       <section className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 44 }}>
-            <SecIcon d={I.scale} size={42} />
             <Index n="04" label="The standard" />
             <AnimatedH2>The model may propose. The system must verify.</AnimatedH2>
           </div>
@@ -834,7 +822,6 @@ export default function DashboardPage() {
         <div className="prin-grid">
           {principles.map((p, i) => (
             <Reveal key={p.title} delay={i * 0.07} className="prin-card">
-              <Icon d={p.icon} size={28} />
               <h3>{p.title}</h3>
               <p>{p.body}</p>
               <span className="prin-step">{p.step}</span>
@@ -847,7 +834,6 @@ export default function DashboardPage() {
       <section className="dash-container dsection">
         <Reveal>
           <div className="dcenter">
-            <SecIcon d={I.grid} size={42} />
             <Index n="05" label="Platform" />
             <AnimatedH2>Build legal products with Placedon</AnimatedH2>
             <p className="lead" style={{ marginTop: 22 }}>
@@ -859,7 +845,6 @@ export default function DashboardPage() {
         <div className="dbuild-grid">
           {build.map((b, i) => (
             <Reveal key={b.title} delay={i * 0.06} className="dbuild-col">
-              <Icon d={b.icon} size={28} />
               <h3>{b.title}</h3>
               <p>{b.body}</p>
             </Reveal>
@@ -871,7 +856,6 @@ export default function DashboardPage() {
       <section id="resources" className="dash-container dsection">
         <Reveal>
           <div className="dcenter">
-            <SecIcon d={I.feather} size={40} />
             <Index n="06" label="Evidence" />
             <AnimatedH2>Evidence &amp; resources</AnimatedH2>
           </div>
@@ -879,13 +863,9 @@ export default function DashboardPage() {
         <div className="dres-grid">
           {resources.map((r, i) => (
             <Reveal key={r.title} delay={(i % 3) * 0.05} className="dres-card">
-              <div className="dres-motif">
-                <Icon d={r.icon} size={30} />
-              </div>
               <div className="dres-foot">
                 <div className="dres-title">{r.title}</div>
                 <span className="dres-kind">
-                  <Icon d={I.arrowR} size={14} />
                   {r.kind}
                 </span>
               </div>
@@ -898,13 +878,9 @@ export default function DashboardPage() {
       <section className="dash-container dsection">
         <Reveal>
           <div className="dband">
-            <span className="dband-icon">
-              <Icon d={I.scale} size={34} />
-            </span>
             <h3>Placedon for Indian corporate law</h3>
             <Link href="/product" className="dbtn dbtn-ghost">
               Learn more
-              <Icon d={I.arrowR} size={16} />
             </Link>
           </div>
         </Reveal>

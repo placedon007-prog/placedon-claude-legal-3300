@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { LegalText } from "@/components/brand";
 import type { ProductClass, EngineError } from "@/lib/engine";
-import { formatIST } from "@/lib/format";
+import { formatIST, formatProvisionReference } from "@/lib/format";
 import "./surfaces.css";
 
 /*
@@ -72,48 +72,24 @@ export function SurfaceShell({
   );
 }
 
-/* ── Answer-class badge — distinguished by icon + label, never colour alone ── */
+/* ── Answer-class badge — distinguished by label text, never colour alone ── */
 
-const CLASS_META: Record<
-  ProductClass,
-  { label: string; note: string; icon: ReactNode }
-> = {
+const CLASS_META: Record<ProductClass, { label: string; note: string }> = {
   verified_fact: {
     label: "Verified fact",
     note: "A documented statutory basis.",
-    icon: (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
-        <path d="m4 12 5 5L20 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
   },
   deterministic_conclusion: {
     label: "Determined",
     note: "A conclusion the rules compel from the facts given.",
-    icon: (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
-        <path d="M5 8h14M5 16h14" strokeLinecap="round" />
-      </svg>
-    ),
   },
   predictive_signal: {
     label: "Signal, not asserted",
     note: "Shown for awareness; it is not a verified answer.",
-    icon: (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
-        <path d="M3 12h4l3-7 4 14 3-7h4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
   },
   abstained: {
     label: "Abstained",
     note: "No verified answer yet. Here is what is missing.",
-    icon: (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
-        <circle cx="12" cy="12" r="8" />
-        <path d="M9 10h6" strokeLinecap="round" />
-      </svg>
-    ),
   },
 };
 
@@ -121,7 +97,6 @@ export function ClassBadge({ kind }: { kind: ProductClass }) {
   const meta = CLASS_META[kind];
   return (
     <span className={`class-badge cb-${kind}`}>
-      {meta.icon}
       <span>{meta.label}</span>
     </span>
   );
@@ -135,9 +110,9 @@ export function classNote(kind: ProductClass): string {
 
 export function Citation({ provision }: { provision: string }) {
   return (
-    <span className="cite mono" title="Statutory provision">
-      {provision}
-    </span>
+    <strong className="cite section-reference" title="Statutory provision">
+      {formatProvisionReference(provision)}
+    </strong>
   );
 }
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Arrow, LegalText, Mark } from "./brand";
+import { LegalText } from "./brand";
 import type {
   ContentLink,
   ContentSection,
@@ -15,7 +15,6 @@ export function Action({
   return (
     <Link className={secondary ? "text-link" : "button"} href={action.href}>
       {action.label}
-      <Arrow />
     </Link>
   );
 }
@@ -38,16 +37,13 @@ export function PageHero({ page }: { page: PageContent }) {
 }
 export function ReadingSection({
   section,
-  index = 0,
 }: {
   section: ContentSection;
-  index?: number;
 }) {
   return (
     <section id={section.id} className="reading-section">
       <div className="container reading-grid">
         <div className="section-aside">
-          <Mark name={index % 2 ? "instrument" : "provision"} />
           <h2>
             <LegalText>{section.heading}</LegalText>
           </h2>
