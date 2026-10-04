@@ -57,7 +57,13 @@ with psycopg.connect(db_url, autocommit=True) as conn:
     )
 
 keys = KeyStore()
-raw, principal = keys.mint(tenant_id=TENANT, actor=ACTOR, label="local-console")
+# `lawyer`, not the `viewer` default. Measured 04-10-2026: with a viewer key every WRITE
+# verb answers 403 -- vault.upload, review_table.create, draft.create and draft.revise all
+# need `lawyer` (gateway/roles.REQUIRED) -- so the local console could read the app and not
+# use it. `admin` is deliberately NOT used: nothing this console does needs it, and a local
+# key with more authority than the screens require is a habit worth not forming.
+raw, principal = keys.mint(tenant_id=TENANT, actor=ACTOR, label="local-console",
+                           role="lawyer")
 
 # Written, not printed. The three lines are replaced rather than appended, so running this
 # twice does not leave a stale key above a live one.

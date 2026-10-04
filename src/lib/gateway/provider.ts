@@ -2,13 +2,27 @@ import "../engine/server-guard";
 import type { EngineResult } from "../engine/errors";
 import type {
   AskResponse,
+  Calendar,
   CancelAck,
   Decision,
   DocumentResponse,
+  DraftDiff,
+  DraftExport,
+  DraftRevise,
+  DraftStatus,
+  DraftVersions,
   ReviewResponse,
   Run,
   RunTrace,
+  TableCancel,
+  TableCreate,
+  TableExport,
+  TableStatus,
   UploadResponse,
+  VaultFind,
+  VaultStatus,
+  VaultUpload,
+  VaultVerify,
 } from "./types";
 
 /**
@@ -66,6 +80,91 @@ export interface GatewayProvider {
    * finished is refused — its trace is what happened.
    */
   cancel(runId: string): Promise<EngineResult<CancelAck>>;
+
+  /* ── vault ──────────────────────────────────────────────────────────────── */
+  /**
+   * Put a document in the vault and queue it for ingestion. **PENDING is not INGESTED** --
+   * nothing is searchable until a worker has read it, and the upload state is what the
+   * file list shows per file rather than a tick.
+   *
+   * Refuses `NO_VAULT` when the deployment has no file store. That is a product state, so
+   * it comes back as `EngineResult` success with a refusal body, not as a failure.
+   */
+  vaultUpload(input: {
+    name: string;
+    text: string;
+    matterId?: string;
+  }): Promise<EngineResult<VaultUpload>>;
+  /** One document's state and tags, or the whole vault's counts. */
+  vaultStatus(input?: { documentId?: string }): Promise<EngineResult<VaultStatus>>;
+  vaultFind(input: { query: string; limit?: number }): Promise<EngineResult<VaultFind>>;
+  /**
+   * Do the stored bytes still hash to the key they were stored under? Returns the checks
+   * individually; the screen renders one line each and never a single real/fake badge.
+   */
+  vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>>;
+
+  /* ── review tables ──────────────────────────────────────────────────────── */
+  /**
+   * Documents down the side, questions across the top, one job per cell. The response's
+   * `estimated_cost_inr` is **null** before any cell runs and must render UNPRICED, and
+   * `scheduled.paused_budget` is the only place PAUSED_BUDGET appears -- `tableStatus`
+   * does not carry it (measured live, 2026-10-04).
+   */
+  tableCreate(input: {
+    name: string;
+    documentIds: readonly string[];
+    columns: readonly { name: string; kind: string; question: string }[];
+  }): Promise<EngineResult<TableCreate>>;
+  tableStatus(input: { gridId: string }): Promise<EngineResult<TableStatus>>;
+  /** The table as CSV. Every cell carries words rather than a blank. */
+  tableExport(input: { gridId: string }): Promise<EngineResult<TableExport>>;
+  /** Stop scheduling. Answered cells are kept; unrun cells stay PENDING, not failed. */
+  tableCancel(input: { gridId: string }): Promise<EngineResult<TableCancel>>;
+
+  /* ── drafts ─────────────────────────────────────────────────────────────── */
+  draftCreate(input: {
+    title: string;
+    body?: string;
+    kind?: string;
+  }): Promise<EngineResult<DraftStatus>>;
+  /**
+   * Save a NEW version; never edits one. `baseVersion` is REQUIRED by the backend -- it is
+   * the version this revision was based on, and if it is not the latest the save is refused
+   * with a CONFLICT naming both versions rather than overwriting a colleague's work.
+   */
+  draftRevise(input: {
+    draftId: string;
+    baseVersion: number;
+    title?: string;
+    body?: string;
+    approvedBy?: string;
+  }): Promise<EngineResult<DraftRevise>>;
+  draftVersions(input: { draftId: string }): Promise<EngineResult<DraftVersions>>;
+  draftDiff(input: {
+    draftId: string;
+    fromVersion?: number;
+    toVersion?: number;
+  }): Promise<EngineResult<DraftDiff>>;
+  draftExport(input: {
+    draftId: string;
+    version?: number;
+    format?: "text" | "docx";
+  }): Promise<EngineResult<DraftExport>>;
+
+  /* ── calendar ───────────────────────────────────────────────────────────── */
+  /**
+   * What falls due in the next 90 days, and what cannot be dated at all. An entry whose
+   * fact is missing arrives with `due: null` and the fact named -- the screen shows
+   * "unknown", never a guessed date.
+   */
+  calendarUpcoming(input: {
+    company: Record<string, unknown>;
+    anchors?: Record<string, string>;
+    intervals?: Record<string, string>;
+    asOf?: string;
+    horizonDays?: number;
+  }): Promise<EngineResult<Calendar>>;
 }
 
 /**

@@ -42,6 +42,23 @@ export const GATEWAY_ROUTES = {
   runApprove: "/v2/runs/approve/{run_id}",
   runReject: "/v2/runs/reject/{run_id}",
   runCancel: "/v2/runs/cancel/{run_id}",
+  // Taken from `rest_path()` in the backend's verb table, verified against a live gateway
+  // on 2026-10-04. A dotted verb's head becomes the path segment, so `review_table.create`
+  // is `/v2/review-table/create` -- hyphen, not underscore, and not a REST noun.
+  vaultUpload: "/v2/vault/upload",
+  vaultStatus: "/v2/vault/status",
+  vaultFind: "/v2/vault/find",
+  vaultVerify: "/v2/vault/verify",
+  tableCreate: "/v2/review-table/create",
+  tableStatus: "/v2/review-table/status",
+  tableExport: "/v2/review-table/export",
+  tableCancel: "/v2/review-table/cancel",
+  draftCreate: "/v2/draft/create",
+  draftRevise: "/v2/draft/revise",
+  draftVersions: "/v2/draft/versions",
+  draftDiff: "/v2/draft/diff",
+  draftExport: "/v2/draft/export",
+  calendarUpcoming: "/v2/calendar/upcoming",
 } as const;
 
 export type EngineV1Route = (typeof ENGINE_ROUTES)[keyof typeof ENGINE_ROUTES];

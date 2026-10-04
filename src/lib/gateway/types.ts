@@ -301,3 +301,357 @@ export function parseAnswer(prose: string): ParsedAnswer {
   }
   return { notice, sentences, raw };
 }
+
+/* ── vault ────────────────────────────────────────────────────────────────── */
+
+/**
+ * Every shape below was read from a LIVE gateway on 2026-10-04, not from the verb table's
+ * input list — an input signature says what to send, not what comes back. Where the live
+ * system differed from what a fixture would have guessed, `docs/app-screens/README.md`
+ * records it.
+ */
+
+/** A verb that decided not to act. `status: "REFUSED"` arrives with HTTP 200. */
+export const verbRefusalSchema = z.object({
+  status: z.literal("REFUSED"),
+  code: z.string(),
+  detail: z.string(),
+});
+export type VerbRefusal = z.infer<typeof verbRefusalSchema>;
+
+export const vaultUploadOkSchema = z.object({
+  document_id: z.string(),
+  sha256: z.string(),
+  name: z.string(),
+  state: z.string(),
+  queued: z.boolean().optional(),
+  note: z.string().optional(),
+});
+/** Live: refuses `NO_VAULT` whenever no file store is wired. Both arms are product states. */
+export const vaultUploadSchema = z.union([vaultUploadOkSchema, verbRefusalSchema]);
+export type VaultUpload = z.infer<typeof vaultUploadSchema>;
+
+export const vaultStatusSchema = z.object({
+  documents: z.number().int().nonnegative(),
+  by_state: z.record(z.string(), z.number().int().nonnegative()),
+  deleted: z.number().int().nonnegative(),
+  /** Documents a search cannot reach: PENDING or CANNOT_READ. Not "no match". */
+  unsearchable: z.number().int().nonnegative(),
+  note: z.string(),
+  document_id: z.string().optional(),
+  name: z.string().optional(),
+  state: z.string().optional(),
+  doc_class: z.string().optional(),
+  tags: z.array(z.unknown()).optional(),
+});
+export type VaultStatus = z.infer<typeof vaultStatusSchema>;
+
+export const vaultHitSchema = z.object({
+  document_id: z.string(),
+  name: z.string().optional(),
+  score: z.number().optional(),
+  quote: z.string().optional(),
+  matter_id: z.string().nullable().optional(),
+});
+
+export const vaultFindSchema = z.object({
+  hits: z.array(vaultHitSchema),
+  searched_documents: z.number().int().nonnegative(),
+  searched_chunks: z.number().int().nonnegative(),
+  unsearchable: z.number().int().nonnegative(),
+  note: z.string(),
+  scope: z.string(),
+  scope_note: z.string(),
+});
+export type VaultFind = z.infer<typeof vaultFindSchema>;
+
+/**
+ * One line per CHECK, never a single real/fake badge. The vault's integrity question has
+ * more than one answer — the bytes may be gone, or present and hashing to something else —
+ * and collapsing them into a badge throws away which.
+ */
+export const vaultVerifyOkSchema = z.object({
+  document_id: z.string(),
+  checks: z.array(
+    z.object({
+      name: z.string(),
+      result: z.string(),
+      detail: z.string().optional(),
+    }),
+  ).optional(),
+  matches: z.boolean().optional(),
+  stored_sha256: z.string().optional(),
+  computed_sha256: z.string().optional(),
+  note: z.string().optional(),
+});
+export const vaultVerifySchema = z.union([vaultVerifyOkSchema, verbRefusalSchema]);
+export type VaultVerify = z.infer<typeof vaultVerifySchema>;
+
+/* ── review_table ─────────────────────────────────────────────────────────── */
+
+/**
+ * Cell states, live. PENDING and FAILED are **not findings** — the backend's own note says
+ * so, and `findings` counts only the three that describe a document.
+ */
+export const cellStateSchema = z.enum([
+  "FOUND",
+  "NOT_FOUND",
+  "NEEDS_LAWYER",
+  "PENDING",
+  "FAILED",
+]);
+export type CellState = z.infer<typeof cellStateSchema>;
+
+export const scheduledSchema = z.object({
+  grid_id: z.string(),
+  enqueued: z.array(z.string()),
+  already_done: z.array(z.string()),
+  already_queued: z.array(z.string()),
+  cancelled: z.boolean(),
+  /** A1: the budget refused a cell's reservation, so scheduling stopped. A STATE. */
+  paused_budget: z.boolean().optional(),
+  pause_reason: z.string().optional(),
+  not_scheduled: z.array(z.string()).optional(),
+  reservations: z.array(z.string()).optional(),
+});
+export type Scheduled = z.infer<typeof scheduledSchema>;
+
+export const tableCreateSchema = z.object({
+  grid_id: z.string(),
+  name: z.string(),
+  cells: z.number().int(),
+  documents: z.number().int(),
+  columns: z.number().int(),
+  scheduled: scheduledSchema,
+  cap: z.number().int(),
+  /** Live: null before any cell has run. UNPRICED, never 0. */
+  estimated_cost_inr: z.number().nullable(),
+  cost_note: z.string(),
+  note: z.string().optional(),
+});
+export type TableCreate = z.infer<typeof tableCreateSchema>;
+
+export const tableSpendSchema = z.object({
+  total_inr: z.number().nullable(),
+  priced_cells: z.number().int(),
+  unpriced_cells: z.number().int(),
+  pending_cells: z.number().int(),
+  is_lower_bound: z.boolean(),
+  note: z.string(),
+});
+
+export const tableCellSchema = z.object({
+  document_id: z.string(),
+  column: z.string(),
+  state: cellStateSchema,
+  value: z.string(),
+  quote: z.string(),
+  reason: z.string(),
+});
+export type TableCell = z.infer<typeof tableCellSchema>;
+
+export const tableStatusSchema = z.object({
+  grid_id: z.string(),
+  name: z.string(),
+  documents: z.number().int(),
+  columns: z.number().int(),
+  cells: z.number().int(),
+  findings: z.number().int(),
+  by_state: z.record(z.string(), z.number().int()),
+  cells_detail: z.array(tableCellSchema),
+  complete: z.boolean(),
+  cancelled: z.boolean(),
+  note: z.string(),
+  spend: tableSpendSchema,
+});
+export type TableStatus = z.infer<typeof tableStatusSchema>;
+
+export const tableExportSchema = z.object({
+  grid_id: z.string(),
+  filename: z.string(),
+  content_type: z.string(),
+  csv: z.string(),
+  complete: z.boolean(),
+  cancelled: z.boolean(),
+  findings: z.number().int(),
+  cells: z.number().int(),
+  note: z.string(),
+});
+export type TableExport = z.infer<typeof tableExportSchema>;
+
+export const tableCancelSchema = z.object({
+  grid_id: z.string(),
+  cancelled: z.boolean(),
+  findings_kept: z.number().int(),
+  pending_stopped: z.number().int(),
+  cells: z.number().int(),
+  note: z.string(),
+});
+export type TableCancel = z.infer<typeof tableCancelSchema>;
+
+/* ── draft ────────────────────────────────────────────────────────────────── */
+
+/**
+ * A slot's provenance. `MODEL_SUGGESTION` is why the drafts screen marks model prose as a
+ * suggestion: it is the backend's own word for text a person has not accepted, and it
+ * blocks approval until one does.
+ */
+export const slotOriginSchema = z.enum([
+  "VERIFIED",
+  "SUPPLIED",
+  "MODEL_SUGGESTION",
+  "UNKNOWN",
+]);
+export type SlotOrigin = z.infer<typeof slotOriginSchema>;
+
+export const draftSlotSchema = z.object({
+  name: z.string(),
+  value: z.string().optional(),
+  origin: z.string().optional(),
+  note: z.string().optional(),
+});
+export type DraftSlot = z.infer<typeof draftSlotSchema>;
+
+export const draftStatusSchema = z.object({
+  draft_id: z.string(),
+  title: z.string(),
+  kind: z.string().nullable().optional(),
+  versions: z.number().int(),
+  version: z.number().int(),
+  ready_for_approval: z.boolean(),
+  requires_review: z.boolean(),
+  /** Slot names that block approval. Each one needs a person. */
+  blocking: z.array(z.string()),
+  approved: z.boolean(),
+  approved_by: z.string().nullable(),
+  note: z.string().optional(),
+});
+export type DraftStatus = z.infer<typeof draftStatusSchema>;
+
+/**
+ * A1's optimistic lock, as it arrives: HTTP **200** with `status: "REFUSED"`, carrying BOTH
+ * versions. It is a product state, not a transport failure, and the screen shows both
+ * numbers because "someone else saved first" without saying what to re-read is not
+ * actionable.
+ */
+export const draftConflictSchema = z.object({
+  status: z.literal("REFUSED"),
+  code: z.literal("CONFLICT"),
+  detail: z.string(),
+  draft_id: z.string(),
+  base_version: z.number().int(),
+  latest_version: z.number().int(),
+});
+export type DraftConflict = z.infer<typeof draftConflictSchema>;
+
+/** Any other refusal from revise — a blocked approval, a bad request. */
+export const draftReviseSchema = z.union([
+  draftConflictSchema,
+  draftStatusSchema,
+  verbRefusalSchema,
+]);
+export type DraftRevise = z.infer<typeof draftReviseSchema>;
+
+export const draftVersionSchema = z.object({
+  draft_id: z.string(),
+  version: z.number().int(),
+  title: z.string(),
+  body: z.string(),
+  created_at: z.string(),
+  slots: z.array(draftSlotSchema),
+  citations: z.array(z.unknown()),
+  ready: z.boolean(),
+  approved: z.boolean(),
+  approved_by: z.string().nullable(),
+  approved_at: z.string().nullable(),
+  blocking: z.array(z.string()),
+});
+export type DraftVersion = z.infer<typeof draftVersionSchema>;
+
+export const draftVersionsSchema = z.object({
+  draft_id: z.string(),
+  title: z.string(),
+  versions: z.array(draftVersionSchema),
+});
+export type DraftVersions = z.infer<typeof draftVersionsSchema>;
+
+export const draftDiffSchema = z.object({
+  draft_id: z.string(),
+  from_version: z.number().int(),
+  to_version: z.number().int(),
+  /** Unified diff, line by line. */
+  text: z.array(z.string()),
+  text_changed: z.boolean(),
+  slots: z.object({
+    added: z.array(z.unknown()),
+    removed: z.array(z.unknown()),
+    retyped: z.array(z.unknown()),
+    revalued: z.array(z.unknown()),
+  }),
+  /** The change a text diff cannot show: identical words, support gone. */
+  newly_blocking: z.array(z.unknown()),
+  newly_supported: z.array(z.unknown()),
+  ready_changed: z.boolean(),
+  note: z.string().optional(),
+});
+export type DraftDiff = z.infer<typeof draftDiffSchema>;
+
+export const draftExportSchema = z.object({
+  draft_id: z.string(),
+  version: z.number().int(),
+  format: z.string(),
+  filename: z.string(),
+  ready_for_approval: z.boolean(),
+  approved: z.boolean(),
+  note: z.string().optional(),
+  text: z.string().optional(),
+  /** base64, for .docx. */
+  content_base64: z.string().optional(),
+});
+export type DraftExport = z.infer<typeof draftExportSchema>;
+
+/* ── calendar ─────────────────────────────────────────────────────────────── */
+
+export const dueEntrySchema = z.object({
+  obligation_id: z.string(),
+  duty: z.string(),
+  provision: z.string(),
+  state: z.string(),
+  due: z.string().nullable(),
+  reason: z.string().optional(),
+  anchor: z.string().nullable().optional(),
+  anchor_label: z.string().optional(),
+  interval: z.string().optional(),
+  days_away: z.number().int().nullable().optional(),
+});
+export type DueEntry = z.infer<typeof dueEntrySchema>;
+
+/**
+ * An UNKNOWN entry names the fact it is missing and carries `due: null`. The screen renders
+ * "unknown" and the missing fact — never a date. A guessed deadline is the one output this
+ * product must not produce, and `missing` is what makes the absence legible instead of blank.
+ */
+export const unknownEntrySchema = dueEntrySchema.extend({
+  due: z.null(),
+  missing: z.array(z.string()),
+});
+export type UnknownEntry = z.infer<typeof unknownEntrySchema>;
+
+export const calendarSchema = z.object({
+  as_of: z.string(),
+  horizon_days: z.number().int(),
+  due: z.array(dueEntrySchema),
+  unknown: z.array(unknownEntrySchema),
+  note: z.string().optional(),
+});
+export type Calendar = z.infer<typeof calendarSchema>;
+
+/** True when a verb answered with a refusal rather than a result. */
+export function isRefusal(value: unknown): value is VerbRefusal {
+  return verbRefusalSchema.safeParse(value).success;
+}
+
+/** True when revise lost an optimistic-lock race. Narrower than `isRefusal`. */
+export function isConflict(value: unknown): value is DraftConflict {
+  return draftConflictSchema.safeParse(value).success;
+}
