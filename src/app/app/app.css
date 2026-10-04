@@ -372,3 +372,181 @@
   cursor: pointer;
 }
 .watch-cancel button:disabled { opacity: 0.5; cursor: progress; }
+
+/* ── the four screens: vault, tables, drafts, calendar ─────────────────────────
+   Tokens only. The accent appears ONCE per view — on the primary button, which
+   already carries it — so nothing below reaches for --gold. The abstain grey is
+   used only where the product abstained: an UNKNOWN date and a MODEL SUGGESTION,
+   which is the model declining to commit. Everything else is cream at a weight. */
+
+/* A transport failure reuses the hatched register: never grey (that is abstention),
+   never gold. It must not be mistakable for either a finding or a refusal. */
+.transport-failure {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid color-mix(in srgb, var(--cream) 55%, transparent);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in srgb, var(--cream) 7%, transparent) 6px 12px
+  );
+}
+.transport-failure h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
+
+/* A named refusal: the gateway answered and declined. Abstain grey, because that is
+   what the colour is reserved for. */
+.verb-refusal {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--abstain);
+  background: color-mix(in srgb, var(--abstain) 16%, transparent);
+}
+.verb-refusal h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
+.conflict table { margin: 0.5rem 0; }
+
+/* PAUSED_BUDGET is a STATE, so it reads as information, not as damage: a plain rule
+   on the left rather than the failure hatching. */
+.paused-budget {
+  margin-top: 0.9rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid color-mix(in srgb, var(--cream) 40%, transparent);
+  background: color-mix(in srgb, var(--cream) 5%, transparent);
+}
+.paused-budget h4 { margin: 0 0 0.3rem; font-size: 0.875rem; }
+
+.blocking-note {
+  margin-top: 0.9rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--abstain);
+  background: color-mix(in srgb, var(--abstain) 12%, transparent);
+}
+
+/* UNPRICED, where a figure would be. Mono, because it stands in for a number. */
+.unpriced {
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--cream) 80%, transparent);
+}
+
+/* Tables shared by the vault, the grid legend and the draft slots. */
+.vault-table, .grid-table, .legend {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+}
+.vault-table caption, .grid-table caption, .legend caption {
+  text-align: left;
+  padding-bottom: 0.6rem;
+}
+.vault-table th, .vault-table td,
+.grid-table th, .grid-table td,
+.legend th, .legend td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.7rem 0.75rem 0.7rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+}
+.vault-table th, .grid-table th, .legend th { font-weight: 600; }
+
+/* The grid. Each cell carries its state as a glyph AND a word, so colour carries
+   nothing. `cell-pending` and `cell-failed` are deliberately NOT tinted: tinting
+   them would imply a verdict about a document nobody read. */
+.grid-table { display: block; overflow-x: auto; }
+.grid-doc { font-family: var(--font-code); white-space: nowrap; }
+.cell { min-width: 11rem; }
+.cell-state { display: block; font-weight: 600; }
+.cell-value { display: block; margin-top: 0.2rem; }
+.cell-quote { display: block; margin-top: 0.2rem; }
+.cell-needs_lawyer { background: color-mix(in srgb, var(--abstain) 12%, transparent); }
+
+.csv-preview, .diff {
+  margin-top: 0.6rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-family: var(--font-code);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre;
+  background: color-mix(in srgb, var(--cream) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+  border-radius: 4px;
+}
+
+/* A model's words are tagged in the markup, so the mark survives a greyscale print
+   and reaches a screen reader. */
+.suggestion-tag {
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--abstain);
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--cream) 85%, transparent);
+}
+.slot-suggestion { background: color-mix(in srgb, var(--abstain) 10%, transparent); }
+.origin-meaning { display: block; }
+
+.cal-form { margin-bottom: 1rem; }
+.cal-result h3, .version-list + section h3 { margin-top: 1.4rem; }
+.cal-list, .vault-hits, .version-list { margin: 0.5rem 0 0; padding-left: 1.1rem; }
+.cal-list { list-style: none; padding-left: 0; }
+.cal-entry {
+  padding: 0.8rem 0 0.8rem 0.9rem;
+  border-left: 3px solid color-mix(in srgb, var(--cream) 22%, transparent);
+  margin-bottom: 0.6rem;
+}
+/* The one place abstain grey belongs on this screen. */
+.cal-unknown { border-left-color: var(--abstain); }
+.cal-state { margin: 0 0 0.3rem; font-weight: 600; }
+.cal-date { font-family: var(--font-code); margin-left: 0.4rem; }
+.cal-date-unknown { color: color-mix(in srgb, var(--cream) 78%, transparent); }
+.cal-duty { margin: 0; }
+.cal-provision, .cal-note { margin-top: 0.2rem; }
+.cal-empty {
+  margin-top: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--abstain);
+  background: color-mix(in srgb, var(--abstain) 12%, transparent);
+}
+
+.vault-hits li, .version-list li { margin-bottom: 0.7rem; }
+.vault-uploaded { margin-top: 0.8rem; }
+.evidence {
+  margin: 0.3rem 0 0;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--gold-muted);
+  font-family: var(--font-code);
+  font-size: 0.8125rem;
+}
+
+/* A row of label + field + button that wraps rather than overflowing at 360px. */
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.inline-form label { margin: 0; }
+.inline-form input { width: auto; min-width: 12rem; flex: 1 1 12rem; }
+
+/* 44px targets, held on every control these screens add. */
+.vault-table button, .grid-table button, .inline-form button {
+  min-height: 44px;
+}
+
+@media (max-width: 480px) {
+  .cell { min-width: 9rem; }
+  .inline-form input { min-width: 0; flex-basis: 100%; }
+}
+
+/* On EVERY result, per AGENTS.md: playbook_status DRAFT and the UAE North hosting note.
+   A rule above it so it reads as a standing condition rather than a footnote. */
+.hosting-note {
+  margin-top: 1.4rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+}
