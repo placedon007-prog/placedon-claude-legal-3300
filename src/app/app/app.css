@@ -550,3 +550,8 @@
   padding-top: 0.7rem;
   border-top: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
 }
+
+/* The reader-facing reference: bold serif, per AGENTS.md's claim/evidence split. The
+   engine's own `s.96(1)` sits beneath it in mono as the basis. */
+.cal-reference { margin: 0.15rem 0 0; font-size: 0.9375rem; }
+.cal-provision { margin-top: 0.1rem; }

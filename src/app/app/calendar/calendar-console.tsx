@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { calendarAction, type CalendarState } from "./actions";
+import { formatProvisionReference } from "@/lib/format";
 import type { DueEntry, UnknownEntry } from "@/lib/gateway/types";
 
 const initial: CalendarState = { phase: "idle" };
@@ -16,12 +17,18 @@ const STATE = {
 } as const;
 
 function Provision({ entry }: { entry: DueEntry | UnknownEntry }) {
-  // Claim, then evidence: the duty reads as a sentence; the provision beneath it is the
-  // basis and stays mono. The reference is never paraphrased either way.
+  // Claim, then evidence, carried by the type. The duty and the reader-facing reference are
+  // the claim: `formatProvisionReference` normalises the engine's `s.96(1)` to the form used
+  // in Indian legal work, in bold serif. The engine's own string stays beneath it in mono —
+  // it is the basis, it is machine-exact, and mono is what says so. Neither is paraphrased:
+  // the normalisation is display-only and the raw value is shown unchanged.
   return (
     <>
       <p className="cal-duty">{entry.duty}</p>
-      <p className="meta cal-provision">{entry.provision}</p>
+      <p className="cal-reference section-reference">
+        {formatProvisionReference(entry.provision)}
+      </p>
+      <p className="meta cal-provision record-reference">{entry.provision}</p>
     </>
   );
 }
