@@ -5,6 +5,20 @@ import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
+  calendarSchema,
+  draftDiffSchema,
+  draftExportSchema,
+  draftReviseSchema,
+  draftStatusSchema,
+  draftVersionsSchema,
+  tableCancelSchema,
+  tableCreateSchema,
+  tableExportSchema,
+  tableStatusSchema,
+  vaultFindSchema,
+  vaultStatusSchema,
+  vaultUploadSchema,
+  vaultVerifySchema,
   cancelSchema,
   decisionSchema,
   documentResponseSchema,
@@ -20,7 +34,21 @@ import {
   type ReviewResponse,
   type Run,
   type RunTrace,
+  type Calendar,
+  type DraftDiff,
+  type DraftExport,
+  type DraftRevise,
+  type DraftStatus,
+  type DraftVersions,
+  type TableCancel,
+  type TableCreate,
+  type TableExport,
+  type TableStatus,
   type UploadResponse,
+  type VaultFind,
+  type VaultStatus,
+  type VaultUpload,
+  type VaultVerify,
 } from "./types";
 
 const TIMEOUT_MS = 120_000; // a live model answer, not a page load
@@ -259,5 +287,182 @@ export class HttpGateway implements GatewayProvider {
       cancelSchema,
       { method: "POST", body: {} },
     );
+  }
+
+  /* ── vault ──────────────────────────────────────────────────────────────── */
+
+  vaultUpload(input: {
+    name: string;
+    text: string;
+    matterId?: string;
+  }): Promise<EngineResult<VaultUpload>> {
+    return this.call(GATEWAY_ROUTES.vaultUpload, GATEWAY_ROUTES.vaultUpload,
+      vaultUploadSchema, {
+        method: "POST",
+        body: {
+          name: input.name,
+          text: input.text,
+          ...(input.matterId ? { matter_id: input.matterId } : {}),
+        },
+      });
+  }
+
+  vaultStatus(input?: { documentId?: string }): Promise<EngineResult<VaultStatus>> {
+    return this.call(GATEWAY_ROUTES.vaultStatus, GATEWAY_ROUTES.vaultStatus,
+      vaultStatusSchema, {
+        method: "POST",
+        body: input?.documentId ? { document_id: input.documentId } : {},
+      });
+  }
+
+  vaultFind(input: { query: string; limit?: number }): Promise<EngineResult<VaultFind>> {
+    return this.call(GATEWAY_ROUTES.vaultFind, GATEWAY_ROUTES.vaultFind, vaultFindSchema, {
+      method: "POST",
+      // `limit` is a STRING input on the verb table, like every other scalar there.
+      body: {
+        query: input.query,
+        ...(input.limit ? { limit: String(input.limit) } : {}),
+      },
+    });
+  }
+
+  vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>> {
+    return this.call(GATEWAY_ROUTES.vaultVerify, GATEWAY_ROUTES.vaultVerify,
+      vaultVerifySchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  /* ── review tables ──────────────────────────────────────────────────────── */
+
+  tableCreate(input: {
+    name: string;
+    documentIds: readonly string[];
+    columns: readonly { name: string; kind: string; question: string }[];
+  }): Promise<EngineResult<TableCreate>> {
+    return this.call(GATEWAY_ROUTES.tableCreate, GATEWAY_ROUTES.tableCreate,
+      tableCreateSchema, {
+        method: "POST",
+        body: {
+          name: input.name,
+          document_ids: [...input.documentIds],
+          columns: input.columns.map((c) => ({
+            name: c.name,
+            kind: c.kind,
+            question: c.question,
+          })),
+        },
+      });
+  }
+
+  tableStatus(input: { gridId: string }): Promise<EngineResult<TableStatus>> {
+    return this.call(GATEWAY_ROUTES.tableStatus, GATEWAY_ROUTES.tableStatus,
+      tableStatusSchema, { method: "POST", body: { grid_id: input.gridId } });
+  }
+
+  tableExport(input: { gridId: string }): Promise<EngineResult<TableExport>> {
+    return this.call(GATEWAY_ROUTES.tableExport, GATEWAY_ROUTES.tableExport,
+      tableExportSchema, { method: "POST", body: { grid_id: input.gridId } });
+  }
+
+  tableCancel(input: { gridId: string }): Promise<EngineResult<TableCancel>> {
+    return this.call(GATEWAY_ROUTES.tableCancel, GATEWAY_ROUTES.tableCancel,
+      tableCancelSchema, { method: "POST", body: { grid_id: input.gridId } });
+  }
+
+  /* ── drafts ─────────────────────────────────────────────────────────────── */
+
+  draftCreate(input: {
+    title: string;
+    body?: string;
+    kind?: string;
+  }): Promise<EngineResult<DraftStatus>> {
+    return this.call(GATEWAY_ROUTES.draftCreate, GATEWAY_ROUTES.draftCreate,
+      draftStatusSchema, {
+        method: "POST",
+        body: {
+          title: input.title,
+          ...(input.body !== undefined ? { body: input.body } : {}),
+          ...(input.kind ? { kind: input.kind } : {}),
+        },
+      });
+  }
+
+  draftRevise(input: {
+    draftId: string;
+    baseVersion: number;
+    title?: string;
+    body?: string;
+    approvedBy?: string;
+  }): Promise<EngineResult<DraftRevise>> {
+    return this.call(GATEWAY_ROUTES.draftRevise, GATEWAY_ROUTES.draftRevise,
+      draftReviseSchema, {
+        method: "POST",
+        body: {
+          draft_id: input.draftId,
+          // REQUIRED by the backend. Sent as a string because every scalar on the verb
+          // table is one; the handler parses it and refuses a non-number by name.
+          base_version: String(input.baseVersion),
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.body !== undefined ? { body: input.body } : {}),
+          ...(input.approvedBy ? { approved_by: input.approvedBy } : {}),
+        },
+      });
+  }
+
+  draftVersions(input: { draftId: string }): Promise<EngineResult<DraftVersions>> {
+    return this.call(GATEWAY_ROUTES.draftVersions, GATEWAY_ROUTES.draftVersions,
+      draftVersionsSchema, { method: "POST", body: { draft_id: input.draftId } });
+  }
+
+  draftDiff(input: {
+    draftId: string;
+    fromVersion?: number;
+    toVersion?: number;
+  }): Promise<EngineResult<DraftDiff>> {
+    return this.call(GATEWAY_ROUTES.draftDiff, GATEWAY_ROUTES.draftDiff, draftDiffSchema, {
+      method: "POST",
+      body: {
+        draft_id: input.draftId,
+        ...(input.fromVersion ? { from_version: String(input.fromVersion) } : {}),
+        ...(input.toVersion ? { to_version: String(input.toVersion) } : {}),
+      },
+    });
+  }
+
+  draftExport(input: {
+    draftId: string;
+    version?: number;
+    format?: "text" | "docx";
+  }): Promise<EngineResult<DraftExport>> {
+    return this.call(GATEWAY_ROUTES.draftExport, GATEWAY_ROUTES.draftExport,
+      draftExportSchema, {
+        method: "POST",
+        body: {
+          draft_id: input.draftId,
+          ...(input.version ? { version: String(input.version) } : {}),
+          ...(input.format ? { format: input.format } : {}),
+        },
+      });
+  }
+
+  /* ── calendar ───────────────────────────────────────────────────────────── */
+
+  calendarUpcoming(input: {
+    company: Record<string, unknown>;
+    anchors?: Record<string, string>;
+    intervals?: Record<string, string>;
+    asOf?: string;
+    horizonDays?: number;
+  }): Promise<EngineResult<Calendar>> {
+    return this.call(GATEWAY_ROUTES.calendarUpcoming, GATEWAY_ROUTES.calendarUpcoming,
+      calendarSchema, {
+        method: "POST",
+        body: {
+          company: input.company,
+          ...(input.anchors ? { anchors: input.anchors } : {}),
+          ...(input.intervals ? { intervals: input.intervals } : {}),
+          ...(input.asOf ? { as_of: input.asOf } : {}),
+          ...(input.horizonDays ? { horizon_days: String(input.horizonDays) } : {}),
+        },
+      });
   }
 }

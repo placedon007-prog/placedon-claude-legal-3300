@@ -4,13 +4,29 @@ import { GATEWAY_ROUTES } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import type {
   AskResponse,
+  Calendar,
   CancelAck,
   Decision,
   DocumentResponse,
+  DraftDiff,
+  DraftExport,
+  DraftRevise,
+  DraftStatus,
+  DraftVersion,
+  DraftVersions,
   ReviewResponse,
   Run,
   RunTrace,
+  TableCancel,
+  TableCell,
+  TableCreate,
+  TableExport,
+  TableStatus,
   UploadResponse,
+  VaultFind,
+  VaultStatus,
+  VaultUpload,
+  VaultVerify,
 } from "./types";
 
 /**
@@ -532,6 +548,651 @@ export class MockGateway implements GatewayProvider {
       quoted_span: input.quotedSpan,
       actor_id: "00000000-0000-0000-0000-0000000000a1",
       decided_at: "2026-09-30T10:00:00+00:00",
+    });
+  }
+
+  /* ── vault ──────────────────────────────────────────────────────────────── */
+
+  /**
+   * Uploaded documents, in memory. Stateful so the file list can show a state PER FILE:
+   * a mock that returned one canned document could not demonstrate PENDING beside
+   * INGESTED, and "PENDING is not INGESTED" is the whole point of that column.
+   */
+  private readonly vault = new Map<
+    string,
+    { name: string; state: string; sha256: string; text: string }
+  >([
+    [
+      "a".repeat(64),
+      {
+        name: "mutual-nda.txt",
+        state: "INGESTED",
+        sha256: "a".repeat(64),
+        text: "This Agreement shall be governed by the laws of India.",
+      },
+    ],
+    [
+      "b".repeat(64),
+      {
+        name: "supply-agreement.pdf",
+        state: "PENDING",
+        sha256: "b".repeat(64),
+        text: "",
+      },
+    ],
+    [
+      "c".repeat(64),
+      { name: "scanned-deed.pdf", state: "CANNOT_READ", sha256: "c".repeat(64), text: "" },
+    ],
+  ]);
+
+  async vaultUpload(input: {
+    name: string;
+    text: string;
+    matterId?: string;
+  }): Promise<EngineResult<VaultUpload>> {
+    const id = `mock-${this.vault.size}-${"d".repeat(50)}`.slice(0, 64);
+    this.vault.set(id, {
+      name: input.name,
+      // PENDING, not INGESTED. Nothing is searchable until a worker has read it, and a
+      // mock that said INGESTED immediately would teach the screen the wrong shape.
+      state: "PENDING",
+      sha256: id,
+      text: input.text,
+    });
+    return engineOk({
+      document_id: id,
+      sha256: id,
+      name: input.name,
+      state: "PENDING",
+      queued: true,
+      note:
+        "Queued for ingestion. PENDING is not INGESTED: nothing in this document is " +
+        "searchable until a worker has read it.",
+    });
+  }
+
+  async vaultStatus(input?: { documentId?: string }): Promise<EngineResult<VaultStatus>> {
+    if (input?.documentId) {
+      const one = this.vault.get(input.documentId);
+      if (!one) {
+        return engineOk({
+          documents: 0,
+          by_state: {},
+          deleted: 0,
+          unsearchable: 0,
+          note: "no such document in this firm's vault",
+        });
+      }
+      return engineOk({
+        documents: 1,
+        by_state: { [one.state]: 1 },
+        deleted: 0,
+        unsearchable: one.state === "INGESTED" ? 0 : 1,
+        note: `${one.name} is ${one.state}.`,
+        document_id: input.documentId,
+        name: one.name,
+        state: one.state,
+      });
+    }
+    const by: Record<string, number> = {};
+    for (const d of this.vault.values()) by[d.state] = (by[d.state] ?? 0) + 1;
+    const unsearchable = [...this.vault.values()].filter(
+      (d) => d.state !== "INGESTED",
+    ).length;
+    return engineOk({
+      documents: this.vault.size,
+      by_state: by,
+      deleted: 0,
+      unsearchable,
+      note:
+        `${this.vault.size} document(s). ${unsearchable} cannot be searched — they are ` +
+        "PENDING or CANNOT_READ, and a search answers from the rest.",
+    });
+  }
+
+  async vaultFind(input: {
+    query: string;
+    limit?: number;
+  }): Promise<EngineResult<VaultFind>> {
+    const q = input.query.toLowerCase().trim();
+    const searchable = [...this.vault.entries()].filter(
+      ([, d]) => d.state === "INGESTED",
+    );
+    const hits = searchable
+      .filter(([, d]) => q.length > 2 && d.text.toLowerCase().includes(q.split(" ")[0]))
+      .slice(0, input.limit ?? 10)
+      .map(([id, d]) => ({
+        document_id: id,
+        name: d.name,
+        score: 1.42,
+        quote: d.text,
+        matter_id: null,
+      }));
+    const unsearchable = this.vault.size - searchable.length;
+    return engineOk({
+      hits,
+      searched_documents: searchable.length,
+      searched_chunks: searchable.length,
+      unsearchable,
+      note:
+        hits.length > 0
+          ? `${hits.length} passage(s) across ${searchable.length} searchable document(s).`
+          : `no passage matched. ${unsearchable} document(s) could not be looked at, so ` +
+            "this is not 'no document matches'.",
+      scope: "tenant",
+      scope_note: "searched the whole firm's vault, not one matter.",
+    });
+  }
+
+  async vaultVerify(input: {
+    documentId: string;
+  }): Promise<EngineResult<VaultVerify>> {
+    const one = this.vault.get(input.documentId);
+    if (!one) {
+      return engineOk({
+        status: "REFUSED" as const,
+        code: "NOT_FOUND",
+        detail: "no such document in this firm's vault",
+      });
+    }
+    // One line per CHECK. A single real/fake badge would collapse "the bytes are gone"
+    // and "the bytes are there and hash to something else", which are different problems
+    // with different remedies.
+    return engineOk({
+      document_id: input.documentId,
+      matches: one.state !== "CANNOT_READ",
+      stored_sha256: one.sha256,
+      computed_sha256:
+        one.state === "CANNOT_READ" ? "e".repeat(64) : one.sha256,
+      checks: [
+        {
+          name: "the record exists",
+          result: "PASS",
+          detail: "a row for this document is in this firm's vault",
+        },
+        {
+          name: "the bytes are present",
+          result: one.state === "CANNOT_READ" ? "FAIL" : "PASS",
+          detail:
+            one.state === "CANNOT_READ"
+              ? "the file store has no object under this key"
+              : "the file store returned the object",
+        },
+        {
+          name: "the bytes hash to their key",
+          result: one.state === "CANNOT_READ" ? "NOT RUN" : "PASS",
+          detail:
+            one.state === "CANNOT_READ"
+              ? "not run: there were no bytes to hash"
+              : "sha256 of the stored bytes equals the key they are stored under",
+        },
+      ],
+      note:
+        "Each check is reported on its own line. A single badge would make 'the bytes " +
+        "are gone' and 'the bytes changed' the same answer.",
+    });
+  }
+
+  /* ── review tables ──────────────────────────────────────────────────────── */
+
+  private readonly tables = new Map<
+    string,
+    {
+      name: string;
+      cells: TableCell[];
+      cancelled: boolean;
+      pausedBudget: boolean;
+      pauseReason: string;
+      notScheduled: string[];
+    }
+  >();
+
+  async tableCreate(input: {
+    name: string;
+    documentIds: readonly string[];
+    columns: readonly { name: string; kind: string; question: string }[];
+  }): Promise<EngineResult<TableCreate>> {
+    const gridId = `mock-grid-${this.tables.size + 1}`;
+    const cells: TableCell[] = [];
+    for (const d of input.documentIds) {
+      for (const c of input.columns) {
+        cells.push({
+          document_id: d,
+          column: c.name,
+          state: "PENDING",
+          value: "",
+          quote: "",
+          reason: "queued; this cell has not been run yet",
+        });
+      }
+    }
+    // A table over four cells pauses part-way, so the screen can show PAUSED_BUDGET as a
+    // STATE with cells either side of it. A mock that never paused would leave that
+    // branch undemonstrated and untested.
+    const paused = cells.length > 4;
+    const dispatched = paused ? 4 : cells.length;
+    const notScheduled = paused
+      ? cells.slice(dispatched).map((c) => `${gridId}:${c.document_id}:${c.column}`)
+      : [];
+    this.tables.set(gridId, {
+      name: input.name,
+      cells,
+      cancelled: false,
+      pausedBudget: paused,
+      pauseReason: paused
+        ? "daily cap reached: ₹111.67 spent + ₹4.00 reserved of ₹116.67"
+        : "",
+      notScheduled,
+    });
+    return engineOk({
+      grid_id: gridId,
+      name: input.name,
+      cells: cells.length,
+      documents: input.documentIds.length,
+      columns: input.columns.length,
+      scheduled: {
+        grid_id: gridId,
+        enqueued: cells
+          .slice(0, dispatched)
+          .map((c) => `${gridId}:${c.document_id}:${c.column}`),
+        already_done: [],
+        already_queued: [],
+        cancelled: false,
+        paused_budget: paused,
+        pause_reason: paused
+          ? "daily cap reached: ₹111.67 spent + ₹4.00 reserved of ₹116.67"
+          : "",
+        not_scheduled: notScheduled,
+        reservations: cells.slice(0, dispatched).map((_, i) => `cell-${i}`),
+      },
+      cap: 500,
+      // null, never 0. No cell has run, so there is no price — and a zero would claim
+      // the work was free.
+      estimated_cost_inr: null,
+      cost_note:
+        "UNPRICED: every cell is a separate model call and none has run yet. The ledger " +
+        "prices each one as it happens; a figure here would be a guess wearing a " +
+        "currency symbol.",
+      note: "One run per cell.",
+    });
+  }
+
+  private tableOr404(gridId: string) {
+    return this.tables.get(gridId);
+  }
+
+  async tableStatus(input: { gridId: string }): Promise<EngineResult<TableStatus>> {
+    const t = this.tableOr404(input.gridId);
+    if (!t) {
+      return engineFail({
+        kind: "not_found",
+        route: GATEWAY_ROUTES.tableStatus,
+        status: 404,
+        message: "No such review table.",
+      });
+    }
+    const by: Record<string, number> = {
+      FOUND: 0,
+      NOT_FOUND: 0,
+      NEEDS_LAWYER: 0,
+      PENDING: 0,
+      FAILED: 0,
+    };
+    for (const c of t.cells) by[c.state] = (by[c.state] ?? 0) + 1;
+    const findings = by.FOUND + by.NOT_FOUND + by.NEEDS_LAWYER;
+    return engineOk({
+      grid_id: input.gridId,
+      name: t.name,
+      documents: new Set(t.cells.map((c) => c.document_id)).size,
+      columns: new Set(t.cells.map((c) => c.column)).size,
+      cells: t.cells.length,
+      findings,
+      by_state: by,
+      cells_detail: t.cells,
+      complete: by.PENDING === 0,
+      cancelled: t.cancelled,
+      note:
+        "FAILED cells did not run and say nothing about the document; PENDING cells have " +
+        "not been attempted. Neither is a finding.",
+      spend: {
+        total_inr: null,
+        priced_cells: 0,
+        unpriced_cells: 0,
+        pending_cells: by.PENDING,
+        is_lower_bound: false,
+        note:
+          `UNPRICED: not one of this table's ${t.cells.length} cells carries a price, so ` +
+          "there is no total. A zero here would claim the work was free.",
+      },
+    });
+  }
+
+  async tableExport(input: { gridId: string }): Promise<EngineResult<TableExport>> {
+    const t = this.tableOr404(input.gridId);
+    if (!t) {
+      return engineFail({
+        kind: "not_found",
+        route: GATEWAY_ROUTES.tableExport,
+        status: 404,
+        message: "No such review table.",
+      });
+    }
+    const columns = [...new Set(t.cells.map((c) => c.column))];
+    const documents = [...new Set(t.cells.map((c) => c.document_id))];
+    // Every cell carries WORDS, never a blank: a blank makes "the clause is absent" and
+    // "we did not read it" identical. A value a spreadsheet would run as a formula is
+    // quoted, which is why the words are chosen to begin with a letter.
+    const WORDS: Record<string, string> = {
+      FOUND: "FOUND",
+      NOT_FOUND: "NOT FOUND",
+      NEEDS_LAWYER: "NEEDS LAWYER",
+      PENDING: "PENDING",
+      FAILED: "COULD NOT RUN",
+    };
+    const rows = documents.map((d) =>
+      [
+        d,
+        ...columns.map((col) => {
+          const cell = t.cells.find((c) => c.document_id === d && c.column === col);
+          if (!cell) return "PENDING";
+          return cell.state === "FOUND" && cell.value ? cell.value : WORDS[cell.state];
+        }),
+      ].join(","),
+    );
+    return engineOk({
+      grid_id: input.gridId,
+      filename: `${t.name}.csv`,
+      content_type: "text/csv",
+      csv: [["document", ...columns].join(","), ...rows].join("\n") + "\n",
+      complete: t.cells.every((c) => c.state !== "PENDING"),
+      cancelled: t.cancelled,
+      findings: t.cells.filter((c) =>
+        ["FOUND", "NOT_FOUND", "NEEDS_LAWYER"].includes(c.state),
+      ).length,
+      cells: t.cells.length,
+      note:
+        "Every cell carries words, never a blank: NOT FOUND, NEEDS LAWYER, PENDING and " +
+        "COULD NOT RUN each read differently.",
+    });
+  }
+
+  async tableCancel(input: { gridId: string }): Promise<EngineResult<TableCancel>> {
+    const t = this.tableOr404(input.gridId);
+    if (!t) {
+      return engineFail({
+        kind: "not_found",
+        route: GATEWAY_ROUTES.tableCancel,
+        status: 404,
+        message: "No such review table.",
+      });
+    }
+    t.cancelled = true;
+    const pending = t.cells.filter((c) => c.state === "PENDING").length;
+    const kept = t.cells.length - pending;
+    return engineOk({
+      grid_id: input.gridId,
+      cancelled: true,
+      findings_kept: kept,
+      pending_stopped: pending,
+      cells: t.cells.length,
+      note:
+        `${kept} answered cell(s) are KEPT and ${pending} unrun cell(s) stay PENDING. ` +
+        "Cancelling stops scheduling; it does not undo work that was done, and it does " +
+        "not mark unrun cells as failed.",
+    });
+  }
+
+  /* ── drafts ─────────────────────────────────────────────────────────────── */
+
+  /** Versions per draft. Stateful, so a stale `base_version` can really lose a race. */
+  private readonly drafts = new Map<string, DraftVersion[]>();
+
+  private seedDraft(draftId: string, title: string): DraftVersion[] {
+    const v1: DraftVersion = {
+      draft_id: draftId,
+      version: 1,
+      title,
+      body: "The Board resolved as follows.",
+      created_at: "2026-10-04T09:00:00+00:00",
+      slots: [
+        {
+          name: "meeting_date",
+          value: "2026-04-30",
+          origin: "SUPPLIED",
+          note: "supplied by the caller",
+        },
+        {
+          name: "resolution_text",
+          value: "that the annual accounts be adopted",
+          // The word the screen marks as a suggestion. It blocks approval until a person
+          // accepts it, which is why the drafts screen never shows model prose as settled.
+          origin: "MODEL_SUGGESTION",
+          note: "written by a model from the source run's findings; not accepted",
+        },
+      ],
+      citations: [],
+      ready: false,
+      approved: false,
+      approved_by: null,
+      approved_at: null,
+      blocking: ["resolution_text"],
+    };
+    const list = [v1];
+    this.drafts.set(draftId, list);
+    return list;
+  }
+
+  private statusOf(draftId: string, list: DraftVersion[]): DraftStatus {
+    const latest = list[list.length - 1];
+    return {
+      draft_id: draftId,
+      title: latest.title,
+      kind: "board_resolution",
+      versions: list.length,
+      version: latest.version,
+      ready_for_approval: latest.ready,
+      requires_review: !latest.ready,
+      blocking: latest.blocking,
+      approved: latest.approved,
+      approved_by: latest.approved_by,
+      note: "Every save is a new version; nothing is edited in place.",
+    };
+  }
+
+  async draftCreate(input: {
+    title: string;
+    body?: string;
+    kind?: string;
+  }): Promise<EngineResult<DraftStatus>> {
+    const id = `mock-draft-${this.drafts.size + 1}`;
+    const list = this.seedDraft(id, input.title);
+    if (input.body !== undefined) list[0].body = input.body;
+    return engineOk(this.statusOf(id, list));
+  }
+
+  async draftRevise(input: {
+    draftId: string;
+    baseVersion: number;
+    title?: string;
+    body?: string;
+    approvedBy?: string;
+  }): Promise<EngineResult<DraftRevise>> {
+    const list = this.drafts.get(input.draftId) ?? this.seedDraft(input.draftId, "Draft");
+    const latest = list[list.length - 1];
+    // A1's optimistic lock, mirrored: a base that is not the latest is REFUSED with both
+    // versions. HTTP 200 with status REFUSED — a product state, not a transport failure.
+    if (input.baseVersion !== latest.version) {
+      return engineOk({
+        status: "REFUSED" as const,
+        code: "CONFLICT" as const,
+        detail:
+          `this revision was based on version ${input.baseVersion}, but the draft is now ` +
+          `at version ${latest.version}. Another save got there first. Re-read version ` +
+          `${latest.version} and revise from it — nothing has been overwritten and ` +
+          "nothing has been merged",
+        draft_id: input.draftId,
+        base_version: input.baseVersion,
+        latest_version: latest.version,
+      });
+    }
+    const accepted = Boolean(input.approvedBy);
+    const next: DraftVersion = {
+      ...latest,
+      version: latest.version + 1,
+      title: input.title ?? latest.title,
+      body: input.body ?? latest.body,
+      created_at: "2026-10-04T10:00:00+00:00",
+      // Approving accepts the model's slot, which is what clears the block. A revise that
+      // does not approve leaves it blocking, because nobody has read it.
+      slots: accepted
+        ? latest.slots.map((sl) =>
+            sl.origin === "MODEL_SUGGESTION"
+              ? { ...sl, origin: "SUPPLIED", note: "accepted by a reviewer" }
+              : sl,
+          )
+        : latest.slots,
+      ready: accepted,
+      approved: accepted,
+      approved_by: input.approvedBy ?? null,
+      approved_at: accepted ? "2026-10-04T10:00:00+00:00" : null,
+      blocking: accepted ? [] : latest.blocking,
+    };
+    list.push(next);
+    return engineOk(this.statusOf(input.draftId, list));
+  }
+
+  async draftVersions(input: {
+    draftId: string;
+  }): Promise<EngineResult<DraftVersions>> {
+    const list = this.drafts.get(input.draftId) ?? this.seedDraft(input.draftId, "Draft");
+    return engineOk({
+      draft_id: input.draftId,
+      title: list[list.length - 1].title,
+      versions: list,
+    });
+  }
+
+  async draftDiff(input: {
+    draftId: string;
+    fromVersion?: number;
+    toVersion?: number;
+  }): Promise<EngineResult<DraftDiff>> {
+    const list = this.drafts.get(input.draftId) ?? this.seedDraft(input.draftId, "Draft");
+    const from = list.find((v) => v.version === (input.fromVersion ?? 1)) ?? list[0];
+    const to =
+      list.find((v) => v.version === (input.toVersion ?? list.length)) ??
+      list[list.length - 1];
+    const changed = from.body !== to.body;
+    return engineOk({
+      draft_id: input.draftId,
+      from_version: from.version,
+      to_version: to.version,
+      text: changed
+        ? [`--- v${from.version}`, `+++ v${to.version}`, "@@ -1 +1 @@", `-${from.body}`, `+${to.body}`]
+        : [],
+      text_changed: changed,
+      slots: { added: [], removed: [], retyped: [], revalued: [] },
+      newly_blocking: [],
+      newly_supported:
+        from.blocking.length > to.blocking.length ? from.blocking : [],
+      ready_changed: from.ready !== to.ready,
+      note:
+        "`newly_blocking` is the change a text diff cannot show: a sentence whose words " +
+        "are identical and whose support is gone.",
+    });
+  }
+
+  async draftExport(input: {
+    draftId: string;
+    version?: number;
+    format?: "text" | "docx";
+  }): Promise<EngineResult<DraftExport>> {
+    const list = this.drafts.get(input.draftId) ?? this.seedDraft(input.draftId, "Draft");
+    const v =
+      list.find((x) => x.version === (input.version ?? list.length)) ??
+      list[list.length - 1];
+    const warning = v.ready
+      ? ""
+      : "\n\nNOT APPROVABLE: " + v.blocking.join(", ") + " still needs a person.";
+    return engineOk({
+      draft_id: input.draftId,
+      version: v.version,
+      format: input.format ?? "text",
+      filename: `${v.title.replace(/\s+/g, "-")}-v${v.version}.${input.format === "docx" ? "docx" : "txt"}`,
+      ready_for_approval: v.ready,
+      approved: v.approved,
+      note:
+        "An exported draft that is not approvable says so on its own face, because the " +
+        "file travels away from this system.",
+      text: `${v.title}\n${"=".repeat(v.title.length)}\n\n${v.body}${warning}`,
+    });
+  }
+
+  /* ── calendar ───────────────────────────────────────────────────────────── */
+
+  async calendarUpcoming(input: {
+    company: Record<string, unknown>;
+    anchors?: Record<string, string>;
+    intervals?: Record<string, string>;
+    asOf?: string;
+    horizonDays?: number;
+  }): Promise<EngineResult<Calendar>> {
+    const asOf = input.asOf ?? "2026-10-04";
+    const hasFyClose = Boolean(input.anchors?.financial_year_end);
+    return engineOk({
+      as_of: asOf,
+      horizon_days: input.horizonDays ?? 90,
+      // A date appears ONLY when the fact it is derived from was supplied.
+      due: hasFyClose
+        ? [
+            {
+              obligation_id: "CA13-S96-AGM",
+              duty: "Hold the annual general meeting",
+              provision: "Companies Act 2013, s.96(1)",
+              state: "DUE",
+              due: "2026-12-31",
+              reason: "six months from the close of the financial year",
+              anchor: input.anchors?.financial_year_end ?? null,
+              anchor_label: "financial_year_end",
+              interval: "six months",
+              days_away: 88,
+            },
+          ]
+        : [],
+      // An UNKNOWN entry carries `due: null` and NAMES the missing fact. The screen shows
+      // "unknown" and the fact; a guessed date is the one output this must never produce.
+      unknown: [
+        {
+          obligation_id: "CA13-S135-CSR",
+          duty: "Constitute a CSR committee, if the company crosses a CSR threshold",
+          provision: "Companies Act 2013, s.135(1)",
+          state: "UNKNOWN",
+          due: null,
+          reason:
+            "missing_fact: the obligation itself is CANNOT_DETERMINE for want of a fact, " +
+            "so a date would be a date for a duty we cannot say applies",
+          missing: ["net_profit", "turnover"],
+        },
+        ...(hasFyClose
+          ? []
+          : [
+              {
+                obligation_id: "CA13-S96-AGM",
+                duty: "Hold the annual general meeting",
+                provision: "Companies Act 2013, s.96(1)",
+                state: "UNKNOWN" as const,
+                due: null,
+                reason:
+                  "missing_fact: the interval runs from the close of the financial year, " +
+                  "and that date was not supplied",
+                missing: ["financial_year_end"],
+              },
+            ]),
+      ],
+      note:
+        "An entry with a missing fact is UNKNOWN and names the fact. No date here is " +
+        "derived from anything that was not supplied.",
     });
   }
 }

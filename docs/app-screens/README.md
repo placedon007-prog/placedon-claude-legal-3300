@@ -188,3 +188,125 @@ path.
 `docs/RUN_LOCALLY.md`. The captures were taken headless through the Chrome DevTools
 Protocol at 1280px wide, using `DOM.setFileInputFiles` for the upload so the file went
 through the real `<input type="file">`.
+
+---
+
+# The four new screens — LIVE, 2026-10-04
+
+Captured against `scripts/local-gateway.py` at checker commit `68fb70a`, PostgreSQL 18.6,
+store `postgres`. **Not** against `placedon_dev`: see "the runbook could not serve these
+screens" below.
+
+| File | Screen | What it shows |
+|---|---|---|
+| `calendar-unknown.png` | Calendar | 15 obligations that cannot be dated, each reading **unknown** with the fact it is missing |
+| `vault-list.png` | Vault | the firm's vault, empty, saying so without claiming "no match" |
+| `vault-upload-refused.png` | Vault | upload refused `NO_VAULT` by name |
+| `tables-created.png` | Review tables | 4 cells queued, cost **UNPRICED** |
+| `tables-grid.png` | Review tables | the grid, every cell PENDING with a glyph and a word |
+| `tables-csv.png` | Review tables | the CSV, every cell carrying words rather than a blank |
+| `drafts-version1.png` | Draft | version 1, with its provenance table |
+| `drafts-saved.png` | Draft | version 2 saved, based on version 1 |
+| `drafts-conflict.png` | Draft | a stale save **refused**, showing version 1 and version 2 |
+| `tables-360.png` | Review tables at 360px | measured horizontal overflow: **0px** |
+
+## Seven ways the live system differed from the mock
+
+All seven are the live deployment being **narrower** than the fixture — which is the
+direction worth knowing about, because a mock that is more capable than the product is a
+demo that promises something nobody can deliver.
+
+### 1. The runbook could not serve these screens at all
+
+`docs/RUN_LOCALLY.md` points `local-gateway.py` at the backend's `PLACEDON_DATABASE_URL`,
+which is `placedon_dev` — and `placedon_dev` is at migration **~007**. Every table these
+four screens need arrives later: `review_grids` (011), `drafts` (012), `matters` (019),
+`vault_documents` (020), `jobs.lane` (021).
+
+It also **cannot be upgraded in place**: `scripts/rls_integration.py`'s own run log records
+that `placedon_dev` holds 64 APPROVED seed rows written before `quote_viewed` existed, and
+008's `VALIDATE` refuses them by design. A fresh database is the answer, and these captures
+used one (`placedon_app_local`, 001–021 applied). **The runbook needs that step; without it
+all four screens fail on a missing table.**
+
+### 2. The local gateway minted a key that could not use the app
+
+`KeyStore.mint` defaults to `role="viewer"`, and `vault.upload`, `review_table.create`,
+`draft.create` and `draft.revise` all require `lawyer` (`gateway/roles.REQUIRED`). The first
+live call returned:
+
+> `403 — vault.upload needs the lawyer role; this key has viewer`
+
+`scripts/local-gateway.py` now mints `lawyer`. Not `admin`: nothing these screens do needs
+it, and a local key with more authority than the screens require is a habit worth not
+forming.
+
+### 3. The vault cannot accept an upload through the HTTP surface
+
+`vault.upload` refuses, by name:
+
+> `NO_VAULT` — no file store is configured on this deployment, so there is nowhere to put
+> the bytes. Refused by name rather than accepting an upload and writing it nowhere.
+
+This is **not** a local-setup gap. `gateway/app.py` never sets `Context.files` — the string
+does not appear in the file — and `create_app` takes no parameter for one, so **no HTTP
+caller can reach a working vault on any deployment.** `gateway/screens.py` sets `ctx.files`
+directly in its own test, which is why the verb is proven and unreachable at the same time.
+The mock accepts uploads and shows PENDING beside INGESTED, so the mock is the only place
+that column has ever had two values.
+
+`vault-upload-refused.png` is the live truth. The screen renders the refusal in the refusal
+register — the gateway answered and declined — rather than as a failure.
+
+### 4. No cell ever leaves PENDING live, because no queue is wired
+
+`review_table.create` returns `scheduled.enqueued: []`. `create_app` accepts a `queue=`
+parameter and `local-gateway.py` passes none, so one job per cell is planned and nothing
+dispatches. Every cell in `tables-grid.png` is PENDING, correctly.
+
+So the live capture cannot show FOUND, NOT FOUND or NEEDS LAWYER. The mock can, and the
+legend on the screen names all five states regardless — a grid that only ever showed the
+state it happened to be in would teach the wrong shape.
+
+### 5. PAUSED_BUDGET did not fire live, and `status` cannot report it anyway
+
+Two separate things, and the second is the one that matters.
+
+Live, `scheduled.paused_budget` was `false`: no budget is wired, so nothing was reserved and
+nothing was refused. The mock pauses any table over four cells, which is how that branch is
+exercised at all.
+
+And **`review_table.status` does not carry the budget state** — no key in the live response
+mentions it. PAUSED_BUDGET arrives **once**, on `create`. A screen that only polled status
+would show a table stuck at PENDING with no reason, so the console keeps the pause from the
+create response and says, on the status panel, that this response cannot speak to it rather
+than guessing.
+
+### 6. A live draft has no slots, so nothing is marked as a suggestion
+
+`draft.create` on the live gateway returned `blocking: []` and `ready_for_approval: true` —
+no slots at all, because none were supplied. `drafts-version1.png` therefore shows a
+provenance table with nothing in it, and `0` suggestion tags.
+
+The mock seeds a `MODEL_SUGGESTION` slot, which is what makes the marking visible and
+testable. The live path to one is `draft.create` with `slots`, or a draft built by the prose
+writer — neither of which this screen does yet. **The marking is implemented and, on the
+live deployment, currently has nothing to mark.**
+
+### 7. The live gateway classified a "Board resolution" as `agm_notice`
+
+`draft.create {"title": "Board resolution"}` came back `kind: "agm_notice"`. The mock says
+`board_resolution`. The screen does not render `kind`, so nothing on screen is wrong — but
+the classifier disagreeing with the obvious reading of the title is recorded here rather
+than discovered later.
+
+## What the captures confirmed, measured
+
+- **`drafts-conflict.png`**: a stale save is refused and the panel shows *both* numbers —
+  "your edit was based on version 1", "the draft is now at version 2". Driven by a second
+  browser page holding the old `base_version`, so the race was real rather than simulated.
+- **`calendar-unknown.png`**: 15 UNKNOWN entries, and the cell where a date would go reads
+  the word `unknown`. Not blank, not a guess.
+- **`tables-created.png`**: the cost cell reads `UNPRICED`, never `₹0.00`.
+- **`tables-360.png`**: horizontal overflow at 360px measured at **0px**, on the widest
+  screen of the four.
