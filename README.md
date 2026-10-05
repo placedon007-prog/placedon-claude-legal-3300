@@ -36,42 +36,61 @@ npm install
 npm run dev          # http://localhost:3300
 npm run build        # production build (also verifies it compiles)
 npm run start:local  # run the production build on :3300
-npx tsc --noEmit && npx eslint . && node tests/contracts.mjs   # full check
+npm run typecheck && npm run lint && npm test   # full check (node:test, no extra test dependency)
 ```
 
 ---
 
 ## Architecture (why this matters for backend work)
-- **Frontend (this repo)** → Vercel. Cheap/free, purpose-built for Next.js.
-- **Backend (separate)** → the deterministic engine + narration model. Host on a
-  cloud with GPU credits (Azure/AWS/GCP) — that's where the money/compute goes,
-  NOT the frontend.
-- **They connect via one env var:** `PLACEDON_API_ORIGIN`. Unset → the app uses
-  the built-in **Mock engine** (real Companies-Act fixtures, deterministic). Set
-  it to the backend URL → the product surfaces show live answers. No rebuild.
-- **The engine is server-only** (`src/lib/engine/*`). Never import a provider
-  into a `"use client"` module (it would leak the token/origin into the browser
-  bundle). `getEngine()` picks Mock vs Http at call time.
-- **Contract: the backend has exactly SIX routes** (see `AGENTS.md` and
-  `src/lib/engine/types.ts`). `/v1/company/{cin}/standing` and `/v1/ask` do NOT
-  exist. A transport error must NEVER render as an abstention (`EngineResult<T>`
-  enforces this).
+- **Frontend (this repo)** → Vercel. Marketing site **plus** the `/app` console for in-house lawyers.
+- **Backend (separate repo, `placedon-law-backend`)** → the deterministic engine, the gateway, the
+  job worker and the model gateway.
+- **Two backend surfaces, two clients in this repo** (full contract in `AGENTS.md`):
+  - `/v1` engine, unauthenticated → `src/lib/engine/*`, selected by `PLACEDON_API_ORIGIN`
+    (unset → Mock engine with real Companies-Act fixtures). Used by the `/product/*` surfaces.
+  - `/v2` gateway verbs, API-key authenticated → `src/lib/gateway/*`, selected by `GATEWAY_URL`
+    + `PLACEDON_GATEWAY_KEY` (unset → MockGateway; URL set without a key → throws on purpose).
+    Used by the `/app` console.
+- **Both clients are server-only.** Never import either into a `"use client"` module — the token
+  would be inlined into the public bundle; `server-guard` throws rather than let it.
+- **A transport error must NEVER render as an abstention** (`EngineResult<T>` / `AskState`
+  enforce it). `cost_inr: null` is UNPRICED, never 0. There is no list-runs verb.
+- Run the real gateway locally: `python3 scripts/local-gateway.py` → see `docs/RUN_LOCALLY.md`.
 
 ## Where things live
-- **Pages:** `src/app/*/page.tsx` (home, product, how-it-works, pricing, about,
-  security, faq, waitlist, privacy, terms, cookies, + 4 product surfaces under
-  `src/app/product/*`).
-- **Shared UI:** `src/components/*` (site-chrome nav/footer, marketing-page
-  scaffold, sections, faq-accordion, legal-page/-toc, request-form, analytics,
-  surfaces/*).
-- **All copy is real content** in `src/lib/placedon-content/content/*` — do not
-  hardcode marketing copy in components; edit the content modules.
-- **Legal pages** (`src/lib/placedon-content/legal/*.md`) are FILLED with real
-  operator details (Placedon Technologies Private Limited; DPC/Grievance =
-  Hardik Singh Rajpurohit + Nishant Singh; privacy/security email
-  placedonsecurity@gmail.com; grievance/legal email placedon007@gmail.com;
-  effective 14 Sep 2026; v1.0). Still marked "for counsel review" — a real lawyer
-  must review before enabling indexing.
+```
+src/
+├── app/                     Next.js App Router
+│   ├── page.tsx               home
+│   ├── product/ how-it-works/ pricing/ about/ security/ faq/   marketing pages
+│   ├── product/{compliance-pack,document-check,events,instruments}/  live /v1 surfaces
+│   ├── app/                   the /app console (passcode login)
+│   │   ├── page.tsx + ask-console.tsx     Ask
+│   │   ├── contracts/                     playbook review
+│   │   ├── documents/                     document review
+│   │   ├── runs/ + runs/[id]/             runs started in this browser + trace
+│   │   ├── review-gate.tsx                lawyer approve / reject
+│   │   ├── actions.ts                     Server Actions — the only path to the gateway
+│   │   └── login/                         passcode → signed session cookie
+│   ├── api/waitlist/route.ts  pilot-request form sink
+│   ├── privacy/ terms/ cookies/            legal pages (templates for counsel review)
+│   ├── og/ robots.ts sitemap.ts            SEO
+│   └── layout.tsx globals.css             fonts, tokens, chrome
+├── components/              shared UI (site-chrome, sections, evidence-card, request-form, surfaces/)
+└── lib/
+    ├── engine/                /v1 client: types, Mock + Http providers, errors, server-guard
+    ├── gateway/               /v2 client: types, Mock + Http providers
+    ├── auth/                  console session, token, recent-runs (this browser only)
+    ├── documents/             .pdf / .docx / .zip text extraction for uploads
+    ├── placedon-content/      ALL marketing copy + legal templates (edit here, not in components)
+    ├── tokens.ts              design tokens — no hex in components
+    └── format.ts seo.ts site.ts track.ts legal.ts intake.ts
+tests/                       node:test suites (gateway, documents) + contracts.mjs + browser.mjs
+scripts/local-gateway.py     starts the real backend gateway and writes a key into .env.local
+brand-kit/                   logo, colours, self-hosted fonts (Fraunces, IBM Plex Mono, Inter), posters
+public/                      served assets (brand mark, hero media)
+docs/                        see docs/README.md
+```
 
 ## Integrations (and where the keys are)
 - **Lead form → Web3Forms.** Key in `src/components/request-form.tsx`
@@ -88,8 +107,9 @@ npx tsc --noEmit && npx eslint . && node tests/contracts.mjs   # full check
 ## Deployment
 - **Vercel**: push to `main` → auto-deploy. No config needed; no env vars
   required for the pilot (mock data, Web3Forms, GA all work on defaults).
-- **Azure (optional)**: `docs/AZURE-DEPLOY.md` — App Service via Deployment
-  Center. `next.config.ts` has `output: "standalone"` for this. Only if you
+- **Azure (optional)**: `docs/deploy/AZURE.md` — App Service via Deployment
+  Center. Build with `BUILD_STANDALONE=1` for this; **never set it on Vercel** (it breaks the
+  post-build trace step with `ENOENT .next/next-server.js.nft.json`). Only if you
   choose Azure over Vercel for the frontend (not recommended — save cloud credits
   for the model). Point `placedon.com` at ONE host, not both.
 
@@ -109,7 +129,7 @@ npx tsc --noEmit && npx eslint . && node tests/contracts.mjs   # full check
    Chrome with extensions off, check GA **Realtime** (not the lagging Home page),
    and look for a `google-analytics.com/g/collect` request in DevTools → Network.
 5. **AGENTS.md is binding** (re-read it every session): near-monochrome brand +
-   one gold accent; IBM Plex Mono on every statute ref/figure/date; **banned
+   one gold accent; reader-facing **Section 96** in bold serif, its evidence line (`s.96(1)`, figures, instruments, dates) in IBM Plex Mono; **banned
    words** (streamline, empower, solution/Solutions, seamless, easy, smart,
    revolutionary, unlock, supercharge, effortless, game-changer, cutting-edge,
    "Join the waitlist"); never invent a statutory figure/section/date (abstain);
@@ -127,8 +147,10 @@ npx tsc --noEmit && npx eslint . && node tests/contracts.mjs   # full check
 4. Optional: make `placedon.com` (non-www) the primary in Vercel → Domains;
    grade/replace the white hero video below the fold.
 
-## Reference docs (historical — read only if you need the detail)
+## Reference docs
 - `AGENTS.md` — binding brand/voice/engineering rules (authoritative).
-- `docs/AZURE-DEPLOY.md`, `DEPLOY.md` — deployment guides.
-- `docs/specs/backend-architecture-dossier.md` — backend contract detail.
-- `docs/specs/*` — redesign analysis dossiers (background, not required reading).
+- `docs/README.md` — index of every document.
+- `docs/RUN_LOCALLY.md` — run the console against the real gateway.
+- `docs/deploy/VERCEL.md`, `docs/deploy/AZURE.md` — deployment guides.
+- `docs/app-screens/` — live screenshots of the console, and how the live system differed from the mock.
+- `docs/archive/` — earlier prompts, RAG notes and redesign dossiers (history, not instructions).
