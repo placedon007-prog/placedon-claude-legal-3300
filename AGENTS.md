@@ -23,6 +23,10 @@ change — check them before you consider any task done.
   reference** — `s.96(1)`, `chars 226–348`, the instrument `G.S.R. 880(E)`, the figure
   `₹10,00,00,000`, the as-of date — stays **IBM Plex Mono**: the claim is serif, its basis is mono.
   **Never paraphrase a section either way.**
+- **The `/app` console is black and white (owner decision, 2026-10-06).** White ground,
+  near-black text, neutral greys; no gold, no cream, no serif inside the console. `app.css`
+  remaps the site tokens inside `.console` so every console screen follows. The marketing
+  site keeps the palette above. The composer is `src/components/ui/prompt-box.tsx`.
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
 

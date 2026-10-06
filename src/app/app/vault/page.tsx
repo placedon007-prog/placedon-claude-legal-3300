@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { vaultListAction } from "./actions";
 import { VaultConsole } from "./vault-console";
 
-export const metadata: Metadata = { title: "Vault", robots: { index: false } };
+export const metadata: Metadata = { title: "Wall System", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function VaultPage() {
@@ -10,7 +10,7 @@ export default async function VaultPage() {
   const listed = await vaultListAction();
   return (
     <>
-      <h2>Vault</h2>
+      <h2>Wall System</h2>
       <p className="lede">
         This firm&rsquo;s documents, each with the state of its ingestion. A document that is
         queued is not yet searchable, and the list says so rather than showing a tick — a
