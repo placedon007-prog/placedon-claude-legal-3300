@@ -23,6 +23,7 @@ import type {
   VaultStatus,
   VaultUpload,
   VaultVerify,
+  DocumentCheck,
 } from "./types";
 
 /**
@@ -103,6 +104,20 @@ export interface GatewayProvider {
    * individually; the screen renders one line each and never a single real/fake badge.
    */
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>>;
+  /**
+   * The Document Check, end to end: verify a stored document, decide whether it is
+   * still in force at `as_of`, and record the action a lawyer should take. A WRITE
+   * verb — it appends a row to `document_checks` — so `recorded` with a `check_id`
+   * means the judgement was written down, append-only. `superseded_by` and
+   * `revoked_on` are facts the caller SUPPLIES; the backend never guesses them.
+   */
+  documentCheck(input: {
+    documentId: string;
+    asOf?: string;
+    renewable?: boolean;
+    supersededBy?: string;
+    revokedOn?: string;
+  }): Promise<EngineResult<DocumentCheck>>;
 
   /* ── review tables ──────────────────────────────────────────────────────── */
   /**

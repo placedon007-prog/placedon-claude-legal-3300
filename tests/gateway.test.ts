@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { findingSchema, isLive, parseAnswer } from "../src/lib/gateway/types";
+import { findingSchema, isLive, isRefusal, parseAnswer } from "../src/lib/gateway/types";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { mintToken, tokenIsValid, MAX_AGE_SECONDS } from "../src/lib/auth/token";
 
@@ -358,4 +358,63 @@ test("a token expires, and one issued in the future is refused", () => {
   assert.ok(tokenIsValid(t, SECRET, now + MAX_AGE_SECONDS * 1000 - 1000));
   assert.ok(!tokenIsValid(t, SECRET, now + MAX_AGE_SECONDS * 1000 + 1000));
   assert.ok(!tokenIsValid(t, SECRET, now - 5000), "a future issued-at is not valid");
+});
+
+
+/* ── document.check: verify → validity → action, recorded ─────────────────── */
+
+const INGESTED = "a".repeat(64); // mutual-nda.txt, seeded INGESTED in the mock vault
+const UNREADABLE = "c".repeat(64); // scanned-deed.pdf, seeded CANNOT_READ
+
+test("document.check on a stored document is NEEDS_LAWYER and NOT_DETERMINED by default", async () => {
+  const r = await new MockGateway().documentCheck({ documentId: INGESTED, asOf: "2026-10-06" });
+  assert.ok(r.ok && !isRefusal(r.data));
+  if (r.ok && !isRefusal(r.data)) {
+    assert.equal(r.data.action.action, "NEEDS_LAWYER");
+    assert.equal(r.data.validity.status, "NOT_DETERMINED");
+    assert.equal(r.data.validity.in_force, false);
+    // The point of the feature: a check that was NOT run blocks KEEP.
+    assert.equal(r.data.verification.overall, "INCOMPLETE_VERIFICATION");
+    const notChecked = r.data.verification.checks.filter((c) => c.result === "NOT_CHECKED");
+    assert.ok(notChecked.length >= 1, "a real document leaves checks NOT_CHECKED");
+    // Append-only: the judgement on this date was written down.
+    assert.equal(r.data.recorded, true);
+    assert.ok(r.data.check_id);
+  }
+});
+
+test("a supplied revocation date makes it REVOKED, and the action is REPLACE", async () => {
+  const r = await new MockGateway().documentCheck({
+    documentId: INGESTED,
+    revokedOn: "2026-01-01",
+  });
+  assert.ok(r.ok && !isRefusal(r.data));
+  if (r.ok && !isRefusal(r.data)) {
+    assert.equal(r.data.validity.status, "REVOKED");
+    assert.equal(r.data.action.action, "REPLACE");
+  }
+});
+
+test("a supplied superseding instrument makes it SUPERSEDED, and the action is REMOVE", async () => {
+  const r = await new MockGateway().documentCheck({
+    documentId: INGESTED,
+    supersededBy: "Board Resolution dated 2026-04-01",
+  });
+  assert.ok(r.ok && !isRefusal(r.data));
+  if (r.ok && !isRefusal(r.data)) {
+    assert.equal(r.data.validity.status, "SUPERSEDED");
+    assert.equal(r.data.action.action, "REMOVE");
+  }
+});
+
+test("document.check on an unknown document REFUSES — ok:true, not a transport failure", async () => {
+  const r = await new MockGateway().documentCheck({ documentId: "no-such-doc" });
+  assert.ok(r.ok, "a refusal is a product answer, carried as ok:true");
+  assert.ok(isRefusal(r.data) && r.data.code === "NOT_FOUND");
+});
+
+test("a document whose bytes cannot be read records NO check — the read failed, not the document", async () => {
+  const r = await new MockGateway().documentCheck({ documentId: UNREADABLE });
+  assert.ok(r.ok && isRefusal(r.data));
+  if (r.ok && isRefusal(r.data)) assert.equal(r.data.code, "VERIFY_FAILED");
 });

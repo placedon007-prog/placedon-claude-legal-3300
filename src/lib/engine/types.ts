@@ -49,6 +49,8 @@ export const GATEWAY_ROUTES = {
   vaultStatus: "/v2/vault/status",
   vaultFind: "/v2/vault/find",
   vaultVerify: "/v2/vault/verify",
+  // document.verify runs INSIDE document.check; the screen calls only the latter.
+  documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",
   tableStatus: "/v2/review-table/status",
   tableExport: "/v2/review-table/export",

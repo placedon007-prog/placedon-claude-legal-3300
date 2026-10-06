@@ -387,6 +387,65 @@ export const vaultVerifyOkSchema = z.object({
 export const vaultVerifySchema = z.union([vaultVerifyOkSchema, verbRefusalSchema]);
 export type VaultVerify = z.infer<typeof vaultVerifySchema>;
 
+/* ── document.check (T3: verify → validity → action, recorded) ─────────────── */
+
+/**
+ * One verification check on its own line — signature, byte coverage, chain, revocation —
+ * never a single genuine/forged badge. The two checks that need a trust list or a network
+ * lookup come back NOT_CHECKED, which is why a real document reports INCOMPLETE_VERIFICATION
+ * rather than COMPLETE today.
+ */
+export const docCheckLineSchema = z.object({
+  name: z.string(),
+  field: z.string().optional(),
+  result: z.string(),
+  detail: z.string().optional(),
+});
+
+/**
+ * `document.check` answers three separate questions and keeps them separate: was it signed
+ * (verification), is it still in force at `as_of` (validity), and what should be done
+ * (action). `NOT_DETERMINED` validity and a `NEEDS_LAWYER` action are the common, honest
+ * answers — the screen must never dress them as a clean bill. The row is append-only, so
+ * `recorded` with a `check_id` means "what we told them on this date" was written down.
+ */
+export const documentCheckOkSchema = z.object({
+  document_id: z.string(),
+  name: z.string().nullable().optional(),
+  as_of: z.string(),
+  verification: z.object({
+    overall: z.string(),
+    checks: z.array(docCheckLineSchema),
+    sentence: z.string(),
+  }),
+  validity: z.object({
+    status: z.string(),
+    as_of: z.string(),
+    document_date: z.string().nullable().optional(),
+    expires_on: z.string().nullable().optional(),
+    in_force: z.boolean(),
+    reason: z.string(),
+    body: z.string().nullable().optional(),
+    law_held: z.boolean().nullable().optional(),
+    citation: z.string().optional(),
+    working: z.string().optional(),
+  }),
+  action: z.object({
+    action: z.string(),
+    reason: z.string(),
+    renew_by: z.string().nullable().optional(),
+  }),
+  check_id: z.string().nullable().optional(),
+  recorded: z.boolean(),
+  note: z.string().optional(),
+});
+
+/** Live: refuses NOT_FOUND / GONE / NO_VAULT / BAD_REQUEST. Each arm is a product state. */
+export const documentCheckSchema = z.union([documentCheckOkSchema, verbRefusalSchema]);
+export type DocumentCheck = z.infer<typeof documentCheckSchema>;
+export type DocumentCheckOk = z.infer<typeof documentCheckOkSchema>;
+export type DocCheckLine = z.infer<typeof docCheckLineSchema>;
+
 /* ── review_table ─────────────────────────────────────────────────────────── */
 
 /**
