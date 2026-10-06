@@ -27,6 +27,7 @@ import type {
   VaultStatus,
   VaultUpload,
   VaultVerify,
+  DocumentCheck,
 } from "./types";
 
 /**
@@ -731,6 +732,124 @@ export class MockGateway implements GatewayProvider {
       note:
         "Each check is reported on its own line. A single badge would make 'the bytes " +
         "are gone' and 'the bytes changed' the same answer.",
+    });
+  }
+
+  async documentCheck(input: {
+    documentId: string;
+    asOf?: string;
+    renewable?: boolean;
+    supersededBy?: string;
+    revokedOn?: string;
+  }): Promise<EngineResult<DocumentCheck>> {
+    const one = this.vault.get(input.documentId);
+    if (!one) {
+      return engineOk({
+        status: "REFUSED" as const,
+        code: "NOT_FOUND",
+        detail: "no such document in this firm's vault",
+      });
+    }
+    const asOf = input.asOf || new Date().toISOString().slice(0, 10);
+
+    // CANNOT_READ: there is nothing to verify, so no check is run and no judgement is
+    // recorded. The backend returns VERIFY_FAILED here, and the point is that it blames
+    // the read, not the document.
+    if (one.state === "CANNOT_READ") {
+      return engineOk({
+        status: "REFUSED" as const,
+        code: "VERIFY_FAILED",
+        detail:
+          "the stored bytes could not be read as a signed PDF, so nothing was verified " +
+          "and no check was recorded. That is a failure of the read, not a finding about " +
+          "the document.",
+      });
+    }
+
+    // ── verification: one line per check ──────────────────────────────────
+    // Two checks need a trust list / a network lookup this deployment does not make, so
+    // they are NOT_CHECKED and a genuine document reports INCOMPLETE_VERIFICATION — never
+    // COMPLETE — which is the honest state today.
+    const checks = [
+      { name: "the PDF carries a cryptographic signature", field: "signature",
+        result: "PASS", detail: "a signature was parsed from the document" },
+      { name: "the signed bytes are unchanged since signing", field: "byte_coverage",
+        result: "PASS", detail: "every byte is covered by the signature; nothing was appended" },
+      { name: "the signing certificate chains to a trusted root", field: "chain",
+        result: "NOT_CHECKED",
+        detail: "NOT CHECKED: this deployment holds no CCA trust list to chain against" },
+      { name: "the certificate was not revoked", field: "revocation",
+        result: "NOT_CHECKED",
+        detail: "NOT CHECKED: OCSP and CRL lookups are network calls and this ran offline" },
+    ];
+    const verification = {
+      overall: "INCOMPLETE_VERIFICATION",
+      checks,
+      sentence:
+        "Signed, and the signed bytes are unchanged. The certificate chain and revocation " +
+        "were not checked, so verification is INCOMPLETE rather than COMPLETE.",
+    };
+
+    // ── validity → action, in the backend's own order (doc_validity.act) ──
+    // revoked_on and superseded_by are SUPPLIED facts; everything else is NOT_DETERMINED,
+    // because no registry says which document class expires under which provision and this
+    // deployment will not take a validity period from a caller.
+    let validity;
+    let action;
+    if (input.revokedOn) {
+      validity = {
+        status: "REVOKED", as_of: asOf, document_date: null, expires_on: null,
+        in_force: false,
+        reason: `withdrawn on ${input.revokedOn}, a date you supplied; a renewal cannot bring the authority back`,
+        body: null, law_held: null, citation: "", working: "",
+      };
+      action = {
+        action: "REPLACE", renew_by: null,
+        reason: "the authority is gone as of the revocation date, so a fresh instrument is needed",
+      };
+    } else if (input.supersededBy) {
+      validity = {
+        status: "SUPERSEDED", as_of: asOf, document_date: null, expires_on: null,
+        in_force: false,
+        reason: `a later instrument of the same kind (${input.supersededBy}) replaced it, which you supplied`,
+        body: null, law_held: null, citation: "", working: "",
+      };
+      action = {
+        action: "REMOVE", renew_by: null,
+        reason: "remove it from the LIVE set — the archive copy stays; what replaced it is authoritative now",
+      };
+    } else {
+      validity = {
+        status: "NOT_DETERMINED", as_of: asOf, document_date: null, expires_on: null,
+        in_force: false,
+        reason:
+          "no held rule says which provision governs this document class's expiry, and a " +
+          "validity period supplied by a caller is not a provision, so the position cannot be stated",
+        body: null, law_held: null, citation: "", working: "",
+      };
+      action = {
+        action: "NEEDS_LAWYER", renew_by: null,
+        reason:
+          "the position could not be determined, and two verification checks were not run — " +
+          "KEEP would assert we looked and found nothing wrong, and we did not look",
+      };
+    }
+
+    return engineOk({
+      document_id: input.documentId,
+      name: one.name,
+      as_of: asOf,
+      verification,
+      validity,
+      action,
+      // Append-only: the row records what we told them on this date. A check in March and a
+      // check in October on the same bytes are two rows, because the answer can change.
+      check_id: `mock-check-${this.vault.size}-${input.documentId.slice(0, 8)}`,
+      recorded: true,
+      note:
+        "Three separate questions, answered separately: was it signed, is it still in " +
+        "force, and what should be done. An action is never a statement that the document " +
+        "is legally valid — NEEDS_LAWYER is the answer whenever a check was not run.",
     });
   }
 

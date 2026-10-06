@@ -19,6 +19,7 @@ import {
   vaultStatusSchema,
   vaultUploadSchema,
   vaultVerifySchema,
+  documentCheckSchema,
   cancelSchema,
   decisionSchema,
   documentResponseSchema,
@@ -49,6 +50,7 @@ import {
   type VaultStatus,
   type VaultUpload,
   type VaultVerify,
+  type DocumentCheck,
 } from "./types";
 
 const TIMEOUT_MS = 120_000; // a live model answer, not a page load
@@ -329,6 +331,27 @@ export class HttpGateway implements GatewayProvider {
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>> {
     return this.call(GATEWAY_ROUTES.vaultVerify, GATEWAY_ROUTES.vaultVerify,
       vaultVerifySchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  documentCheck(input: {
+    documentId: string;
+    asOf?: string;
+    renewable?: boolean;
+    supersededBy?: string;
+    revokedOn?: string;
+  }): Promise<EngineResult<DocumentCheck>> {
+    return this.call(GATEWAY_ROUTES.documentCheck, GATEWAY_ROUTES.documentCheck,
+      documentCheckSchema, {
+        method: "POST",
+        body: {
+          document_id: input.documentId,
+          ...(input.asOf ? { as_of: input.asOf } : {}),
+          // `renewable` is a BOOLEAN field on the verb table; the others are strings.
+          ...(input.renewable ? { renewable: true } : {}),
+          ...(input.supersededBy ? { superseded_by: input.supersededBy } : {}),
+          ...(input.revokedOn ? { revoked_on: input.revokedOn } : {}),
+        },
+      });
   }
 
   /* ── review tables ──────────────────────────────────────────────────────── */

@@ -555,3 +555,23 @@
    engine's own `s.96(1)` sits beneath it in mono as the basis. */
 .cal-reference { margin: 0.15rem 0 0; font-size: 0.9375rem; }
 .cal-provision { margin-top: 0.1rem; }
+
+/* Document Check — an inline checkbox+label, and a small sub-heading between the three
+   questions (verification / validity / action) so they read as separate answers. */
+.console .check-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+.console .check-inline input {
+  width: auto;
+  margin-top: 0.15rem;
+}
+.console .sub-head {
+  margin-top: 1.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+}
+.console .sub-head .mono { font-size: 0.9375rem; }
