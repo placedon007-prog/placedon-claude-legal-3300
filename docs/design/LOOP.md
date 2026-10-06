@@ -13,3 +13,10 @@
   (permanent source viewer). It sits under the /app layout, so render each direction as a fixed
   full-screen overlay. Fixture = ANSWER_S96 in src/lib/gateway/mock.ts (not exported; copy the
   string). Screenshot 1440 + 390, put them in the PR body, ASK the owner to pick. Stop there.
+
+## 2026-10-07 — iteration 2
+- Phase 3 DONE: /app/design-lab?d=a|b|c (A Document, B Chat, C Split). Screens in docs/design/lab/.
+  `.console-main > *` caps width at 62rem (unlayered CSS) — the lab overlay sets maxWidth inline.
+- node_modules was missing @radix-ui/react-tooltip/popover (in package.json, not installed);
+  `npm install --cache $TMPDIR/npm-cache` fixed it with no lockfile change.
+- WAITING ON OWNER: pick A, B or C (and confirm the name "Wall System"). No hi-fi until then.
