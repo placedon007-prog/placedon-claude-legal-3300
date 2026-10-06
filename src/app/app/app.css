@@ -1,80 +1,169 @@
 /* /app — the in-house lawyer's console.
-   Tokens only (--ink, --cream, --gold, --gold-muted, --abstain, --font-*).
-   No hard-coded hex. Corners <=6px. Motion <=250ms and reduced-motion honoured. */
+
+   Black and white (owner decision, 2026-10-06). The screens below were written against the
+   site tokens --ink / --cream / --gold / --gold-muted / --abstain, with a dark ground. Rather
+   than rewrite every rule, the console REMAPS those tokens inside .console:
+     --ink   -> the ground (white)      --cream -> the text (near-black)
+     --gold  -> black                   --gold-muted, --abstain -> mid grey
+   so every console screen turns monochrome at once, and the marketing site is untouched.
+   --font-display is mapped to the body face: no serif in the console.
+   Corners <=6px except the composer. Motion <=250ms, reduced motion honoured. */
 
 .console {
+  --ink: #ffffff;
+  --cream: #0a0a0a;
+  --gold: #0a0a0a;
+  --gold-muted: #525252;
+  --abstain: #525252;
+  --font-display: var(--font-body);
   min-height: 100dvh;
   background: var(--ink);
   color: var(--cream);
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+@media (max-width: 760px) {
+  .console { grid-template-columns: minmax(0, 1fr); }
 }
 
-.console-bar {
+.console-side {
+  background: #fafafa;
+  border-right: 1px solid #ebebeb;
+  padding: 1rem 0.75rem;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 1.25rem;
-  padding: 1rem clamp(1rem, 4vw, 2.5rem);
-  border-bottom: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+  flex-direction: column;
+  gap: 0.25rem;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  box-sizing: border-box;
 }
-.console-bar h1 {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
+@media (max-width: 760px) {
+  /* On a phone the sidebar becomes one scrollable row of links above the screen. */
+  .console-side {
+    position: static; height: auto; border-right: 0; border-bottom: 1px solid #ebebeb;
+    flex-direction: row; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem;
+  }
+  .console-brand { padding: 0 0.25rem; }
+  .console-brand { font-size: 0; gap: 0; }
+  .console-new { display: none; }
+}
+.console-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0.5rem 0.9rem;
   font-weight: 600;
+  font-size: 0.9375rem;
   letter-spacing: -0.01em;
-  margin: 0;
 }
-.console-nav { display: flex; gap: 1.25rem; margin-left: auto; flex-wrap: wrap; }
-.console-nav a,
-.console-bar form button {
-  color: color-mix(in srgb, var(--cream) 72%, transparent);
+.console-brand .mark {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 5px;
+  background: #0a0a0a;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+.console-new {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.65rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0a0a0a;
   text-decoration: none;
-  font-size: 0.8125rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: none;
-  border: 0;
-  padding: 0.25rem 0;
-  cursor: pointer;
-  border-bottom: 1px solid transparent;
-  transition: color 180ms ease, border-color 180ms ease;
+  font-size: 0.875rem;
 }
-.console-nav a[aria-current="page"] { color: var(--cream); border-bottom-color: var(--gold); }
-.console-nav a:hover, .console-bar form button:hover { color: var(--cream); }
-.console-nav a:focus-visible,
-.console-bar form button:focus-visible,
+.console-new:hover { border-color: #a3a3a3; }
+
+.console-nav { display: flex; flex-direction: column; gap: 0.125rem; flex: 1; }
+.console-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.25rem;
+  padding: 0 0.65rem;
+  border-radius: 6px;
+  color: #404040;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background-color 150ms ease;
+}
+.console-nav a svg { width: 1rem; height: 1rem; flex: none; }
+.console-nav a:hover { background: #f0f0f0; color: #0a0a0a; }
+.console-nav a[aria-current="page"] { background: #ececec; color: #0a0a0a; font-weight: 500; }
+.console-nav form { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid #ebebeb; }
+.console-nav form button {
+  width: 100%;
+  text-align: left;
+  min-height: 2.25rem;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #525252;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.console-nav form button:hover { background: #f0f0f0; color: #0a0a0a; }
+@media (max-width: 760px) {
+  .console-nav { flex-direction: row; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .console-nav a { white-space: nowrap; min-height: 2.75rem; }
+  .console-nav form { margin-top: 0; padding-top: 0; border-top: 0; }
+  .console-nav form button { white-space: nowrap; min-height: 2.75rem; }
+}
 .console a:focus-visible, .console button:focus-visible,
-.console input:focus-visible, .console textarea:focus-visible {
-  outline: 2px solid var(--gold);
+.console input:focus-visible, .console textarea:focus-visible, .console select:focus-visible {
+  outline: 2px solid #0a0a0a;
   outline-offset: 2px;
 }
+/* The composer shows focus with its own border (focus-within), not a box inside it. */
+.console textarea.pb-input:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  .console-nav a { transition: none; }
+}
 
-/* Standing notices. Not decorative: each states a limit of this deployment. */
-.console-notices { border-bottom: 1px solid color-mix(in srgb, var(--cream) 14%, transparent); }
+.console-body { min-width: 0; display: flex; flex-direction: column; }
+
+/* Single-column variant (sign-in page): no sidebar, a plain top bar. */
+.console-single { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
+.console-bar { padding: 0.9rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid #ebebeb; }
+.console-bar h1 { margin: 0; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+
+/* Standing notices: each states a limit of THIS deployment, so they stay on every screen,
+   but as one quiet line each rather than a banner. */
+.console-notices { border-bottom: 1px solid #ebebeb; background: #ffffff; }
 .notice {
-  /* globals.css puts a reading measure on every <p>. A standing notice is a band across
-     the screen, not prose in a column, so it opts out explicitly. */
   max-width: none;
   width: 100%;
   margin: 0;
-  padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
-  border-top: 1px solid color-mix(in srgb, var(--cream) 10%, transparent);
-  font-size: 0.8125rem;
+  padding: 0.45rem clamp(1rem, 3vw, 2rem);
+  border-top: 1px solid #f2f2f2;
+  font-size: 0.75rem;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--cream) 80%, transparent);
+  color: #525252;
   display: flex;
-  gap: 0.65rem;
+  gap: 0.6rem;
   align-items: baseline;
 }
 .console-notices .notice:first-child { border-top: 0; }
-.notice strong { color: var(--cream); font-weight: 600; }
+.notice strong { color: #0a0a0a; font-weight: 500; }
 .notice .notice-key {
   font-family: var(--font-code);
   font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--gold-muted);
+  color: #525252;
   white-space: nowrap;
 }
 
@@ -96,7 +185,7 @@
 
 /* Forms */
 .console label { display: block; font-size: 0.8125rem; margin-bottom: 0.45rem; }
-.console textarea, .console input[type="text"], .console input[type="password"] {
+.console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"] {
   width: 100%;
   background: color-mix(in srgb, var(--cream) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--cream) 22%, transparent);
@@ -105,9 +194,9 @@
   font: inherit;
   padding: 0.7rem 0.8rem;
 }
-.console textarea { min-height: 9rem; resize: vertical; font-size: 0.9375rem; line-height: 1.55; }
+.console textarea:not(.pb-input) { min-height: 9rem; resize: vertical; font-size: 0.9375rem; line-height: 1.55; }
 .console .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
-.console-main button[type="submit"] {
+.console-main button[type="submit"]:not(.pb-send) {
   min-height: 44px;
   padding: 0 1.15rem;
   border-radius: 4px;
@@ -119,15 +208,7 @@
   cursor: pointer;
   transition: opacity 180ms ease;
 }
-.console-main button[type="submit"]:disabled { opacity: 0.55; cursor: progress; }
-/* Sign out is navigation, not an action worth the one accent this view is allowed. */
-.console-bar form button[type="submit"] {
-  background: none;
-  border: 0;
-  color: color-mix(in srgb, var(--cream) 72%, transparent);
-  font-weight: inherit;
-  min-height: 44px;
-}
+.console-main button[type="submit"]:not(.pb-send):disabled { opacity: 0.55; cursor: progress; }
 .console .checkline { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.8125rem; }
 .console .checkline input { margin-top: 0.15rem; width: 18px; height: 18px; }
 

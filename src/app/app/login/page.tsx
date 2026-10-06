@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage() {
   if (!gateEnabled() || (await hasSession())) redirect("/app");
   return (
-    <div className="console">
+    <div className="console console-single">
       <header className="console-bar">
         <h1>Placedon console</h1>
       </header>
