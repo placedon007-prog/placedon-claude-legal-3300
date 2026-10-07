@@ -9,7 +9,6 @@
  * is reading its own storage, so there is no hydration mismatch.
  */
 import * as React from "react";
-import { PlacedonMark } from "@/components/brand/placedon-mark";
 import {
   Dialog,
   DialogContent,
@@ -49,12 +48,9 @@ export function Welcome() {
         });
 
   return (
-    <p className="flex max-w-[720px] items-center justify-center gap-3 text-center text-display font-medium tracking-[-0.02em] text-fg">
-      <PlacedonMark className="size-8 flex-none text-fg" />
-      <span>
-        {line.hello ? <>{line.hello} </> : null}
-        {line.question}
-      </span>
+    <p className="max-w-[720px] text-center text-display font-medium tracking-[-0.02em] text-fg">
+      {line.hello ? <>{line.hello} </> : null}
+      {line.question}
     </p>
   );
 }
