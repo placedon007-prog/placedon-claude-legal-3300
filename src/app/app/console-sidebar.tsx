@@ -276,19 +276,50 @@ function Group({ title, threads, open }: { title: string; threads: LocalThread[]
   );
 }
 
+/** Initials on ink, like a signature; a neutral outline until a name is set. */
+function Avatar({ name }: { name: string | null }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0]!.toUpperCase())
+        .join("")
+    : null;
+  return initials ? (
+    <span aria-hidden className="grid size-7 flex-none place-items-center rounded-full bg-fg text-[11px] font-semibold tracking-[0.02em] text-ground">
+      {initials}
+    </span>
+  ) : (
+    <span aria-hidden className="grid size-7 flex-none place-items-center rounded-full border border-line-control text-fg-2">
+      <UserRound className="size-4" />
+    </span>
+  );
+}
+
 function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: boolean }) {
   const [name] = useDisplayName();
   const [nicknames, setNicknames] = useNicknamesOn();
   const earned = persona(useActivity());
   const [naming, setNaming] = React.useState(false);
+  const access = passcode ? "Shared passcode" : "No passcode set";
   const trigger = (
     <button
       type="button"
-      aria-label="Account"
-      className={compact ? iconOnly : cn(item, "w-full")}
+      aria-label={name ? `Account — ${name}` : "Account"}
+      className={
+        compact
+          ? "grid size-11 place-items-center rounded-lg transition-colors duration-150 hover:bg-wash-2"
+          : "flex min-h-12 w-full items-center gap-2.5 rounded-lg px-2 text-left transition-colors duration-150 hover:bg-wash-2"
+      }
     >
-      <UserRound className={compact ? "size-[18px]" : "size-4"} aria-hidden />
-      {compact ? null : (name ?? "This console")}
+      <Avatar name={name} />
+      {compact ? null : (
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="truncate text-body font-medium text-fg">{name ?? "Set your name"}</span>
+          <span className="truncate text-caption text-fg-3">{access}</span>
+        </span>
+      )}
     </button>
   );
   return (
@@ -302,9 +333,17 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         )}
         <DropdownMenuContent side={compact ? "right" : "top"} align="start" className="w-72">
+          <div className="flex items-center gap-2.5 px-2 py-2">
+            <Avatar name={name} />
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate text-body font-medium text-fg">{name ?? "No name set"}</span>
+              <span className="truncate text-caption text-fg-3">{access}</span>
+            </span>
+          </div>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="min-h-10" onSelect={() => setNaming(true)}>
-            <UserRound className="size-4" aria-hidden />
-            {name ? `Called “${name}” — change` : "What should we call you?"}
+            <PenLine className="size-4" aria-hidden />
+            {name ? "Change your name" : "What should we call you?"}
           </DropdownMenuItem>
           <DropdownMenuCheckboxItem
             className="min-h-10"
@@ -320,12 +359,13 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
               : "Earned after a few days of questions. Read from this browser only; never sent anywhere."}
           </DropdownMenuLabel>
           <DropdownMenuItem className="min-h-10" onSelect={() => forgetActivity()}>
+            <History className="size-4" aria-hidden />
             Forget my pattern
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
             {passcode
-              ? "Signed in with the shared passcode. There are no personal accounts yet."
+              ? "There are no personal accounts yet: everyone signs in with the shared passcode."
               : "No passcode is set: anyone who can reach this console can use it."}
           </DropdownMenuLabel>
           <form action={logoutAction}>
