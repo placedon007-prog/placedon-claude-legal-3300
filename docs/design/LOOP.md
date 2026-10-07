@@ -45,3 +45,10 @@
   forced light; sheet overlay blur removed (glass is banned); mono reserved for evidence.
 - /app/design-lab deleted. AGENTS.md has the "/app console" design system.
 - WAITING ON OWNER: approve the final screenshots in PR #8. Do not merge.
+
+## 2026-10-07 — iteration 5 (full section text)
+- Backend PR bubblebee1408/placedon-law-backend#78: citation.get returns `section {text,start,end}`
+  only on a re-verified quote. Gate 317/0 green. Merge was blocked by the permission check —
+  OWNER TO MERGE #78.
+- Frontend: panel shows the whole section once with all cited passages marked (fail-closed
+  offsets), hard wraps joined for display. 65 tests. Screens recaptured; axe 0.

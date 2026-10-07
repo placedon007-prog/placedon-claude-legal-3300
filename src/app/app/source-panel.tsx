@@ -8,15 +8,17 @@
  * on the quote. If the read does not arrive, the stored quote is shown and labelled as not
  * re-verified — never as verified, and never as a refusal.
  *
- * What the backend does not serve is said, not filled in: the section's full text, and
- * the date it came into force (`in_force_from` is null: not recorded).
+ * When the gateway serves the section the quotes were re-read from (`section`, only on a
+ * re-verified quote), the panel shows that section once with every cited passage marked;
+ * each mark is drawn only where `text[start:end]` is exactly the quote. Otherwise it shows
+ * the passages alone and says so. `in_force_from: null` is "not recorded", never a date.
  */
 import * as React from "react";
 import { Check, Copy, X } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { EnvelopeCitation } from "@/lib/gateway/types";
-import type { CitationGroup } from "@/lib/thread";
+import { joinWrappedLines, segmentSection, splitSection, type CitationGroup } from "@/lib/thread";
 import { cn } from "@/lib/utils";
 import { citationAction, type CitationState } from "./actions";
 
@@ -43,7 +45,7 @@ export function SourcePanel({
         aria-label="Source"
         className="sticky top-0 flex h-dvh w-[440px] flex-none flex-col border-l border-line bg-ground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-4 motion-safe:duration-200"
       >
-        <PanelBody source={source} onClose={onClose} />
+        <PanelBody key={`${source.conversationId}:${source.group.label}`} source={source} onClose={onClose} />
       </aside>
     );
   }
@@ -52,7 +54,7 @@ export function SourcePanel({
       <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-0 rounded-t-[14px] p-0">
         {source ? (
           <SheetMarker>
-            <PanelBody source={source} onClose={onClose} />
+            <PanelBody key={`${source.conversationId}:${source.group.label}`} source={source} onClose={onClose} />
           </SheetMarker>
         ) : null}
       </SheetContent>
@@ -86,26 +88,121 @@ function PanelBody({ source, onClose }: { source: OpenSource; onClose: () => voi
         </button>
       </header>
       <div className="flex-1 overflow-y-auto px-5 py-5">
-        <SheetDescriptionOrText>
-          {group.citations.length === 1
-            ? "The passage cited, re-read from the held corpus when this panel opened."
-            : `${group.citations.length} passages cited from this provision, each re-read from the held corpus when this panel opened.`}
-        </SheetDescriptionOrText>
-        <ol className="mt-4 flex flex-col gap-4">
-          {group.citations.map((c) => (
-            <Passage
-              key={`${source.conversationId}:${c.id}`}
-              citation={c}
-              conversationId={source.conversationId}
-              active={source.activeId === c.id}
-            />
-          ))}
-        </ol>
-        <p className="mt-6 border-t border-line pt-3 text-caption text-fg-3">
-          Only the cited passages are shown. No verb serves the full text of the section yet, so
-          the passage cannot be shown in its surrounding text here.
-        </p>
+        <Passages source={source} />
       </div>
+    </>
+  );
+}
+
+/** Every citation in the group, re-read once when the panel opens. */
+function useReads(citations: readonly EnvelopeCitation[], conversationId: string) {
+  const [reads, setReads] = React.useState<Record<string, CitationState>>({});
+  React.useEffect(() => {
+    let live = true;
+    for (const c of citations) {
+      citationAction({ citationId: c.id, conversationId }).then((s) => {
+        if (live) setReads((r) => ({ ...r, [c.id]: s }));
+      });
+    }
+    return () => {
+      live = false;
+    };
+  }, [citations, conversationId]);
+  return reads;
+}
+
+function Passages({ source }: { source: OpenSource }) {
+  const { group } = source;
+  const reads = useReads(group.citations, source.conversationId);
+
+  // One section view when EVERY passage re-verified against the same served section and
+  // each offset slices back to its quote. Anything less falls back to one card per passage.
+  const ranges = group.citations.map((c) => {
+    const r = reads[c.id];
+    if (r?.phase !== "read" || !r.data.reverified || !r.data.section) return null;
+    return splitSection(r.data.section, r.data.citation.quote)
+      ? { id: c.id, start: r.data.section.start, end: r.data.section.end, text: r.data.section.text }
+      : null;
+  });
+  const sameText = ranges.every((x) => x && x.text === ranges[0]?.text);
+  const unified = ranges.length > 0 && ranges.every(Boolean) && sameText;
+
+  if (unified) {
+    const first = reads[group.citations[0].id];
+    const data = first?.phase === "read" ? first.data : null;
+    return (
+      <SectionView
+        text={ranges[0]!.text}
+        ranges={ranges.map((r) => ({ id: r!.id, start: r!.start, end: r!.end }))}
+        activeId={source.activeId}
+        count={group.citations.length}
+        citation={data?.citation ?? group.citations[0]}
+      />
+    );
+  }
+  return (
+    <>
+      <SheetDescriptionOrText>
+        {group.citations.length === 1
+          ? "The passage cited, re-read from the held corpus when this panel opened."
+          : `${group.citations.length} passages cited from this provision, each re-read from the held corpus when this panel opened.`}
+      </SheetDescriptionOrText>
+      <ol className="mt-4 flex flex-col gap-4">
+        {group.citations.map((c) => (
+          <Passage key={c.id} citation={c} state={reads[c.id] ?? null} active={source.activeId === c.id} />
+        ))}
+      </ol>
+      <p className="mt-6 border-t border-line pt-3 text-caption text-fg-3">
+        Only the cited passages are shown: this gateway did not serve the section&rsquo;s full
+        text with them.
+      </p>
+    </>
+  );
+}
+
+/** The whole section, every cited passage marked, the clicked one emphasised and in view. */
+function SectionView({
+  text,
+  ranges,
+  activeId,
+  count,
+  citation,
+}: {
+  text: string;
+  ranges: { id: string; start: number; end: number }[];
+  activeId: string | null;
+  count: number;
+  citation: EnvelopeCitation;
+}) {
+  const activeRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "center" });
+  }, [activeId]);
+  return (
+    <>
+      <SheetDescriptionOrText>
+        The section as held, re-read just now. {count === 1 ? "The cited passage is" : `The ${count} cited passages are`}{" "}
+        marked{count > 1 && activeId ? "; the one you opened is underlined" : ""}. Each byte-matches the held text.
+      </SheetDescriptionOrText>
+      {/* Display only: hard wraps from the source PDF are joined (joinWrappedLines); a new
+          sub-section or proviso keeps its line. The words are the held text, unchanged. */}
+      <div className="mt-4 rounded-card border border-line-2 p-4 text-read whitespace-pre-line text-fg">
+        {segmentSection(text, ranges).map((seg, i) =>
+          seg.kind === "text" ? (
+            <React.Fragment key={i}>{joinWrappedLines(seg.text)}</React.Fragment>
+          ) : (
+            <mark
+              key={i}
+              ref={seg.id === activeId ? activeRef : undefined}
+              aria-current={seg.id === activeId ? "true" : undefined}
+              className={cn("text-fg", seg.id === activeId || count === 1 ? "quote-mark" : "bg-wash-2")}
+            >
+              {joinWrappedLines(seg.text)}
+            </mark>
+          ),
+        )}
+      </div>
+      <Evidence citation={citation} />
     </>
   );
 }
@@ -135,26 +232,14 @@ function SheetMarker({ children }: { children: React.ReactNode }) {
 
 function Passage({
   citation,
-  conversationId,
+  state,
   active,
 }: {
   citation: EnvelopeCitation;
-  conversationId: string;
+  state: CitationState | null;
   active: boolean;
 }) {
-  const [state, setState] = React.useState<CitationState | null>(null);
   const ref = React.useRef<HTMLLIElement>(null);
-
-  React.useEffect(() => {
-    let live = true;
-    citationAction({ citationId: citation.id, conversationId }).then((s) => {
-      if (live) setState(s);
-    });
-    return () => {
-      live = false;
-    };
-  }, [citation.id, conversationId]);
-
   React.useEffect(() => {
     if (active) ref.current?.scrollIntoView({ block: "nearest" });
   }, [active]);

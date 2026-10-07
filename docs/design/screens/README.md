@@ -1,7 +1,8 @@
 # /app console — verification screens (2026-10-07)
 
 Captured by `capture.mjs` (Playwright + axe-core) against a **production build** (`next build &&
-next start`) talking to the **real gateway** (backend ca1e86a) on its in-memory store. Nothing on
+next start`) talking to the **real gateway** — backend main 7e0e38f plus PR #78 (`citation.get`
+serves the section), on its in-memory store. Nothing on
 these screens is a fixture: every answer, abstention and citation is what the gateway served.
 "Did not arrive" was captured by stopping that gateway, so the failure is a real transport error.
 
@@ -10,7 +11,7 @@ Widths: 1440 · 1024 · 390 (file suffix).
 | File | What it shows |
 |------|---------------|
 | `ask-empty-*` | Empty state: one sentence and the composer |
-| `ask-answered-*` | Answered; at ≥1024 the source panel opens with the first cited answer |
+| `ask-answered-*` | Answered; at ≥1024 the source panel opens with the first cited answer, showing the whole section with the cited passage marked |
 | `ask-panel-closed-*` | The panel closed: the thread takes the full width |
 | `ask-source-sheet-390` | Below 1024 the source panel is a bottom sheet |
 | `ask-abstained-*` | Not answered; the reasons, body by body |

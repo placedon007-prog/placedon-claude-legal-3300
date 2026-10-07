@@ -128,3 +128,50 @@ test("every recorded live reply parses against the contract", async () => {
   assert.ok(conversationSendOkSchema.safeParse(RECORDED.send_abstained).success);
   for (const c of Object.values(RECORDED.citations)) assert.ok(citationGetOkSchema.safeParse(c).success);
 });
+
+/* ── the section around a quote (citation.get `section`) ────────────────── */
+
+import { splitSection } from "../src/lib/thread";
+
+test("a served section splits into before / the quote / after", () => {
+  const text = "Heading. Provided that the meeting shall be held. Explanation.";
+  const quote = "Provided that the meeting shall be held.";
+  const start = text.indexOf(quote);
+  assert.deepEqual(splitSection({ text, start, end: start + quote.length }, quote), {
+    before: "Heading. ",
+    quote,
+    after: " Explanation.",
+  });
+});
+
+test("offsets that do not slice back to the quote mark nothing (fail closed)", () => {
+  const text = "Heading. Provided that the meeting shall be held.";
+  assert.equal(splitSection({ text, start: 0, end: 8 }, "Provided that"), null);
+  assert.equal(splitSection({ text, start: -1, end: 4 }, "Head"), null);
+  assert.equal(splitSection(null, "x"), null);
+});
+
+import { segmentSection } from "../src/lib/thread";
+
+test("one section, several passages: each marked once, in order, overlaps skipped", () => {
+  const text = "aaa BBB ccc DDD eee";
+  const segs = segmentSection(text, [
+    { id: "c2", start: 12, end: 15 },
+    { id: "c1", start: 4, end: 7 },
+    { id: "cx", start: 5, end: 9 }, // overlaps c1: skipped
+  ]);
+  assert.deepEqual(segs.map((s) => (s.kind === "quote" ? `[${s.id}:${s.text}]` : s.text)).join(""),
+    "aaa [c1:BBB] ccc [c2:DDD] eee");
+  assert.equal(segs.map((s) => s.text).join(""), text, "nothing is lost or added");
+});
+
+import { joinWrappedLines } from "../src/lib/thread";
+
+test("hard wraps join; a new sub-section, proviso or footnote keeps its line", () => {
+  const held = "within which any annual\ngeneral meeting shall be held:\nProvided that the Registrar\nmay extend.\n(2) Every meeting\nshall be called.\n1[Inserted]";
+  assert.equal(
+    joinWrappedLines(held),
+    "within which any annual general meeting shall be held:\nProvided that the Registrar may extend.\n(2) Every meeting shall be called.\n1[Inserted]",
+  );
+  assert.equal(joinWrappedLines(held).replace(/\s+/g, ""), held.replace(/\s+/g, ""), "no word changes");
+});

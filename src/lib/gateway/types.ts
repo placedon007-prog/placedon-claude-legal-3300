@@ -826,6 +826,14 @@ export const citationGetOkSchema = z.object({
   /** false means the quote no longer matches the corpus, and nothing may rest on it. */
   reverified: z.boolean(),
   reverified_note: z.string(),
+  /**
+   * The section the quote was re-read from, with the quote's offsets in it. Served only
+   * when `reverified` is true; null otherwise. Optional because older gateways lack it.
+   */
+  section: z
+    .object({ text: z.string(), start: z.number().int(), end: z.number().int() })
+    .nullable()
+    .optional(),
   note: z.string().optional(),
 });
 export const citationGetSchema = z.union([citationGetOkSchema, verbRefusalSchema]);

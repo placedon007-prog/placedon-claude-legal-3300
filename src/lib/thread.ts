@@ -214,3 +214,61 @@ export function groupThreads(
     ),
   };
 }
+
+/* ── the section around a quote ─────────────────────────────────────────── */
+
+export interface ServedSection {
+  readonly text: string;
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * Split a served section into the text before the quote, the quote, and the text after.
+ * Fails closed: if `text[start:end]` is not exactly the quote, nothing is marked — a
+ * highlight on the wrong words would point a reader at a sentence nobody cited.
+ */
+export function splitSection(
+  section: ServedSection | null | undefined,
+  quote: string,
+): { before: string; quote: string; after: string } | null {
+  if (!section) return null;
+  const { text, start, end } = section;
+  if (start < 0 || end > text.length || start >= end) return null;
+  if (text.slice(start, end) !== quote) return null;
+  return { before: text.slice(0, start), quote, after: text.slice(end) };
+}
+
+export type SectionSegment =
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "quote"; readonly text: string; readonly id: string };
+
+/**
+ * One section with several cited passages marked. Ranges are sorted; one that overlaps an
+ * earlier range is skipped rather than merged, so every mark is exactly one served quote.
+ */
+export function segmentSection(
+  text: string,
+  ranges: readonly { id: string; start: number; end: number }[],
+): SectionSegment[] {
+  const out: SectionSegment[] = [];
+  let at = 0;
+  for (const r of ranges.toSorted((a, b) => a.start - b.start)) {
+    if (r.start < at || r.end > text.length || r.start >= r.end) continue;
+    if (r.start > at) out.push({ kind: "text", text: text.slice(at, r.start) });
+    out.push({ kind: "quote", text: text.slice(r.start, r.end), id: r.id });
+    at = r.end;
+  }
+  if (at < text.length) out.push({ kind: "text", text: text.slice(at) });
+  return out;
+}
+
+/**
+ * Display-only: the held text keeps the source PDF's hard line wraps, which break sentences
+ * mid-phrase. A break is kept where the next line starts a new unit of the statute — a
+ * sub-section "(2)", a numbered item, a "[" footnote, a proviso, explanation or illustration —
+ * and becomes a space otherwise. The words are untouched; only line breaks change.
+ */
+export function joinWrappedLines(text: string): string {
+  return text.replace(/[ \t]*\n(?!\s*(?:\(|\d|\[|Provided|Explanation|Illustration))[ \t]*/g, " ");
+}

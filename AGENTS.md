@@ -72,8 +72,11 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
 - **Citations:** inline numbered marker → Sources list → Source panel. Ask runs on
   `conversation.send` / `conversation.get`; the panel re-reads every quote through
   `citation.get` and says when it no longer matches. The section number comes only from the
-  served `provision` (`linkCitations` in `src/lib/thread.ts`). The panel shows the cited
-  passages only — no verb serves a section's full text yet — and `in_force_from: null`
+  served `provision` (`linkCitations` in `src/lib/thread.ts`). When `citation.get` serves
+  `section` (backend PR #78; only on a re-verified quote) the panel shows the whole section
+  once with every cited passage marked — a mark is drawn only where `text[start:end]` is
+  exactly the quote (`splitSection`, `segmentSection`); PDF hard wraps are joined for display
+  only (`joinWrappedLines`). Without it, the passages alone, said so. `in_force_from: null`
   renders "not recorded", never a date.
 - **Standing limits:** on Ask, one quiet line under every result (law read as at · Playbook
   DRAFT · UAE North · not legal advice); on every other screen, one line under the top edge.
