@@ -1,417 +1,346 @@
-/* /app — the in-house lawyer's console.
+/* /app — the in-house lawyer's console. Design system: AGENTS.md → "/app console".
 
-   Black and white (owner decision, 2026-10-06). The screens below were written against the
-   site tokens --ink / --cream / --gold / --gold-muted / --abstain, with a dark ground. Rather
-   than rewrite every rule, the console REMAPS those tokens inside .console:
-     --ink   -> the ground (white)      --cream -> the text (near-black)
-     --gold  -> black                   --gold-muted, --abstain -> mid grey
-   so every console screen turns monochrome at once, and the marketing site is untouched.
-   --font-display is mapped to the body face: no serif in the console.
-   Corners <=6px except the composer. Motion <=250ms, reduced motion honoured. */
+   Black and white (owner decision, 2026-10-06). Every value below is a token; components
+   use the Tailwind names mapped in globals.css (text-fg, border-line, rounded-card, …).
 
+   The tokens are set on `.console` AND on `[data-slot]`: shadcn's tooltips, menus and sheets
+   render in a portal at the end of <body>, outside `.console`, and every one of them carries
+   a data-slot attribute. Nothing on the marketing site does, so it never sees these values.
+
+   The older screens were written against the site tokens --ink / --cream / --gold /
+   --gold-muted / --abstain. Those are remapped here, so they turn monochrome too. */
+
+.console,
+[data-slot] {
+  color-scheme: light;
+  /* Ground and greys — five steps. */
+  --c-ground: #ffffff;
+  --c-wash: #fafafa;        /* sidebar, quiet surfaces */
+  --c-wash-2: #f2f2f2;      /* hover, the highlighted quote */
+  --c-line: #e8e8e8;        /* hairlines between things */
+  --c-line-2: #d4d4d4;      /* hairlines around things */
+  --c-line-control: #8f8f8f; /* control outlines: 3.3:1 on white (WCAG 1.4.11) */
+
+  /* Text — all AA on white: 19.4:1, 10.4:1, 5.4:1. */
+  --c-fg: #0a0a0a;
+  --c-fg-2: #404040;
+  --c-fg-3: #6b6b6b;
+
+  /* Motion: at most 200ms, and only to show what an action changed. */
+  --c-dur: 160ms;
+  --c-dur-panel: 200ms;
+  --c-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* shadcn's own names, valued from the tokens above. */
+  --background: var(--c-ground);
+  --foreground: var(--c-fg);
+  --card: var(--c-ground);
+  --card-foreground: var(--c-fg);
+  --popover: var(--c-ground);
+  --popover-foreground: var(--c-fg);
+  --primary: var(--c-fg);
+  --primary-foreground: var(--c-ground);
+  --secondary: var(--c-wash-2);
+  --secondary-foreground: var(--c-fg);
+  --muted: var(--c-wash-2);
+  --muted-foreground: var(--c-fg-3);
+  --accent: var(--c-wash-2);
+  --accent-foreground: var(--c-fg);
+  --destructive: var(--c-fg);
+  --border: var(--c-line);
+  --input: var(--c-line-control);
+  --ring: var(--c-fg);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  --font-console: var(--font-plex-sans);
+  font-family: var(--font-console), var(--font-body), system-ui, sans-serif;
+}
+
+/* The older screens' site tokens, remapped. */
 .console {
-  --ink: #ffffff;
-  --cream: #0a0a0a;
-  --gold: #0a0a0a;
-  --gold-muted: #525252;
-  --abstain: #525252;
-  --font-display: var(--font-body);
+  --ink: var(--c-ground);
+  --cream: var(--c-fg);
+  --gold: var(--c-fg);
+  --gold-muted: var(--c-fg-3);
+  --abstain: var(--c-fg-3);
+  --font-display: var(--font-console);
   min-height: 100dvh;
-  background: var(--ink);
-  color: var(--cream);
-  display: grid;
-  grid-template-columns: 15.5rem minmax(0, 1fr);
-  font-family: var(--font-body), system-ui, sans-serif;
-}
-@media (max-width: 760px) {
-  .console { grid-template-columns: minmax(0, 1fr); }
+  background: var(--c-ground);
+  color: var(--c-fg);
+  /* The site's <html> is dark; native controls (checkbox, file input, scrollbars) follow
+     color-scheme, so the console says light. */
+  color-scheme: light;
 }
 
-.console-side {
-  background: #fafafa;
-  border-right: 1px solid #ebebeb;
-  padding: 1rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  box-sizing: border-box;
-}
-@media (max-width: 760px) {
-  /* On a phone the sidebar becomes one scrollable row of links above the screen. */
-  .console-side {
-    position: static; height: auto; border-right: 0; border-bottom: 1px solid #ebebeb;
-    flex-direction: row; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem;
-  }
-  .console-brand { padding: 0 0.25rem; }
-  .console-brand { font-size: 0; gap: 0; }
-  .console-new { display: none; }
-}
-.console-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.25rem 0.5rem 0.9rem;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  letter-spacing: -0.01em;
-}
-.console-brand .mark {
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: 5px;
-  background: #0a0a0a;
-  color: #ffffff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-}
-.console-new {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0 0.65rem;
-  margin-bottom: 0.75rem;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #0a0a0a;
-  text-decoration: none;
-  font-size: 0.875rem;
-}
-.console-new:hover { border-color: #a3a3a3; }
-
-.console-nav { display: flex; flex-direction: column; gap: 0.125rem; flex: 1; }
-.console-nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 2.25rem;
-  padding: 0 0.65rem;
-  border-radius: 6px;
-  color: #404040;
-  text-decoration: none;
-  font-size: 0.875rem;
-  transition: background-color 150ms ease;
-}
-.console-nav a svg { width: 1rem; height: 1rem; flex: none; }
-.console-nav a:hover { background: #f0f0f0; color: #0a0a0a; }
-.console-nav a[aria-current="page"] { background: #ececec; color: #0a0a0a; font-weight: 500; }
-.console-nav form { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid #ebebeb; }
-.console-nav form button {
-  width: 100%;
-  text-align: left;
-  min-height: 2.25rem;
-  padding: 0 0.65rem;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #525252;
-  font: inherit;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.console-nav form button:hover { background: #f0f0f0; color: #0a0a0a; }
-@media (max-width: 760px) {
-  .console-nav { flex-direction: row; overflow-x: auto; flex: 1; scrollbar-width: none; }
-  .console-nav a { white-space: nowrap; min-height: 2.75rem; }
-  .console-nav form { margin-top: 0; padding-top: 0; border-top: 0; }
-  .console-nav form button { white-space: nowrap; min-height: 2.75rem; }
-}
-.console a:focus-visible, .console button:focus-visible,
-.console input:focus-visible, .console textarea:focus-visible, .console select:focus-visible {
-  outline: 2px solid #0a0a0a;
+.console a:focus-visible, .console button:focus-visible, .console [tabindex]:focus-visible,
+.console input:focus-visible, .console textarea:focus-visible, .console select:focus-visible,
+[data-slot]:focus-visible, [data-slot] :focus-visible {
+  outline: 2px solid var(--c-fg);
   outline-offset: 2px;
 }
-/* The composer shows focus with its own border (focus-within), not a box inside it. */
+/* The composer shows focus on its own frame (focus-within), not as a box inside it. */
 .console textarea.pb-input:focus-visible { outline: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .console-nav a { transition: none; }
+  .console *, [data-slot], [data-slot] * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
-.console-body { min-width: 0; display: flex; flex-direction: column; }
-
-/* Single-column variant (sign-in page): no sidebar, a plain top bar. */
-.console-single { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
-.console-bar { padding: 0.9rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid #ebebeb; }
+/* Sign-in page: no sidebar, a plain top bar. */
+.console-single { display: grid; grid-template-rows: auto 1fr; }
+.console-bar { padding: 0.9rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--c-line); }
 .console-bar h1 { margin: 0; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
 
-/* Standing notices: each states a limit of THIS deployment, so they stay on every screen,
-   but as one quiet line each rather than a banner. */
-.console-notices { border-bottom: 1px solid #ebebeb; background: #ffffff; }
-.notice {
-  max-width: none;
-  width: 100%;
+/* Standing notices on screens other than Ask: one quiet line. On Ask they sit under each
+   result instead, which is where a reader is when they matter. */
+.console-notice {
   margin: 0;
-  padding: 0.45rem clamp(1rem, 3vw, 2rem);
-  border-top: 1px solid #f2f2f2;
-  font-size: 0.75rem;
+  padding: 0.5rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--c-line);
+  font-size: var(--text-caption);
   line-height: 1.5;
-  color: #525252;
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
+  color: var(--c-fg-3);
 }
-.console-notices .notice:first-child { border-top: 0; }
-.notice strong { color: #0a0a0a; font-weight: 500; }
-.notice .notice-key {
-  font-family: var(--font-code);
-  font-size: 0.6875rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #525252;
-  white-space: nowrap;
-}
+.console-notice strong { color: var(--c-fg-2); font-weight: 500; }
 
-.console-main { padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2.5rem) 4rem; }
-.console-main > * { max-width: 62rem; }
-.console h2 {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 500;
-  letter-spacing: -0.015em;
+/* Screens other than Ask: a padded reading column. Ask is a full-bleed workspace. */
+.console-main { min-width: 0; }
+.console-main:not(:has(> .ask-workspace)) {
+  padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2.5rem) 4rem;
+}
+.console-main > :not(.ask-workspace) { max-width: 62rem; }
+.console-main > h2 {
+  font-size: var(--text-display);
+  line-height: var(--text-display--line-height);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: 0 0 0.5rem;
 }
 .console .lede {
-  color: color-mix(in srgb, var(--cream) 70%, transparent);
+  color: var(--c-fg-2);
   max-width: 44rem;
   margin: 0 0 1.75rem;
   line-height: 1.6;
 }
 
 /* Forms */
-.console label { display: block; font-size: 0.8125rem; margin-bottom: 0.45rem; }
-.console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"] {
+.console label { display: block; font-size: var(--text-ui); margin-bottom: 0.45rem; color: var(--c-fg-2); }
+.console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"],
+.console input[type="date"], .console input[type="search"]:not(.bare), .console select {
   width: 100%;
-  background: color-mix(in srgb, var(--cream) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cream) 22%, transparent);
-  border-radius: 4px;
-  color: var(--cream);
+  min-height: 44px;
+  background: var(--c-ground);
+  border: 1px solid var(--c-line-control);
+  border-radius: 8px;
+  color: var(--c-fg);
   font: inherit;
-  padding: 0.7rem 0.8rem;
+  padding: 0.6rem 0.8rem;
 }
 .console textarea:not(.pb-input) { min-height: 9rem; resize: vertical; font-size: 0.9375rem; line-height: 1.55; }
+.console select { width: auto; min-width: 12rem; padding-right: 2rem; }
+/* The native file control, in the system's button language. */
+.console input[type="file"] { font: inherit; font-size: var(--text-body); color: var(--c-fg-2); }
+.console input[type="file"]::file-selector-button {
+  min-height: 44px;
+  margin-right: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--c-line-control);
+  border-radius: 8px;
+  background: var(--c-ground);
+  color: var(--c-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.console input[type="file"]::file-selector-button:hover { background: var(--c-wash-2); }
+/* The search field inside the sidebar shows focus on its wrapper. */
+.console input.bare:focus-visible, [data-slot] input.bare:focus-visible { outline: none; }
+
+/* Sections on the form screens: a heading with air above it, so each block reads apart. */
+.console-main > h3, .console-main > section > h3, .console-main > form + h3 {
+  margin: 2.25rem 0 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--c-fg);
+}
+.console-main form button[type="submit"]:not(.pb-send):not(.bare) { margin-top: 0.9rem; }
 .console .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
-.console-main button[type="submit"]:not(.pb-send) {
+.console-main button[type="submit"]:not(.pb-send):not(.bare) {
   min-height: 44px;
   padding: 0 1.15rem;
-  border-radius: 4px;
-  border: 1px solid var(--gold);
-  background: var(--gold);
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--c-fg);
+  background: var(--c-fg);
+  color: var(--c-ground);
+  font-weight: 500;
+  font-size: var(--text-body);
   cursor: pointer;
-  transition: opacity 180ms ease;
+  transition: opacity var(--c-dur) var(--c-ease);
 }
-.console-main button[type="submit"]:not(.pb-send):disabled { opacity: 0.55; cursor: progress; }
-.console .checkline { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.8125rem; }
+.console-main button[type="submit"]:not(.pb-send):not(.bare):hover { opacity: 0.86; }
+.console-main button[type="submit"]:not(.pb-send):not(.bare):disabled { opacity: 0.5; cursor: progress; }
+.console .checkline { display: flex; gap: 0.55rem; align-items: flex-start; font-size: var(--text-ui); }
 .console .checkline input { margin-top: 0.15rem; width: 18px; height: 18px; }
 
 /* Panels */
 .panel {
-  border: 1px solid color-mix(in srgb, var(--cream) 16%, transparent);
-  border-radius: 6px;
+  border: 1px solid var(--c-line-2);
+  border-radius: 10px;
   padding: 1.1rem 1.25rem;
   margin-top: 1.5rem;
-  background: color-mix(in srgb, var(--cream) 4%, transparent);
+  background: var(--c-ground);
 }
 .panel-head {
   display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: baseline;
   margin-bottom: 0.9rem;
 }
-.panel-head h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.0625rem; margin: 0; }
+.panel-head h3 { font-weight: 600; font-size: 1.0625rem; margin: 0; }
 .mono { font-family: var(--font-code); }
+/* Helper and meta text is prose, so it is sans. Mono is kept for identifiers and evidence
+   (`.mono`, `.evidence`, `.quoted`, hashes, dates). */
 .meta {
-  font-family: var(--font-code);
-  font-size: 0.75rem;
-  color: color-mix(in srgb, var(--cream) 62%, transparent);
-  letter-spacing: 0.02em;
+  font-size: var(--text-ui);
+  line-height: 1.5;
+  color: var(--c-fg-3);
 }
 
-/* A cited sentence: the claim, then its basis. */
+/* A cited sentence: the claim, then its basis in mono. */
 .cited { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
 .cited li { display: grid; gap: 0.35rem; }
 .cited .claim { line-height: 1.6; }
-/* Claim, then evidence — carried by the type.
-   The reference a reader READS is the claim: Fraunces, bold, at reading size.
-   Everything after it is the BASIS: machine-exact, and mono is what says so. */
 .cited .basis {
   font-family: var(--font-code);
-  font-size: 0.8125rem;
-  color: var(--gold-muted);
+  font-size: var(--text-ui);
+  color: var(--c-fg-3);
   display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline;
 }
-.cited .section {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--gold);
-  letter-spacing: -0.005em;
-}
+.cited .section { font-weight: 600; font-size: 1rem; color: var(--c-fg); }
 
-/* The three result registers, and they must never be confused.
-   - answer: ordinary cream
-   - abstain: cool grey, RESERVED for a refusal the pipeline decided on
-   - failure: a hatched edge + FAILURE label, never grey, never gold */
-.register-abstain {
-  border-left: 3px solid var(--abstain);
-  background: color-mix(in srgb, var(--abstain) 16%, transparent);
+/* The result registers. They must never be confused, and colour carries none of it:
+   - a refusal the product decided on: a solid hairline box on the wash;
+   - a transport failure: a DASHED ink box, and the words "this is not a refusal". */
+.register-abstain, .verb-refusal, .blocking-note, .cal-empty, .paused-budget {
+  border: 1px solid var(--c-line-2);
+  border-radius: 10px;
+  background: var(--c-wash);
 }
-.register-failure {
-  border-left: 3px solid color-mix(in srgb, var(--cream) 55%, transparent);
-  background: repeating-linear-gradient(
-    135deg,
-    transparent 0 6px,
-    color-mix(in srgb, var(--cream) 7%, transparent) 6px 12px
-  );
+.register-failure, .transport-failure {
+  border: 1px dashed var(--c-fg);
+  border-radius: 10px;
+  background: var(--c-ground);
 }
-.register-label {
-  font-family: var(--font-code);
-  font-size: 0.6875rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.register-abstain .register-label { color: color-mix(in srgb, var(--cream) 78%, transparent); }
-.register-failure .register-label { color: var(--cream); }
+.register-label { font-size: var(--text-ui); font-weight: 600; color: var(--c-fg); }
 
 /* Findings table. Status is readable without colour: a glyph AND a word. */
-.findings { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.875rem; }
+.findings { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: var(--text-body); }
 .findings caption { text-align: left; padding-bottom: 0.6rem; }
 .findings th, .findings td {
   text-align: left;
   vertical-align: top;
   padding: 0.7rem 0.75rem 0.7rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+  border-bottom: 1px solid var(--c-line);
 }
-.findings th {
-  font-family: var(--font-code);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--cream) 62%, transparent);
+.findings th, .steps th {
+  font-size: var(--text-caption);
+  color: var(--c-fg-3);
   font-weight: 500;
 }
 .status { display: inline-flex; gap: 0.45rem; align-items: baseline; white-space: nowrap; }
 .status .glyph { font-family: var(--font-code); font-weight: 500; }
-.status-word { font-family: var(--font-code); font-size: 0.75rem; letter-spacing: 0.04em; }
-.status-deviates .glyph, .status-deviates .status-word { color: var(--gold); }
-.status-needs_lawyer .glyph, .status-needs_lawyer .status-word { color: var(--cream); }
-.status-missing .glyph, .status-missing .status-word {
-  color: color-mix(in srgb, var(--cream) 72%, transparent);
-}
-.status-matches .glyph, .status-matches .status-word {
-  color: color-mix(in srgb, var(--cream) 58%, transparent);
-}
-/* Document checks. Gold is the one accent this view is allowed, so it marks the DEFECT
-   row and nothing else; the glyph and the word carry the rest without colour. */
-.status-defect .glyph, .status-defect .status-word { color: var(--gold); }
-.status-needs_book .glyph, .status-needs_book .status-word { color: var(--cream); }
-.status-pass .glyph, .status-pass .status-word {
-  color: color-mix(in srgb, var(--cream) 58%, transparent);
-}
-/* N/A is the one most easily misread as a pass, so it is the quietest thing on the row. */
-.status-na .glyph, .status-na .status-word {
-  color: color-mix(in srgb, var(--cream) 42%, transparent);
-}
+.status-word { font-family: var(--font-code); font-size: var(--text-caption); }
+/* Weight and ink, never hue: the word beside the glyph carries the meaning. */
+.status-deviates .glyph, .status-deviates .status-word,
+.status-defect .glyph, .status-defect .status-word { color: var(--c-fg); font-weight: 700; }
+.status-needs_lawyer .glyph, .status-needs_lawyer .status-word,
+.status-needs_book .glyph, .status-needs_book .status-word { color: var(--c-fg); }
+.status-missing .glyph, .status-missing .status-word { color: var(--c-fg-2); }
+.status-matches .glyph, .status-matches .status-word,
+.status-pass .glyph, .status-pass .status-word,
+.status-na .glyph, .status-na .status-word { color: var(--c-fg-3); }
 
-/* The company position. Set in the body face, not mono: it is a sentence a person wrote
-   for another person to read, unlike the quoted comparison beside it, which is machine
-   output. `.standard-rationale` inherits `.meta` and sits under it as the reason. */
-.standard-text {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--cream) 88%, transparent);
-}
+.standard-text { margin: 0; font-size: var(--text-ui); line-height: 1.5; color: var(--c-fg-2); }
 .standard-rationale { margin: 0.35rem 0 0; line-height: 1.5; }
 
 .quoted {
   font-family: var(--font-code);
-  font-size: 0.8125rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
-  color: color-mix(in srgb, var(--cream) 82%, transparent);
-  border-left: 2px solid color-mix(in srgb, var(--cream) 22%, transparent);
-  padding-left: 0.6rem;
+  color: var(--c-fg-2);
+  background: var(--c-wash);
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
   margin: 0;
 }
 
 /* Runs */
-.runs { list-style: none; padding: 0; margin: 1.25rem 0 0; display: grid; gap: 1px;
-  background: color-mix(in srgb, var(--cream) 12%, transparent); border-radius: 6px; overflow: hidden; }
-.runs li { background: var(--ink); }
-.runs a { display: grid; gap: 0.3rem; padding: 0.9rem 1rem; text-decoration: none; color: inherit; }
-.runs a:hover { background: color-mix(in srgb, var(--cream) 5%, transparent); }
-.steps { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.runs { list-style: none; padding: 0; margin: 1.25rem 0 0; border: 1px solid var(--c-line-2);
+  border-radius: 10px; overflow: hidden; }
+.runs li + li { border-top: 1px solid var(--c-line); }
+.runs a { display: grid; gap: 0.3rem; padding: 0.9rem 1rem; text-decoration: none; color: inherit;
+  transition: background-color var(--c-dur) var(--c-ease); }
+.runs a:hover { background: var(--c-wash); }
+.steps { width: 100%; border-collapse: collapse; font-size: var(--text-ui); }
 .steps th, .steps td {
   text-align: left; padding: 0.65rem 0.75rem 0.65rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+  border-bottom: 1px solid var(--c-line);
   vertical-align: top;
 }
-.steps th { font-family: var(--font-code); font-size: 0.6875rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: color-mix(in srgb, var(--cream) 62%, transparent); font-weight: 500; }
-.unpriced { font-family: var(--font-code); color: var(--abstain); }
 
-.empty { color: color-mix(in srgb, var(--cream) 62%, transparent); }
-.field-error { color: var(--gold); font-size: 0.8125rem; margin-top: 0.6rem; }
+.empty { color: var(--c-fg-3); }
+.field-error { color: var(--c-fg); font-weight: 500; font-size: var(--text-ui); margin-top: 0.6rem; }
 
-@media (prefers-reduced-motion: reduce) {
-  .console * { transition: none !important; animation: none !important; }
-}
 @media (max-width: 40rem) {
   .findings thead, .steps thead { display: none; }
   .findings tr, .steps tr { display: grid; gap: 0.3rem; padding: 0.8rem 0; }
   .findings td, .steps td { border: 0; padding: 0; }
-  .findings tr { border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent); }
+  .findings tr { border-bottom: 1px solid var(--c-line); }
 }
 
 /* ── the human gate ───────────────────────────────────────────────────────── */
-/* Sits inside the row it decides, not in a toolbar: a control that floats above a table
-   is a control that acts on the table, and there is deliberately no such thing here. */
+/* Inside the row it decides, never in a toolbar above the table. */
 .gate {
   margin-top: 0.85rem;
   padding: 0.75rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--cream) 16%, transparent);
-  border-radius: 4px;
+  border: 1px solid var(--c-line-2);
+  border-radius: 8px;
   display: grid;
   gap: 0.45rem;
 }
 .gate-quote summary {
-  font-family: var(--font-code);
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
+  font-size: var(--text-ui);
   cursor: pointer;
-  color: color-mix(in srgb, var(--cream) 72%, transparent);
+  color: var(--c-fg-2);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
-.gate-quote summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.gate-quote[open] summary { color: color-mix(in srgb, var(--cream) 88%, transparent); }
+.gate-quote[open] summary { color: var(--c-fg); }
 .gate-quote .quoted { margin-top: 0.5rem; }
-.gate label { font-size: 0.75rem; }
-.gate textarea { min-height: 3.2rem; font-size: 0.8125rem; }
+.gate label { font-size: var(--text-caption); }
+.gate textarea { min-height: 3.2rem; font-size: var(--text-ui); }
 .gate-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.gate-actions button { font-size: 0.8125rem; padding: 0.4rem 0.9rem; }
-/* Disabled is a real state here, not a hint: the buttons do nothing until the quote has
-   been opened and a reason typed. */
+.gate-actions button { font-size: var(--text-ui); padding: 0.4rem 0.9rem; }
+/* Disabled is a real state: nothing happens until the quote is opened and a reason typed. */
 .gate-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
-.gate-actions .secondary {
-  background: transparent;
-  color: color-mix(in srgb, var(--cream) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cream) 28%, transparent);
+.gate-actions .secondary, .watch-cancel button {
+  min-height: 44px;
+  background: var(--c-ground);
+  color: var(--c-fg);
+  border: 1px solid var(--c-line-control);
+  border-radius: 8px;
+  cursor: pointer;
 }
-.gate-error { font-size: 0.8125rem; color: var(--abstain); margin: 0; }
+.gate-error { font-size: var(--text-ui); color: var(--c-fg); margin: 0; }
 .gate-note { margin-top: 0.7rem; }
-.gate-done {
-  margin: 0.85rem 0 0;
-  font-size: 0.8125rem;
-  padding-left: 0.6rem;
-  border-left: 2px solid var(--gold-muted);
-}
+.gate-done { margin: 0.85rem 0 0; font-size: var(--text-ui); color: var(--c-fg-2); }
 
-/* Documents: three short fields on one line, stacking on a phone. */
 .field-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -425,234 +354,138 @@
 /* ── watching a run that is still moving ──────────────────────────────────── */
 .watch { margin-bottom: 1.5rem; display: grid; gap: 0.5rem; }
 .watch .lede { margin: 0; }
-/* The one moving thing on the page, and it moves slowly. Reduced motion stops it dead
-   rather than slowing it: a pulse is information here, not decoration, so the static
-   state has to read as "watching" on its own — which the words beside it do. */
-.watch-live::before {
+/* The one moving thing on the page. Reduced motion stops it; the words carry "watching". */
+.watch-live::before, .pulse-dot {
   content: "";
   display: inline-block;
   width: 6px; height: 6px;
   margin-right: 0.4rem;
   border-radius: 50%;
-  background: var(--gold);
-  animation: watch-pulse 2s ease-in-out infinite;
+  background: var(--c-fg);
+  animation: c-pulse 2s ease-in-out infinite;
 }
-@keyframes watch-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) {
-  .watch-live::before { animation: none; }
-}
+@keyframes c-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .watch-cancel { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-.watch-cancel button {
-  min-height: 44px;
-  padding: 0 1rem;
-  border-radius: 4px;
-  background: transparent;
-  color: color-mix(in srgb, var(--cream) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cream) 28%, transparent);
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
+.watch-cancel button { padding: 0 1rem; font-size: var(--text-ui); }
 .watch-cancel button:disabled { opacity: 0.5; cursor: progress; }
 
-/* ── the four screens: vault, tables, drafts, calendar ─────────────────────────
-   Tokens only. The accent appears ONCE per view — on the primary button, which
-   already carries it — so nothing below reaches for --gold. The abstain grey is
-   used only where the product abstained: an UNKNOWN date and a MODEL SUGGESTION,
-   which is the model declining to commit. Everything else is cream at a weight. */
-
-/* A transport failure reuses the hatched register: never grey (that is abstention),
-   never gold. It must not be mistakable for either a finding or a refusal. */
-.transport-failure {
-  margin-top: 1rem;
-  padding: 0.9rem 1rem;
-  border-left: 3px solid color-mix(in srgb, var(--cream) 55%, transparent);
-  background: repeating-linear-gradient(
-    135deg,
-    transparent 0 6px,
-    color-mix(in srgb, var(--cream) 7%, transparent) 6px 12px
-  );
-}
-.transport-failure h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
-
-/* A named refusal: the gateway answered and declined. Abstain grey, because that is
-   what the colour is reserved for. */
-.verb-refusal {
-  margin-top: 1rem;
-  padding: 0.9rem 1rem;
-  border-left: 3px solid var(--abstain);
-  background: color-mix(in srgb, var(--abstain) 16%, transparent);
-}
-.verb-refusal h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
+/* ── Wall System, tables, drafts, calendar ───────────────────────────────────── */
+.transport-failure, .verb-refusal { margin-top: 1rem; padding: 0.9rem 1rem; }
+.transport-failure h3, .verb-refusal h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
 .conflict table { margin: 0.5rem 0; }
+.paused-budget { margin-top: 0.9rem; padding: 0.8rem 1rem; }
+.paused-budget h4 { margin: 0 0 0.3rem; font-size: var(--text-body); }
+.blocking-note { margin-top: 0.9rem; padding: 0.8rem 1rem; }
 
-/* PAUSED_BUDGET is a STATE, so it reads as information, not as damage: a plain rule
-   on the left rather than the failure hatching. */
-.paused-budget {
-  margin-top: 0.9rem;
-  padding: 0.8rem 1rem;
-  border-left: 3px solid color-mix(in srgb, var(--cream) 40%, transparent);
-  background: color-mix(in srgb, var(--cream) 5%, transparent);
-}
-.paused-budget h4 { margin: 0 0 0.3rem; font-size: 0.875rem; }
+/* UNPRICED stands where a figure would be: never 0. Mono, because it stands in for a number. */
+.unpriced { font-family: var(--font-code); font-size: var(--text-caption); color: var(--c-fg); }
 
-.blocking-note {
-  margin-top: 0.9rem;
-  padding: 0.8rem 1rem;
-  border-left: 3px solid var(--abstain);
-  background: color-mix(in srgb, var(--abstain) 12%, transparent);
-}
-
-/* UNPRICED, where a figure would be. Mono, because it stands in for a number. */
-.unpriced {
-  font-family: var(--font-code);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--cream) 80%, transparent);
-}
-
-/* Tables shared by the vault, the grid legend and the draft slots. */
 .vault-table, .grid-table, .legend {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.6rem;
-  font-size: 0.875rem;
+  font-size: var(--text-body);
 }
-.vault-table caption, .grid-table caption, .legend caption {
-  text-align: left;
-  padding-bottom: 0.6rem;
-}
+.vault-table caption, .grid-table caption, .legend caption { text-align: left; padding-bottom: 0.6rem; }
 .vault-table th, .vault-table td,
 .grid-table th, .grid-table td,
 .legend th, .legend td {
   text-align: left;
   vertical-align: top;
   padding: 0.7rem 0.75rem 0.7rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+  border-bottom: 1px solid var(--c-line);
 }
-.vault-table th, .grid-table th, .legend th { font-weight: 600; }
+.vault-table th, .grid-table th, .legend th { font-weight: 600; font-size: var(--text-ui); }
 
-/* The grid. Each cell carries its state as a glyph AND a word, so colour carries
-   nothing. `cell-pending` and `cell-failed` are deliberately NOT tinted: tinting
-   them would imply a verdict about a document nobody read. */
+/* Each cell carries its state as a glyph AND a word. Pending and failed are not tinted:
+   a tint would imply a verdict about a document nobody read. */
 .grid-table { display: block; overflow-x: auto; }
 .grid-doc { font-family: var(--font-code); white-space: nowrap; }
 .cell { min-width: 11rem; }
 .cell-state { display: block; font-weight: 600; }
-.cell-value { display: block; margin-top: 0.2rem; }
-.cell-quote { display: block; margin-top: 0.2rem; }
-.cell-needs_lawyer { background: color-mix(in srgb, var(--abstain) 12%, transparent); }
+.cell-value, .cell-quote { display: block; margin-top: 0.2rem; }
+.cell-needs_lawyer { background: var(--c-wash-2); }
 
 .csv-preview, .diff {
   margin-top: 0.6rem;
   padding: 0.75rem;
   overflow-x: auto;
   font-family: var(--font-code);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   line-height: 1.55;
   white-space: pre;
-  background: color-mix(in srgb, var(--cream) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
-  border-radius: 4px;
+  background: var(--c-wash);
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
 }
 
-/* A model's words are tagged in the markup, so the mark survives a greyscale print
-   and reaches a screen reader. */
+/* A model's words are tagged in the markup, so the mark survives greyscale print and
+   reaches a screen reader. */
 .suggestion-tag {
-  font-family: var(--font-code);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.1rem 0.35rem;
-  border: 1px solid var(--abstain);
-  border-radius: 3px;
-  color: color-mix(in srgb, var(--cream) 85%, transparent);
+  font-size: var(--text-caption);
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--c-line-control);
+  border-radius: 6px;
+  color: var(--c-fg-2);
 }
-.slot-suggestion { background: color-mix(in srgb, var(--abstain) 10%, transparent); }
+.slot-suggestion { background: var(--c-wash); }
 .origin-meaning { display: block; }
 
 .cal-form { margin-bottom: 1rem; }
 .cal-result h3, .version-list + section h3 { margin-top: 1.4rem; }
 .cal-list, .vault-hits, .version-list { margin: 0.5rem 0 0; padding-left: 1.1rem; }
-.cal-list { list-style: none; padding-left: 0; }
-.cal-entry {
-  padding: 0.8rem 0 0.8rem 0.9rem;
-  border-left: 3px solid color-mix(in srgb, var(--cream) 22%, transparent);
-  margin-bottom: 0.6rem;
-}
-/* The one place abstain grey belongs on this screen. */
-.cal-unknown { border-left-color: var(--abstain); }
+.cal-list { list-style: none; padding-left: 0; display: grid; gap: 0.5rem; }
+.cal-entry { padding: 0.8rem 1rem; border: 1px solid var(--c-line-2); border-radius: 10px; }
+/* An unknown date: dashed, because the fact that would date it is missing. */
+.cal-unknown { border-style: dashed; }
 .cal-state { margin: 0 0 0.3rem; font-weight: 600; }
 .cal-date { font-family: var(--font-code); margin-left: 0.4rem; }
-.cal-date-unknown { color: color-mix(in srgb, var(--cream) 78%, transparent); }
+.cal-date-unknown { color: var(--c-fg-2); }
 .cal-duty { margin: 0; }
 .cal-provision, .cal-note { margin-top: 0.2rem; }
-.cal-empty {
-  margin-top: 0.5rem;
-  padding: 0.8rem 1rem;
-  border-left: 3px solid var(--abstain);
-  background: color-mix(in srgb, var(--abstain) 12%, transparent);
-}
+.cal-empty { margin-top: 0.5rem; padding: 0.8rem 1rem; }
 
 .vault-hits li, .version-list li { margin-bottom: 0.7rem; }
 .vault-uploaded { margin-top: 0.8rem; }
 .evidence {
   margin: 0.3rem 0 0;
-  padding-left: 0.8rem;
-  border-left: 2px solid var(--gold-muted);
   font-family: var(--font-code);
-  font-size: 0.8125rem;
+  font-size: var(--text-ui);
+  color: var(--c-fg-3);
 }
 
-/* A row of label + field + button that wraps rather than overflowing at 360px. */
-.inline-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-}
+.inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem; margin-top: 0.5rem; }
 .inline-form label { margin: 0; }
 .inline-form input { width: auto; min-width: 12rem; flex: 1 1 12rem; }
-
-/* 44px targets, held on every control these screens add. */
-.vault-table button, .grid-table button, .inline-form button {
-  min-height: 44px;
-}
+.vault-table button, .grid-table button, .inline-form button { min-height: 44px; }
 
 @media (max-width: 480px) {
   .cell { min-width: 9rem; }
   .inline-form input { min-width: 0; flex-basis: 100%; }
 }
 
-/* On EVERY result, per AGENTS.md: playbook_status DRAFT and the UAE North hosting note.
-   A rule above it so it reads as a standing condition rather than a footnote. */
+/* On EVERY result: playbook DRAFT and the UAE North hosting note, one quiet line. */
 .hosting-note {
   margin-top: 1.4rem;
   padding-top: 0.7rem;
-  border-top: 1px solid color-mix(in srgb, var(--cream) 14%, transparent);
+  border-top: 1px solid var(--c-line);
+  font-size: var(--text-caption);
+  color: var(--c-fg-3);
 }
 
-/* The reader-facing reference: bold serif, per AGENTS.md's claim/evidence split. The
-   engine's own `s.96(1)` sits beneath it in mono as the basis. */
-.cal-reference { margin: 0.15rem 0 0; font-size: 0.9375rem; }
-.cal-provision { margin-top: 0.1rem; }
+.cal-reference { margin: 0.15rem 0 0; font-size: 0.9375rem; font-weight: 600; }
 
-/* Document Check — an inline checkbox+label, and a small sub-heading between the three
-   questions (verification / validity / action) so they read as separate answers. */
-.console .check-inline {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.9375rem;
-}
-.console .check-inline input {
-  width: auto;
-  margin-top: 0.15rem;
-}
-.console .sub-head {
-  margin-top: 1.2rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
-}
+.console .check-inline { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.9375rem; }
+.console .check-inline input { width: auto; margin-top: 0.15rem; }
+.console .sub-head { margin-top: 1.2rem; padding-top: 0.6rem; border-top: 1px solid var(--c-line); }
 .console .sub-head .mono { font-size: 0.9375rem; }
+
+/* ── Ask: the highlighted quote in the source panel ───────────────────────── */
+/* Underline is allowed here and nowhere else: it marks an expressly highlighted passage. */
+.quote-mark {
+  background: var(--c-wash-2);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: auto;
+}

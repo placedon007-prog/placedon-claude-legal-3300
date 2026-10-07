@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
    * (e.g. Azure) by setting BUILD_STANDALONE=1.
    */
   output: process.env.BUILD_STANDALONE ? "standalone" : undefined,
+  /**
+   * The development-only route badge sits bottom-left, exactly where the console's account
+   * avatar is, and reads as a broken avatar. Off; compile and runtime errors still show.
+   */
+  devIndicators: false,
 };
 
 export default nextConfig;

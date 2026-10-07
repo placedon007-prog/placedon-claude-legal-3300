@@ -1,0 +1,220 @@
+{
+ "_recorded": "2026-10-07 against the real gateway (backend ca1e86a) on its in-memory store, scratch key, tenant 00000000-0000-0000-0000-00000000c0de. Not composed: every field is what the gateway returned.",
+ "send_answered": {
+  "conversation_id": "b790a342-e4a6-4f5c-9b44-b96254bb6aa6",
+  "message_id": "9fb6a84e-2a34-4e37-9f10-834305b56565",
+  "classification": {
+   "task": "RESEARCH_QUESTION",
+   "alternatives": [
+    "EVENT_ASSESS",
+    "LAW_CHANGES"
+   ],
+   "reason": "it is shaped as a question about the law, and nothing is attached to review",
+   "decided_by": "rules",
+   "rule": "question_shape"
+  },
+  "run_id": "7255807a-0616-4407-88b4-0136d12effb0",
+  "envelope": {
+   "schema": "answer_envelope.v1",
+   "status": "ANSWERED",
+   "task": "RESEARCH_QUESTION",
+   "as_of": "2026-10-07",
+   "text_blocks": [
+    {
+     "text": "1. A company shall hold its annual general meeting within a period of six months from the date of closing of the financial year.\n   — Companies Act 2013, s.96 [350:626]\n2. The Registrar may extend the time within which any annual general meeting shall be held by a period not exceeding three months.\n   — Companies Act 2013, s.96 [826:1044]",
+     "citation_ids": [
+      "c1",
+      "c2"
+     ]
+    }
+   ],
+   "bodies": [
+    {
+     "body_id": "CA2013",
+     "name": "Companies Act, 2013",
+     "status": "ANSWERED",
+     "note": "held and read as at the date shown"
+    }
+   ],
+   "citations": [
+    {
+     "id": "c1",
+     "instrument": "Companies Act 2013",
+     "provision": "s.96",
+     "source": "corpus/companies_act/1287.json",
+     "fetched_at": "2026-08-18T22:16:51+00:00",
+     "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+     "quote": "Provided that in case of the first annual general meeting, it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company and in any other case, within a\nperiod of six months, from the date of closing of the financial year:"
+    },
+    {
+     "id": "c2",
+     "instrument": "Companies Act 2013",
+     "provision": "s.96",
+     "source": "corpus/companies_act/1287.json",
+     "fetched_at": "2026-08-18T22:16:51+00:00",
+     "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+     "quote": "Provided also that the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths."
+    }
+   ],
+   "files": [],
+   "run_id": "7255807a-0616-4407-88b4-0136d12effb0",
+   "trace_url": "/v2/runs/7255807a-0616-4407-88b4-0136d12effb0/trace"
+  }
+ },
+ "send_abstained": {
+  "conversation_id": "b790a342-e4a6-4f5c-9b44-b96254bb6aa6",
+  "message_id": "a32d656d-ff57-4723-ab96-1ef80b2a0a48",
+  "classification": {
+   "task": "RESEARCH_QUESTION",
+   "alternatives": [
+    "EVENT_ASSESS",
+    "LAW_CHANGES"
+   ],
+   "reason": "it asks a question whose subject is the event 'listed_material_event' (matched 'material event'), so the law is what is wanted",
+   "decided_by": "rules",
+   "rule": "event_phrase+question_shape",
+   "event": "listed_material_event"
+  },
+  "run_id": "8ae11aef-93fc-4936-bff3-bfa93cf2937a",
+  "envelope": {
+   "schema": "answer_envelope.v1",
+   "status": "ABSTAINED",
+   "task": "RESEARCH_QUESTION",
+   "as_of": "2026-10-07",
+   "text_blocks": [
+    {
+     "text": "See the findings.",
+     "citation_ids": []
+    }
+   ],
+   "bodies": [
+    {
+     "body_id": "CA2013",
+     "name": "Companies Act, 2013",
+     "status": "NOT_ENGAGED",
+     "note": "this question is about another body of law, so the Companies Act was not engaged"
+    },
+    {
+     "body_id": "SEBI_LODR",
+     "name": "SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015",
+     "status": "CURRENT_ONLY",
+     "note": "SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015 (SEBI): the current consolidated text is held, but it is a snapshot, not a history. A question about what this body required on a past date cannot be answered from it. SEBI's own consolidation is held (amended up to 14-07-2026, SEBI/LAD-NRO/GN/2015-16/013), PENDING_HUMAN_REVIEW. It answers what the law is NOW and is silent on every earlier date, because SEBI publishes a consolidation where MCA publishes discrete amending notifications. Dated LODR questions stay refused until those notifications are acquired individually. No obligation is wired to it yet."
+    }
+   ],
+   "citations": [],
+   "files": [],
+   "run_id": "8ae11aef-93fc-4936-bff3-bfa93cf2937a",
+   "trace_url": "/v2/runs/8ae11aef-93fc-4936-bff3-bfa93cf2937a/trace"
+  }
+ },
+ "citations": {
+  "c1": {
+   "citation": {
+    "id": "c1",
+    "instrument": "Companies Act 2013",
+    "provision": "s.96",
+    "source": "corpus/companies_act/1287.json",
+    "fetched_at": "2026-08-18T22:16:51+00:00",
+    "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+    "quote": "Provided that in case of the first annual general meeting, it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company and in any other case, within a\nperiod of six months, from the date of closing of the financial year:"
+   },
+   "message_id": "9fb6a84e-2a34-4e37-9f10-834305b56565",
+   "reverified": true,
+   "reverified_note": "re-read from corpus/companies_act/1287.json and the quote byte-matches",
+   "note": "The quote was re-read from the corpus just now, not trusted from the stored answer. reverified=false means nothing may rest on it, whatever the stored envelope says."
+  },
+  "c2": {
+   "citation": {
+    "id": "c2",
+    "instrument": "Companies Act 2013",
+    "provision": "s.96",
+    "source": "corpus/companies_act/1287.json",
+    "fetched_at": "2026-08-18T22:16:51+00:00",
+    "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+    "quote": "Provided also that the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths."
+   },
+   "message_id": "9fb6a84e-2a34-4e37-9f10-834305b56565",
+   "reverified": true,
+   "reverified_note": "re-read from corpus/companies_act/1287.json and the quote byte-matches",
+   "note": "The quote was re-read from the corpus just now, not trusted from the stored answer. reverified=false means nothing may rest on it, whatever the stored envelope says."
+  }
+ },
+ "conversation": {
+  "conversation": {
+   "conversation_id": "b790a342-e4a6-4f5c-9b44-b96254bb6aa6",
+   "title": "What is the time limit for holding an annual general meeting",
+   "created_at": null,
+   "updated_at": null,
+   "matter_id": null
+  },
+  "messages": [
+   {
+    "message_id": "c0a0b23c-97f1-4ecd-a6a6-c2247cbcc46a",
+    "conversation_id": "b790a342-e4a6-4f5c-9b44-b96254bb6aa6",
+    "ordinal": 0,
+    "role": "user",
+    "text": "What is the time limit for holding an annual general meeting under section 96?",
+    "file_ids": [],
+    "task": null,
+    "run_id": null,
+    "envelope": null
+   },
+   {
+    "message_id": "9fb6a84e-2a34-4e37-9f10-834305b56565",
+    "conversation_id": "b790a342-e4a6-4f5c-9b44-b96254bb6aa6",
+    "ordinal": 1,
+    "role": "assistant",
+    "text": "",
+    "file_ids": [],
+    "task": "RESEARCH_QUESTION",
+    "run_id": "7255807a-0616-4407-88b4-0136d12effb0",
+    "envelope": {
+     "schema": "answer_envelope.v1",
+     "status": "ANSWERED",
+     "task": "RESEARCH_QUESTION",
+     "as_of": "2026-10-07",
+     "text_blocks": [
+      {
+       "text": "1. A company shall hold its annual general meeting within a period of six months from the date of closing of the financial year.\n   — Companies Act 2013, s.96 [350:626]\n2. The Registrar may extend the time within which any annual general meeting shall be held by a period not exceeding three months.\n   — Companies Act 2013, s.96 [826:1044]",
+       "citation_ids": [
+        "c1",
+        "c2"
+       ]
+      }
+     ],
+     "bodies": [
+      {
+       "body_id": "CA2013",
+       "name": "Companies Act, 2013",
+       "status": "ANSWERED",
+       "note": "held and read as at the date shown"
+      }
+     ],
+     "citations": [
+      {
+       "id": "c1",
+       "instrument": "Companies Act 2013",
+       "provision": "s.96",
+       "source": "corpus/companies_act/1287.json",
+       "fetched_at": "2026-08-18T22:16:51+00:00",
+       "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+       "quote": "Provided that in case of the first annual general meeting, it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company and in any other case, within a\nperiod of six months, from the date of closing of the financial year:"
+      },
+      {
+       "id": "c2",
+       "instrument": "Companies Act 2013",
+       "provision": "s.96",
+       "source": "corpus/companies_act/1287.json",
+       "fetched_at": "2026-08-18T22:16:51+00:00",
+       "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+       "quote": "Provided also that the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths."
+      }
+     ],
+     "files": [],
+     "run_id": "7255807a-0616-4407-88b4-0136d12effb0",
+     "trace_url": "/v2/runs/7255807a-0616-4407-88b4-0136d12effb0/trace"
+    }
+   }
+  ]
+ }
+}

@@ -61,6 +61,12 @@ export const GATEWAY_ROUTES = {
   draftDiff: "/v2/draft/diff",
   draftExport: "/v2/draft/export",
   calendarUpcoming: "/v2/calendar/upcoming",
+  // C2, the conversation layer. `conversation.get` and `citation.get` end in `.get`, so
+  // `rest_path()` drops the `/get` head: `/v2/conversation/{id}` and `/v2/citation`.
+  // Verified against a live gateway on 2026-10-07.
+  conversationSend: "/v2/conversation/send",
+  conversationGet: "/v2/conversation/{conversation_id}",
+  citationGet: "/v2/citation",
 } as const;
 
 export type EngineV1Route = (typeof ENGINE_ROUTES)[keyof typeof ENGINE_ROUTES];

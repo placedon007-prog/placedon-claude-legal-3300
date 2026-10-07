@@ -2,7 +2,13 @@ import "../engine/server-guard";
 import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES } from "../engine/types";
 import type { GatewayProvider } from "./provider";
+import RECORDED from "./fixtures/conversation.json" with { type: "json" };
+import { citationGetOkSchema, conversationSendOkSchema } from "./types";
 import type {
+  CitationGet,
+  ConversationGet,
+  ConversationMessage,
+  ConversationSend,
   AskResponse,
   Calendar,
   CancelAck,
@@ -204,6 +210,16 @@ const DOCUMENT_MINUTES: DocumentResponse = {
     ],
 };
 
+/**
+ * Conversations this server process has seen. Module-level because `getGateway()` makes a
+ * new MockGateway per call; a thread has to outlive one request to be re-opened.
+ * ponytail: unbounded and per-process, fine for a demo with no backend; the real store is the gateway's.
+ */
+const THREADS = new Map<string, ConversationMessage[]>();
+// Parsed, not cast: a fixture that drifted from the contract fails here, loudly.
+const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
+const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
+
 export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
@@ -252,6 +268,70 @@ export class MockGateway implements GatewayProvider {
       answer: ANSWER_S96,
       run_id: RUN_ASK,
     });
+  }
+
+  async conversationSend(input: {
+    conversationId?: string;
+    text: string;
+    taskOverride?: string;
+  }): Promise<EngineResult<ConversationSend>> {
+    if (input.taskOverride && input.taskOverride !== "RESEARCH_QUESTION") {
+      // Only research replies were recorded. Composing a DRAFT or review envelope here
+      // would put text on screen that no gateway produced.
+      return engineOk({
+        status: "REFUSED",
+        code: "NOT_RECORDED",
+        detail: `The demo gateway has no recorded ${input.taskOverride} reply. Run against the real gateway (docs/RUN_LOCALLY.md) to use this.`,
+      });
+    }
+    // Same rule as ask(): law this corpus does not hold abstains, by name.
+    const recorded = /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
+      ? ABSTAINED
+      : ANSWERED;
+    const id = input.conversationId ?? crypto.randomUUID();
+    const thread = THREADS.get(id) ?? [];
+    const reply: ConversationMessage = {
+      message_id: crypto.randomUUID(),
+      ordinal: thread.length + 1,
+      role: "assistant",
+      text: "",
+      run_id: recorded.run_id ?? null,
+      envelope: recorded.envelope,
+    };
+    THREADS.set(id, [
+      ...thread,
+      { message_id: crypto.randomUUID(), ordinal: thread.length, role: "user", text: input.text },
+      reply,
+    ]);
+    return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id });
+  }
+
+  async conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {
+    const messages = THREADS.get(conversationId);
+    if (!messages) {
+      return engineOk({
+        status: "REFUSED",
+        code: "NOT_FOUND",
+        detail: `no conversation '${conversationId}' for this tenant`,
+      });
+    }
+    const title = messages[0]?.text.slice(0, 60) ?? "";
+    return engineOk({ conversation: { conversation_id: conversationId, title }, messages });
+  }
+
+  async citationGet(input: {
+    citationId: string;
+    conversationId: string;
+  }): Promise<EngineResult<CitationGet>> {
+    const raw = (RECORDED.citations as Record<string, unknown>)[input.citationId];
+    const hit = raw === undefined ? undefined : citationGetOkSchema.parse(raw);
+    return engineOk(
+      hit ?? {
+        status: "REFUSED",
+        code: "NOT_FOUND",
+        detail: `no citation '${input.citationId}' in conversation '${input.conversationId}'`,
+      },
+    );
   }
 
   async reviewContract(input: {

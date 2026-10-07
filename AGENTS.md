@@ -23,12 +23,77 @@ change — check them before you consider any task done.
   reference** — `s.96(1)`, `chars 226–348`, the instrument `G.S.R. 880(E)`, the figure
   `₹10,00,00,000`, the as-of date — stays **IBM Plex Mono**: the claim is serif, its basis is mono.
   **Never paraphrase a section either way.**
-- **The `/app` console is black and white (owner decision, 2026-10-06).** White ground,
-  near-black text, neutral greys; no gold, no cream, no serif inside the console. `app.css`
-  remaps the site tokens inside `.console` so every console screen follows. The marketing
-  site keeps the palette above. The composer is `src/components/ui/prompt-box.tsx`.
+- **The `/app` console is black and white (owner decision, 2026-10-06)** and has its own
+  design system — see **"/app console"** below. The marketing site keeps the palette above.
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
+
+## /app console — design system (owner sign-off on direction C, 2026-10-07)
+
+Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/SYSTEM.md`
+(screens, verbs, state machine, citation model), `docs/design/LOOP.md` (decisions log).
+
+- **Layout — the Split workspace.** Sidebar · thread · source panel.
+  - Sidebar (`console-sidebar.tsx`): a 56px icon rail; **every icon has a tooltip**. The
+    expand toggle (264px, labelled links, this browser's threads, search) is remembered per
+    browser in localStorage. Below 768px it is a top bar plus a left Sheet.
+  - Thread (`ask-workspace.tsx`, `answer.tsx`): a 680px column. **Each question is a heading
+    line** (20/28, 600); the answer is unboxed prose at 16/28 (max 68ch). No chat bubbles.
+  - Source panel (`source-panel.tsx`): docked at ≥1024px as a 440px column, **closed until a
+    citation is clicked** (it also opens with the first cited answer); closing it gives the
+    thread the full width. Below 1024px it is a **bottom sheet**.
+- **Tokens** live in `src/app/app/app.css` under `.console, [data-slot]` (the `[data-slot]`
+  half reaches shadcn's portals); their Tailwind names are in `globals.css` `@theme`.
+  **Never hard-code a hex in a component — use these:**
+  - ground `bg-ground` #fff · greys `bg-wash` #fafafa, `bg-wash-2` #f2f2f2, `border-line`
+    #e8e8e8, `border-line-2` #d4d4d4, `border-line-control` #8f8f8f (3.3:1, for control edges).
+  - text `text-fg` #0a0a0a, `text-fg-2` #404040, `text-fg-3` #6b6b6b — all AA on white.
+  - type: `text-caption` 12/16 · `text-ui` 13/20 · `text-body` 14/22 · `text-read` 16/28 ·
+    `text-title` 20/28 · `text-display` 28/34.
+  - radii: `rounded-chip` 6px · `rounded-card` 10px · `rounded-composer` 24px. One shadow,
+    `shadow-float`, used only by the composer and floating menus. Spacing on Tailwind's 4px base.
+  - motion ≤200ms (`--c-dur` 160ms, `--c-dur-panel` 200ms), only in answer to an action;
+    `prefers-reduced-motion` turns all of it off.
+- **Type:** IBM Plex Sans (one family, `brand-kit/fonts/IBMPlexSans-Variable-latin.woff2`,
+  OFL) for everything; IBM Plex Mono only for identifiers and evidence lines (provision,
+  sha256, chars, dates). Fraunces and Playfair are rejected for the console.
+- **Components:** shadcn primitives (radix base) in `src/components/ui/` — Button, Tooltip,
+  Popover, Dialog, Sheet, DropdownMenu, ScrollArea, Separator, Textarea, Skeleton. `cn` is
+  `@/lib/utils`. The composer is `src/components/ui/prompt-box.tsx` (from the owner's 21st.dev
+  "ChatGPT prompt input"): "+" stores a PDF/DOCX in Wall System then opens Document Check;
+  Tools = Research (default) · Draft (removable chip, sends the `DRAFT` override) · Check a
+  document · Review a contract; mic shown, `aria-disabled`, "Voice input — coming soon"
+  (voice will go through AWS Transcribe in Mumbai, never the browser speech API).
+- **Answer registers — shape and words, never colour:** answered ✓ · partly answered ◐ ·
+  a lawyer needs to decide ⦶ · not answered ⊘ (names its reason, or the body-by-body notes) ·
+  needs clarification ? · queued ◷ · **did not arrive — this is not a refusal** (dashed ink
+  box + Try again). An `ABSTAINED` envelope that still carries cited text shows it under
+  "Passages served with this abstention — they do not answer the question", never as an answer.
+- **Citations:** inline numbered marker → Sources list → Source panel. Ask runs on
+  `conversation.send` / `conversation.get`; the panel re-reads every quote through
+  `citation.get` and says when it no longer matches. The section number comes only from the
+  served `provision` (`linkCitations` in `src/lib/thread.ts`). When `citation.get` serves
+  `section` (backend PR #78; only on a re-verified quote) the panel shows the whole section
+  once with every cited passage marked — a mark is drawn only where `text[start:end]` is
+  exactly the quote (`splitSection`, `segmentSection`); PDF hard wraps are joined for display
+  only (`joinWrappedLines`). Without it, the passages alone, said so. `in_force_from: null`
+  renders "not recorded", never a date.
+- **Welcome line (owner request, 2026-10-08):** two lines, then a badge saying what was
+  recognised and why. The MOMENT is recognised on the first visit (open at 1 am → "Hey Night
+  Wolf, / what are we checking tonight?" · badge "Night Wolf · Late-night session"); a HABIT
+  (8+ questions over 3+ days, ≥50% in the band) beats the moment and lasts all day. With a
+  name too, name and nickname alternate by day ("Hey Nishant," / "Hey Night Wolf,"). Personas:
+  Night Wolf (10 pm–4 am), Early Riser (5–8 am), Weekend Warrior. `src/lib/greeting.ts`
+  (`recognise`, `greeting`). Name, switch and the day/hour/weekday of past questions stay in
+  this browser and are never sent; the account menu turns nicknames off and forgets the
+  pattern. Warmth stays on the welcome line — answers stay formal.
+- **Standing limits:** on Ask, one quiet line under every result (law read as at · Playbook
+  DRAFT · UAE North · not legal advice); on every other screen, one line under the top edge.
+- **Banned in the console:** colour of any hue, gradients, blur/glass, left-border accent
+  cards, ALL-CAPS tracked labels, avatar discs, suggestion cards on the empty state,
+  model-written follow-up prompts, confidence numbers.
+- **The marketing type scale is scoped out of the console** (`h1–h3`, `p` carry
+  `:where(:not(.console *, [data-slot] *))` in `globals.css`), so console utilities win.
 
 ## Voice — Terse. Traceable. Unsparing.
 - **Claim, then evidence.** Split the assertion from its basis. Filter test for every sentence:
@@ -77,6 +142,10 @@ change — check them before you consider any task done.
   ONE verb table that also produces the MCP tools and the CLI, with a parity test):
   `POST /v2/ask` · `POST /v2/review-contract` · `GET /v2/runs/{run_id}` ·
   `GET /v2/runs/{run_id}/trace` · `POST /v2/documents/upload`.
+  **Ask runs on the conversation layer (C2):** `POST /v2/conversation/send` ·
+  `GET /v2/conversation/{conversation_id}` · `POST /v2/citation` (`citation.get`, re-verifies the
+  quote). `conversation.list` exists but needs a `matter_id`, so the sidebar lists only this
+  browser's threads and says so.
   **`/v1/ask` now EXISTS** and is served through the gateway as the `ask` verb — an earlier
   revision of this file said it did not, which was true then and is not now.
   - The key maps to a **tenant**; every call writes a metadata-only audit row. It lives in

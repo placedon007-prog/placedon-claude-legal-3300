@@ -3,10 +3,9 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
-import { parseAnswer, type ParsedAnswer, type ReviewResponse } from "@/lib/gateway/types";
+import { isRefusal, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
-import type { AskResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { endSession, passcodeAccepted, startSession } from "@/lib/auth/session";
 import { rememberRun } from "@/lib/auth/recent-runs";
@@ -25,10 +24,17 @@ import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
  * register is the defect AGENTS.md names, so the types do not allow it.
  */
 
-export type AskState =
-  | { readonly phase: "idle" }
-  | { readonly phase: "answered"; readonly data: AskResponse; readonly parsed: ParsedAnswer }
-  | { readonly phase: "refused"; readonly data: AskResponse }
+/** One turn of the Ask thread, as the screen renders it. */
+export type TurnState =
+  /** The gateway answered with an envelope (any status, including ABSTAINED). */
+  | { readonly phase: "answered"; readonly conversationId: string; readonly envelope: Envelope;
+      readonly draftId: string | null }
+  /** The work went on the queue: the reply has not arrived, which is not an empty answer. */
+  | { readonly phase: "queued"; readonly conversationId: string; readonly runId: string | null;
+      readonly note: string }
+  /** The verb declined before answering, by name (e.g. AS_OF_UNSUPPORTED, NO_STORE). */
+  | { readonly phase: "refused"; readonly code: string; readonly detail: string }
+  /** The answer never arrived. Never rendered as a refusal. */
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
@@ -37,32 +43,87 @@ const questionSchema = z
   .trim()
   .min(8, "A question needs at least a few words.")
   .max(500, "Questions are capped at 500 characters.");
+const idSchema = z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9-]+$/);
+/** The only override the screen offers: drafting from the thread's last answer. */
+const overrideSchema = z.enum(["DRAFT"]).optional();
 
-export async function askAction(
-  _prev: AskState,
-  formData: FormData,
-): Promise<AskState> {
-  const parsedInput = questionSchema.safeParse(formData.get("question"));
-  if (!parsedInput.success) {
-    return { phase: "invalid", message: parsedInput.error.issues[0].message };
-  }
+export async function sendAction(input: {
+  conversationId: string | null;
+  text: string;
+  taskOverride?: "DRAFT";
+}): Promise<TurnState> {
+  const text = questionSchema.safeParse(input.text);
+  if (!text.success) return { phase: "invalid", message: text.error.issues[0].message };
+  const cid = input.conversationId === null ? null : idSchema.safeParse(input.conversationId);
+  if (cid && !cid.success) return { phase: "invalid", message: "That thread id is not valid." };
+  const override = overrideSchema.safeParse(input.taskOverride);
+  if (!override.success) return { phase: "invalid", message: "Unknown task." };
+
   const gateway = await getGateway();
-  const result = await gateway.ask(parsedInput.data);
+  const result = await gateway.conversationSend({
+    text: text.data,
+    conversationId: cid?.data,
+    taskOverride: override.data,
+  });
   if (!result.ok) return { phase: "failed", error: result.error };
-
   const data = result.data;
+  if (isRefusal(data)) return { phase: "refused", code: data.code, detail: data.detail };
+
   if (data.run_id) {
     await rememberRun({
       id: data.run_id,
-      intent: "research_question",
+      intent: override.data === "DRAFT" ? "draft" : "conversation",
       at: new Date().toISOString(),
-      label: parsedInput.data.slice(0, 80),
+      label: text.data.slice(0, 80),
     });
   }
-  if (data.status === "REFUSED" || data.status === "FAILED") {
-    return { phase: "refused", data };
+  if (data.envelope === null) {
+    return {
+      phase: "queued",
+      conversationId: data.conversation_id,
+      runId: data.run_id ?? null,
+      note: data.note ?? "",
+    };
   }
-  return { phase: "answered", data, parsed: parseAnswer(data.answer ?? "") };
+  return {
+    phase: "answered",
+    conversationId: data.conversation_id,
+    envelope: data.envelope,
+    draftId: data.draft_id ?? null,
+  };
+}
+
+export type ThreadLoad =
+  | { readonly phase: "loaded"; readonly title: string; readonly messages: readonly ConversationMessage[] }
+  | { readonly phase: "refused"; readonly code: string; readonly detail: string }
+  | { readonly phase: "failed"; readonly error: EngineError };
+
+/** Re-open a stored thread. Called from the Ask page (a server component). */
+export async function loadThread(conversationId: string): Promise<ThreadLoad> {
+  const cid = idSchema.safeParse(conversationId);
+  if (!cid.success) return { phase: "refused", code: "BAD_REQUEST", detail: "That thread id is not valid." };
+  const result = await (await getGateway()).conversationGet(cid.data);
+  if (!result.ok) return { phase: "failed", error: result.error };
+  if (isRefusal(result.data)) return { phase: "refused", code: result.data.code, detail: result.data.detail };
+  return { phase: "loaded", title: result.data.conversation.title, messages: result.data.messages };
+}
+
+export type CitationState =
+  | { readonly phase: "read"; readonly data: CitationGetOk }
+  | { readonly phase: "refused"; readonly code: string; readonly detail: string }
+  | { readonly phase: "failed"; readonly error: EngineError };
+
+/** The source panel's read: one citation, its quote re-read from the corpus just now. */
+export async function citationAction(input: {
+  citationId: string;
+  conversationId: string;
+}): Promise<CitationState> {
+  const ids = z.object({ citationId: idSchema, conversationId: idSchema }).safeParse(input);
+  if (!ids.success) return { phase: "refused", code: "BAD_REQUEST", detail: "Not a citation id." };
+  const result = await (await getGateway()).citationGet(ids.data);
+  if (!result.ok) return { phase: "failed", error: result.error };
+  if (isRefusal(result.data)) return { phase: "refused", code: result.data.code, detail: result.data.detail };
+  return { phase: "read", data: result.data };
 }
 
 export interface SourceDoc {

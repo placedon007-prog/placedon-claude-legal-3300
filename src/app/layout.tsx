@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@/components/analytics";
 import "./globals.css";
+import { plexSans } from "./app/fonts";
 
 const fraunces = localFont({
   src: "../../brand-kit/fonts/Fraunces-Variable.ttf",
@@ -44,7 +45,7 @@ export default function RootLayout({
     <html
       lang="en-IN"
       data-theme="dark"
-      className={`${fraunces.variable} ${inter.variable} ${mono.variable}`}
+      className={`${fraunces.variable} ${inter.variable} ${mono.variable} ${plexSans.variable}`}
       suppressHydrationWarning
     >
       <body>
