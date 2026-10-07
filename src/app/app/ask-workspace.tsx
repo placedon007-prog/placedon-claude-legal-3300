@@ -18,7 +18,8 @@ import { sendAction } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
-import { rememberThread } from "./local-store";
+import { recordActivity, rememberThread } from "./local-store";
+import { NameHint, Welcome } from "./welcome";
 
 const DOCKED = "(min-width: 1024px)";
 
@@ -85,6 +86,9 @@ export function AskWorkspace({
 
   function send(text: string, chosen: ComposerTool, retryKey?: string) {
     const key = retryKey ?? crypto.randomUUID();
+    // When questions are asked (day, hour, weekday) — read only by the welcome line, in
+    // this browser. A retry is the same question, so it is not counted twice.
+    if (!retryKey) recordActivity(new Date());
     setTurns((t) =>
       retryKey ? t.map((x) => (x.key === key ? { ...x, state: null } : x)) : [...t, { key, question: text, state: null }],
     );
@@ -140,9 +144,7 @@ export function AskWorkspace({
                 {loadProblem}
               </p>
             ) : null}
-            <p className="text-center text-display font-semibold tracking-[-0.02em] text-fg">
-              What do you need to check?
-            </p>
+            <Welcome />
             <div className="w-full max-w-[720px]" ref={composerRef}>
               {composer}
             </div>
@@ -150,6 +152,7 @@ export function AskWorkspace({
               Answers quote the exact provision, or say plainly what cannot be answered. Not legal
               advice.
             </p>
+            <NameHint />
           </div>
         ) : (
           <>

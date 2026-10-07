@@ -31,6 +31,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -40,7 +41,16 @@ import {
 import { cn } from "@/lib/utils";
 import { PlacedonMark } from "@/components/brand/placedon-mark";
 import { groupThreads, type LocalThread } from "@/lib/thread";
-import { useLocalThreads, useSidebarExpanded } from "./local-store";
+import {
+  forgetActivity,
+  useActivity,
+  useDisplayName,
+  useLocalThreads,
+  useNicknamesOn,
+  useSidebarExpanded,
+} from "./local-store";
+import { NameDialog } from "./welcome";
+import { PERSONA_NAME, PERSONA_REASON, persona } from "@/lib/greeting";
 import { logoutAction } from "./actions";
 
 const LINKS = [
@@ -267,6 +277,10 @@ function Group({ title, threads, open }: { title: string; threads: LocalThread[]
 }
 
 function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: boolean }) {
+  const [name] = useDisplayName();
+  const [nicknames, setNicknames] = useNicknamesOn();
+  const earned = persona(useActivity());
+  const [naming, setNaming] = React.useState(false);
   const trigger = (
     <button
       type="button"
@@ -274,34 +288,57 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
       className={compact ? iconOnly : cn(item, "w-full")}
     >
       <UserRound className={compact ? "size-[18px]" : "size-4"} aria-hidden />
-      {compact ? null : "This console"}
+      {compact ? null : (name ?? "This console")}
     </button>
   );
   return (
-    <DropdownMenu>
-      {compact ? (
-        <Tip label="Account">
+    <>
+      <DropdownMenu>
+        {compact ? (
+          <Tip label="Account">
+            <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+          </Tip>
+        ) : (
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-        </Tip>
-      ) : (
-        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      )}
-      <DropdownMenuContent side={compact ? "right" : "top"} align="start" className="w-64">
-        <DropdownMenuLabel className="text-caption font-normal text-fg-3">
-          {passcode
-            ? "Signed in with the shared passcode. There are no personal accounts yet."
-            : "No passcode is set: anyone who can reach this console can use it."}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <form action={logoutAction}>
-          <DropdownMenuItem asChild>
-            <button type="submit" className="flex min-h-10 w-full items-center gap-2">
-              <LogOut className="size-4" aria-hidden />
-              Sign out
-            </button>
+        )}
+        <DropdownMenuContent side={compact ? "right" : "top"} align="start" className="w-72">
+          <DropdownMenuItem className="min-h-10" onSelect={() => setNaming(true)}>
+            <UserRound className="size-4" aria-hidden />
+            {name ? `Called “${name}” — change` : "What should we call you?"}
           </DropdownMenuItem>
-        </form>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuCheckboxItem
+            className="min-h-10"
+            checked={nicknames}
+            onCheckedChange={(on) => setNicknames(on === true)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            Nicknames from when I work
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuLabel className="text-caption font-normal text-fg-3">
+            {nicknames && earned
+              ? `You’re a ${PERSONA_NAME[earned]}: ${PERSONA_REASON[earned]}.`
+              : "Earned after a few days of questions. Read from this browser only; never sent anywhere."}
+          </DropdownMenuLabel>
+          <DropdownMenuItem className="min-h-10" onSelect={() => forgetActivity()}>
+            Forget my pattern
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-caption font-normal text-fg-3">
+            {passcode
+              ? "Signed in with the shared passcode. There are no personal accounts yet."
+              : "No passcode is set: anyone who can reach this console can use it."}
+          </DropdownMenuLabel>
+          <form action={logoutAction}>
+            <DropdownMenuItem asChild>
+              <button type="submit" className="flex min-h-10 w-full items-center gap-2">
+                <LogOut className="size-4" aria-hidden />
+                Sign out
+              </button>
+            </DropdownMenuItem>
+          </form>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <NameDialog open={naming} onOpenChange={setNaming} />
+    </>
   );
 }

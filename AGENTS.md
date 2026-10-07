@@ -78,6 +78,12 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
   exactly the quote (`splitSection`, `segmentSection`); PDF hard wraps are joined for display
   only (`joinWrappedLines`). Without it, the passages alone, said so. `in_force_from: null`
   renders "not recorded", never a date.
+- **Welcome line (owner request, 2026-10-07):** the Ask empty state greets by time of day, the
+  name the user gives ("What should we call you?"), or — once earned — a nickname from WHEN
+  they work (Night Wolf / Early Riser / Weekend Warrior: 8+ questions over 3+ days, ≥50% in the
+  band; `src/lib/greeting.ts`). Name, switch and the day/hour/weekday of past questions live in
+  this browser only and are never sent; the account menu turns nicknames off and forgets the
+  pattern. Warmth stays on the welcome line — answers stay formal.
 - **Standing limits:** on Ask, one quiet line under every result (law read as at · Playbook
   DRAFT · UAE North · not legal advice); on every other screen, one line under the top edge.
 - **Banned in the console:** colour of any hue, gradients, blur/glass, left-border accent

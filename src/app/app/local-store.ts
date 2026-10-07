@@ -9,6 +9,7 @@
  */
 import * as React from "react";
 import type { LocalThread } from "@/lib/thread";
+import { activityAt, cleanName, MAX_ACTIVITY, type Activity } from "@/lib/greeting";
 
 const THREADS_KEY = "placedon.console.threads.v1";
 const SIDEBAR_KEY = "placedon.console.sidebar.v1";
@@ -82,4 +83,67 @@ export function useSidebarExpanded(): [boolean, (v: boolean) => void] {
   const raw = useStored(SIDEBAR_KEY);
   const set = React.useCallback((v: boolean) => write(SIDEBAR_KEY, v ? "expanded" : "collapsed"), []);
   return [raw === "expanded", set];
+}
+
+/* ── the welcome line: name, switch, and when questions are asked ─────────── */
+
+const NAME_KEY = "placedon.console.name.v1";
+const GREETING_KEY = "placedon.console.greeting.v1";
+const ACTIVITY_KEY = "placedon.console.activity.v1";
+
+/** What the user asked to be called. Kept in this browser only. */
+export function useDisplayName(): [string | null, (name: string | null) => void] {
+  const raw = useStored(NAME_KEY);
+  const set = React.useCallback((name: string | null) => {
+    if (name === null) {
+      try {
+        window.localStorage.removeItem(NAME_KEY);
+      } catch {
+        // nothing to remove
+      }
+      window.dispatchEvent(new Event(CHANGED));
+    } else write(NAME_KEY, name);
+  }, []);
+  return [cleanName(raw), set];
+}
+
+/** Nicknames from usage are on unless switched off. */
+export function useNicknamesOn(): [boolean, (on: boolean) => void] {
+  const raw = useStored(GREETING_KEY);
+  const set = React.useCallback((on: boolean) => write(GREETING_KEY, on ? "on" : "off"), []);
+  return [raw !== "off", set];
+}
+
+export function useActivity(): Activity[] {
+  const raw = useStored(ACTIVITY_KEY);
+  return React.useMemo(() => {
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? (parsed as Activity[]) : [];
+    } catch {
+      return [];
+    }
+  }, [raw]);
+}
+
+/** Record that a question was asked now: day, hour and weekday only. */
+export function recordActivity(now: Date): void {
+  let list: Activity[] = [];
+  try {
+    const parsed: unknown = JSON.parse(read(ACTIVITY_KEY) ?? "[]");
+    if (Array.isArray(parsed)) list = parsed as Activity[];
+  } catch {
+    list = [];
+  }
+  write(ACTIVITY_KEY, JSON.stringify([...list, activityAt(now)].slice(-MAX_ACTIVITY)));
+}
+
+/** Forget the usage pattern (the menu's "Forget my pattern"). */
+export function forgetActivity(): void {
+  try {
+    window.localStorage.removeItem(ACTIVITY_KEY);
+  } catch {
+    // nothing to forget
+  }
+  window.dispatchEvent(new Event(CHANGED));
 }
