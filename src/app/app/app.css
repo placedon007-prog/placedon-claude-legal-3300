@@ -130,6 +130,7 @@
 }
 
 /* Forms */
+.console label[for="your-name"] { display: inline; margin: 0; font-size: var(--text-ui); }
 .console label { display: block; font-size: var(--text-ui); margin-bottom: 0.45rem; color: var(--c-fg-2); }
 .console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"],
 .console input[type="date"], .console input[type="search"]:not(.bare), .console select {
@@ -169,9 +170,9 @@
   letter-spacing: -0.005em;
   color: var(--c-fg);
 }
-.console-main form button[type="submit"]:not(.pb-send) { margin-top: 0.9rem; }
+.console-main form button[type="submit"]:not(.pb-send):not(.bare) { margin-top: 0.9rem; }
 .console .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
-.console-main button[type="submit"]:not(.pb-send) {
+.console-main button[type="submit"]:not(.pb-send):not(.bare) {
   min-height: 44px;
   padding: 0 1.15rem;
   border-radius: 8px;
@@ -183,8 +184,8 @@
   cursor: pointer;
   transition: opacity var(--c-dur) var(--c-ease);
 }
-.console-main button[type="submit"]:not(.pb-send):hover { opacity: 0.86; }
-.console-main button[type="submit"]:not(.pb-send):disabled { opacity: 0.5; cursor: progress; }
+.console-main button[type="submit"]:not(.pb-send):not(.bare):hover { opacity: 0.86; }
+.console-main button[type="submit"]:not(.pb-send):not(.bare):disabled { opacity: 0.5; cursor: progress; }
 .console .checkline { display: flex; gap: 0.55rem; align-items: flex-start; font-size: var(--text-ui); }
 .console .checkline input { margin-top: 0.15rem; width: 18px; height: 18px; }
 

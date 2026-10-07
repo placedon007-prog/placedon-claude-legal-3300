@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* shadcn components carry `dark:` styles. They follow a `.dark` class, never the OS setting:
+   the console is black on white by decision, and nothing sets `.dark`. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --ink: #0c0c0d;
