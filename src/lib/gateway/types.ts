@@ -714,3 +714,119 @@ export function isRefusal(value: unknown): value is VerbRefusal {
 export function isConflict(value: unknown): value is DraftConflict {
   return draftConflictSchema.safeParse(value).success;
 }
+
+/* ── conversation (C2) ────────────────────────────────────────────────────── */
+
+/**
+ * `answer_envelope.v1`, read from the backend's `gateway/schemas/answer_envelope.v1.json`
+ * and checked against live replies recorded on 2026-10-07 (`fixtures/conversation.json`).
+ *
+ * FAILED is transport-only by the schema's own definition, so the screen renders it in the
+ * "did not arrive" register and never as a refusal.
+ */
+export const envelopeStatusSchema = z.enum([
+  "ANSWERED",
+  "PARTIAL",
+  "NEEDS_LAWYER",
+  "ABSTAINED",
+  "NEEDS_CLARIFICATION",
+  "FAILED",
+]);
+export type EnvelopeStatus = z.infer<typeof envelopeStatusSchema>;
+
+export const envelopeCitationSchema = z.object({
+  id: z.string().min(1),
+  instrument: z.string().min(1),
+  /** e.g. `s.96`. The only place a section number may come from. */
+  provision: z.string().min(1),
+  /** NULL means NOT RECORDED. The backend does not hold commencement dates per section. */
+  in_force_from: z.string().nullable().optional(),
+  source: z.string().min(1),
+  fetched_at: z.string().min(1),
+  sha256: z.string(),
+  /** The verbatim span, byte-matched against the corpus before it was served. */
+  quote: z.string().min(1),
+});
+export type EnvelopeCitation = z.infer<typeof envelopeCitationSchema>;
+
+export const envelopeBodySchema = z.object({
+  body_id: z.string(),
+  name: z.string(),
+  status: z.enum(["ANSWERED", "NOT_HELD", "CURRENT_ONLY", "NEED_FACT", "NOT_ENGAGED"]),
+  note: z.string(),
+});
+export type EnvelopeBody = z.infer<typeof envelopeBodySchema>;
+
+export const envelopeSchema = z.object({
+  schema: z.literal("answer_envelope.v1"),
+  status: envelopeStatusSchema,
+  task: z.string(),
+  as_of: z.string(),
+  text_blocks: z.array(z.object({ text: z.string(), citation_ids: z.array(z.string()) })),
+  bodies: z.array(envelopeBodySchema),
+  citations: z.array(envelopeCitationSchema),
+  files: z.array(
+    z.object({
+      file_id: z.string(),
+      name: z.string(),
+      state: z.enum(["READING", "READ", "CANNOT_READ"]),
+      pages: z.number().int().nullable().optional(),
+      reason: z.string().nullable().optional(),
+    }),
+  ),
+  run_id: z.string().nullable().optional(),
+  trace_url: z.string().nullable().optional(),
+});
+export type Envelope = z.infer<typeof envelopeSchema>;
+
+/**
+ * One turn. `envelope: null` with a `run_id` means the work was QUEUED and the reply has
+ * not arrived — which is not an empty answer.
+ */
+export const conversationSendOkSchema = z.object({
+  conversation_id: z.string(),
+  message_id: z.string(),
+  classification: z.record(z.string(), z.unknown()).optional(),
+  run_id: z.string().nullable().optional(),
+  envelope: envelopeSchema.nullable(),
+  draft_id: z.string().optional(),
+  note: z.string().optional(),
+});
+export const conversationSendSchema = z.union([conversationSendOkSchema, verbRefusalSchema]);
+export type ConversationSend = z.infer<typeof conversationSendSchema>;
+export type ConversationSendOk = z.infer<typeof conversationSendOkSchema>;
+
+export const conversationMessageSchema = z.object({
+  message_id: z.string(),
+  ordinal: z.number().int(),
+  role: z.enum(["user", "assistant"]),
+  text: z.string(),
+  run_id: z.string().nullable().optional(),
+  envelope: envelopeSchema.nullable().optional(),
+});
+export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
+
+export const conversationGetOkSchema = z.object({
+  conversation: z.object({
+    conversation_id: z.string(),
+    title: z.string(),
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+  }),
+  messages: z.array(conversationMessageSchema),
+});
+export const conversationGetSchema = z.union([conversationGetOkSchema, verbRefusalSchema]);
+export type ConversationGet = z.infer<typeof conversationGetSchema>;
+
+/** The source panel's read: the stored citation, with its quote RE-READ from the corpus. */
+export const citationGetOkSchema = z.object({
+  citation: envelopeCitationSchema,
+  message_id: z.string(),
+  /** false means the quote no longer matches the corpus, and nothing may rest on it. */
+  reverified: z.boolean(),
+  reverified_note: z.string(),
+  note: z.string().optional(),
+});
+export const citationGetSchema = z.union([citationGetOkSchema, verbRefusalSchema]);
+export type CitationGet = z.infer<typeof citationGetSchema>;
+export type CitationGetOk = z.infer<typeof citationGetOkSchema>;

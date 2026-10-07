@@ -24,6 +24,9 @@ import type {
   VaultUpload,
   VaultVerify,
   DocumentCheck,
+  ConversationSend,
+  ConversationGet,
+  CitationGet,
 } from "./types";
 
 /**
@@ -166,6 +169,25 @@ export interface GatewayProvider {
     version?: number;
     format?: "text" | "docx";
   }): Promise<EngineResult<DraftExport>>;
+
+  /* ── conversation (C2) ─────────────────────────────────────────────────── */
+  /**
+   * One turn of a thread. Intake classifies it and dispatches it to the verb that answers
+   * it; the reply is an `answer_envelope.v1`, or `envelope: null` and a run_id when the work
+   * was queued. A WRITE verb: it stores both messages.
+   */
+  conversationSend(input: {
+    conversationId?: string;
+    text: string;
+    /** Name the task instead of letting intake classify it, e.g. `DRAFT`. */
+    taskOverride?: string;
+  }): Promise<EngineResult<ConversationSend>>;
+  conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>>;
+  /** One citation for the source panel, its quote re-read from the corpus at call time. */
+  citationGet(input: {
+    citationId: string;
+    conversationId: string;
+  }): Promise<EngineResult<CitationGet>>;
 
   /* ── calendar ───────────────────────────────────────────────────────────── */
   /**

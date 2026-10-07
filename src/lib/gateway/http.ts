@@ -20,6 +20,12 @@ import {
   vaultUploadSchema,
   vaultVerifySchema,
   documentCheckSchema,
+  conversationSendSchema,
+  conversationGetSchema,
+  citationGetSchema,
+  type ConversationSend,
+  type ConversationGet,
+  type CitationGet,
   cancelSchema,
   decisionSchema,
   documentResponseSchema,
@@ -331,6 +337,41 @@ export class HttpGateway implements GatewayProvider {
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>> {
     return this.call(GATEWAY_ROUTES.vaultVerify, GATEWAY_ROUTES.vaultVerify,
       vaultVerifySchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  conversationSend(input: {
+    conversationId?: string;
+    text: string;
+    taskOverride?: string;
+  }): Promise<EngineResult<ConversationSend>> {
+    return this.call(GATEWAY_ROUTES.conversationSend, GATEWAY_ROUTES.conversationSend,
+      conversationSendSchema, {
+        method: "POST",
+        body: {
+          text: input.text,
+          ...(input.conversationId ? { conversation_id: input.conversationId } : {}),
+          ...(input.taskOverride ? { task_override: input.taskOverride } : {}),
+        },
+      });
+  }
+
+  conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {
+    return this.call(
+      GATEWAY_ROUTES.conversationGet,
+      GATEWAY_ROUTES.conversationGet.replace("{conversation_id}", encodeURIComponent(conversationId)),
+      conversationGetSchema,
+    );
+  }
+
+  citationGet(input: {
+    citationId: string;
+    conversationId: string;
+  }): Promise<EngineResult<CitationGet>> {
+    return this.call(GATEWAY_ROUTES.citationGet, GATEWAY_ROUTES.citationGet,
+      citationGetSchema, {
+        method: "POST",
+        body: { citation_id: input.citationId, conversation_id: input.conversationId },
+      });
   }
 
   documentCheck(input: {
