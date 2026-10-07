@@ -36,6 +36,10 @@ const BODY_STATUS: Record<string, string> = {
   NOT_ENGAGED: "not engaged by this question",
 };
 
+/** "a b c." → "a b " and "c." — the head keeps its trailing space. */
+const lead = (t: string) => t.replace(/\S+$/, "");
+const tail = (t: string) => t.match(/\S+$/)?.[0] ?? "";
+
 export function TurnView({
   turn,
   onRetry,
@@ -117,6 +121,40 @@ function Answered({
   const parsed = parseAnswer(first?.text ?? "");
   const { groups, refs, active } = linkCitations(parsed.sentences, envelope.citations);
   const open = (g: CitationGroup, id: string | null) => onOpenSource(g, id, conversationId);
+  // An abstention that still carries CITED text: that text is set aside under its own label.
+  // Uncited text (e.g. "See the findings.") stays in the main flow, as served.
+  const setAside =
+    kind === "refused" && (parsed.sentences.length > 0 || (first?.citation_ids.length ?? 0) > 0);
+  const servedProse = parsed.sentences.length > 0 ? (
+        <p className="max-w-[68ch] text-read text-fg">
+          {parsed.sentences.map((s, i) => {
+            const n = refs[i];
+            const group = n === null ? null : groups[n - 1];
+            return (
+              <React.Fragment key={s.n}>
+                {/* The last word and its marker never part across a line break. */}
+                {lead(s.text)}
+                <span className="whitespace-nowrap">
+                  {tail(s.text)}
+                  {group ? (
+                    <button
+                      type="button"
+                      onClick={() => open(group, active[i])}
+                      aria-label={`Source ${n}${group.section ? `, Section ${group.section}` : ""}`}
+                      className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-line-control px-1 align-[2px] text-[11px] leading-none font-medium text-fg-2 transition-colors duration-150 hover:border-fg hover:bg-fg hover:text-ground"
+                    >
+                      {n}
+                    </button>
+                  ) : null}
+                </span>{" "}
+              </React.Fragment>
+            );
+          })}
+        </p>
+      ) : first ? (
+        // Unparsed: verbatim. A reconstruction would be this app writing law.
+        <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
+      ) : null;
 
   if (kind === "failed") {
     // FAILED is transport-only by the envelope's own schema: the dashed register.
@@ -134,44 +172,30 @@ function Answered({
     <article className="flex flex-col gap-4">
       <StatusLine
         kind={kind}
-        extra={groups.length ? `${groups.length} source${groups.length > 1 ? "s" : ""}` : undefined}
+        extra={groups.length && !setAside ? `${groups.length} source${groups.length > 1 ? "s" : ""}` : undefined}
       />
 
-      {parsed.sentences.length > 0 ? (
-        <p className="max-w-[68ch] text-read text-fg">
-          {parsed.sentences.map((s, i) => {
-            const n = refs[i];
-            const group = n === null ? null : groups[n - 1];
-            return (
-              <React.Fragment key={s.n}>
-                {s.text}
-                {group ? (
-                  <button
-                    type="button"
-                    onClick={() => open(group, active[i])}
-                    aria-label={`Source ${n}${group.section ? `, Section ${group.section}` : ""}`}
-                    className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-line-control px-1 align-[2px] text-[11px] leading-none font-medium text-fg-2 transition-colors duration-150 hover:border-fg hover:bg-fg hover:text-ground"
-                  >
-                    {n}
-                  </button>
-                ) : null}{" "}
-              </React.Fragment>
-            );
-          })}
-        </p>
-      ) : first ? (
-        // Unparsed: verbatim. A reconstruction would be this app writing law.
-        <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
-      ) : null}
-
+      {setAside ? null : servedProse}
       {rest.map((b, i) => (
         <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
       ))}
       {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
 
-      {groups.length > 0 ? <Sources groups={groups} onOpen={(g) => open(g, null)} /> : null}
+      {groups.length > 0 && !setAside ? <Sources groups={groups} onOpen={(g) => open(g, null)} /> : null}
 
       {envelope.bodies.length > 0 && kind !== "answered" ? <Bodies envelope={envelope} /> : null}
+
+      {setAside ? (
+        // The gateway can abstain and still serve traced passages (seen live 2026-10-07).
+        // They are shown — hiding served text would be editing it — but never as the answer.
+        <section aria-label="Passages served with this abstention" className="flex flex-col gap-2 border-t border-line pt-3">
+          <h3 className="text-ui font-medium text-fg">
+            Passages served with this abstention — they do not answer the question
+          </h3>
+          {servedProse}
+          {groups.length > 0 ? <Sources groups={groups} onOpen={(g) => open(g, null)} /> : null}
+        </section>
+      ) : null}
 
       {draftId ? (
         <Link href={`/app/drafts/${encodeURIComponent(draftId)}`} className="self-start text-body font-medium underline underline-offset-4">
@@ -266,11 +290,16 @@ function Actions({ envelope, onDraft }: { envelope: Envelope; onDraft: () => voi
         </button>
       </Act>
       <Act label="Add to calendar — no verb accepts an entry yet">
-        <span tabIndex={0} className="inline-flex rounded-lg" aria-label="Add to calendar — no verb accepts an entry yet">
-          <button type="button" className={btn} disabled tabIndex={-1} aria-hidden>
-            <CalendarPlus className="size-4" />
-          </button>
-        </span>
+        {/* aria-disabled keeps it focusable so the tooltip can say why it does nothing. */}
+        <button
+          type="button"
+          aria-disabled="true"
+          aria-label="Add to calendar — no verb accepts an entry yet"
+          onClick={(e) => e.preventDefault()}
+          className={cn(btn, "cursor-not-allowed text-fg-3 hover:bg-transparent hover:text-fg-3")}
+        >
+          <CalendarPlus className="size-4" aria-hidden />
+        </button>
       </Act>
       <Act label="Draft from this">
         <button type="button" className={btn} onClick={onDraft} aria-label="Draft from this">

@@ -1,0 +1,30 @@
+1. button "Source 1, Section 96" focus-visible:yes
+2. button "1Section 96Companies Act 2013, s.96 · 1 " focus-visible:yes
+3. button "Copy answer and quotes" focus-visible:yes
+4. button "Add to calendar — no verb accepts an entry yet" focus-visible:yes
+5. button "Draft from this" focus-visible:yes
+6. a "View run" focus-visible:yes
+7. textarea "Your question" focus-visible:NO
+8. button "Attach a PDF or DOCX" focus-visible:yes
+9. button "Tools" focus-visible:yes
+10. button "Voice input — coming soon" focus-visible:yes
+11. button "Close source" focus-visible:yes
+12. button "Copy the full sha256" focus-visible:yes
+13. body "Skip to main contentPPlacedonPAskWhat is" focus-visible:NO
+14. a "Skip to main content" focus-visible:yes
+15. button "Expand sidebar" focus-visible:yes
+16. a "New question" focus-visible:yes
+17. a "Ask" focus-visible:yes
+18. a "Wall System" focus-visible:yes
+19. a "Document Check" focus-visible:yes
+20. a "Contracts" focus-visible:yes
+21. a "Review tables" focus-visible:yes
+22. a "Drafts" focus-visible:yes
+23. a "Calendar" focus-visible:yes
+24. a "Runs" focus-visible:yes
+25. button "Account" focus-visible:yes
+26. button "Source 1, Section 96" focus-visible:yes
+27. button "1Section 96Companies Act 2013, s.96 · 1 " focus-visible:yes
+28. button "Copy answer and quotes" focus-visible:yes
+29. button "Add to calendar — no verb accepts an entry yet" focus-visible:yes
+30. button "Draft from this" focus-visible:yes

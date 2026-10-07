@@ -55,18 +55,15 @@ async function attachToWall(file: File): Promise<AttachOutcome> {
 
 export function AskWorkspace({
   initialConversationId,
-  initialTitle,
   initialTurns,
   loadProblem,
 }: {
   initialConversationId: string | null;
-  initialTitle: string | null;
   initialTurns: readonly Turn[];
   /** Set when ?c= named a thread that could not be opened. */
   loadProblem: string | null;
 }) {
   const [conversationId, setConversationId] = React.useState(initialConversationId);
-  const [title, setTitle] = React.useState(initialTitle);
   const [turns, setTurns] = React.useState<readonly Turn[]>(initialTurns);
   const [source, setSource] = React.useState<OpenSource | null>(null);
   const [tool, setTool] = React.useState<ComposerTool>("research");
@@ -78,7 +75,7 @@ export function AskWorkspace({
 
   React.useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [turns.length]);
+  }, [turns]);
 
   const openSource = React.useCallback(
     (group: CitationGroup, activeId: string | null, cid: string) =>
@@ -102,7 +99,6 @@ export function AskWorkspace({
 
       const cid = state.conversationId;
       setConversationId(cid);
-      setTitle((prev) => prev ?? text.slice(0, 80));
       rememberThread(cid, text);
       // The URL names the thread, without a server round-trip.
       window.history.replaceState(null, "", `/app?c=${encodeURIComponent(cid)}`);
@@ -157,10 +153,7 @@ export function AskWorkspace({
           </div>
         ) : (
           <>
-            <header className="sticky top-0 z-20 flex h-14 items-center border-b border-line bg-ground/95 px-6 max-md:top-14">
-              <p className="truncate text-body font-medium text-fg">{title ?? "Thread"}</p>
-            </header>
-            <div className="flex-1 px-4 pt-8 pb-6 md:px-8">
+            <div className="flex-1 px-4 pt-10 pb-6 md:px-8">
               <div className="mx-auto flex w-full max-w-[680px] flex-col gap-12">
                 {turns.map((t) => (
                   <TurnView

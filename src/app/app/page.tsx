@@ -30,14 +30,13 @@ function toTurns(conversationId: string, messages: readonly ConversationMessage[
 export default async function AskPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const { c } = await searchParams;
   if (!c) {
-    return <AskWorkspace initialConversationId={null} initialTitle={null} initialTurns={[]} loadProblem={null} />;
+    return <AskWorkspace initialConversationId={null} initialTurns={[]} loadProblem={null} />;
   }
   const loaded = await loadThread(c);
   if (loaded.phase === "loaded") {
     return (
       <AskWorkspace
         initialConversationId={c}
-        initialTitle={loaded.title}
         initialTurns={toTurns(c, loaded.messages)}
         loadProblem={null}
       />
@@ -50,5 +49,5 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         ? "That thread is not on this gateway — it may have been started against a different deployment. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
-  return <AskWorkspace initialConversationId={null} initialTitle={null} initialTurns={[]} loadProblem={problem} />;
+  return <AskWorkspace initialConversationId={null} initialTurns={[]} loadProblem={problem} />;
 }

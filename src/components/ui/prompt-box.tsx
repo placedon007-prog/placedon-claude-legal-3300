@@ -109,7 +109,7 @@ export function PromptBox({
     <form
       onSubmit={submit}
       className={cn(
-        "flex flex-col rounded-composer border border-line-2 bg-ground p-2 shadow-float transition-colors duration-150 focus-within:border-line-control",
+        "flex flex-col rounded-composer border border-line-2 bg-ground p-2 shadow-float transition-colors duration-150 focus-within:border-fg",
         className,
       )}
     >
@@ -215,13 +215,17 @@ export function PromptBox({
 
         <div className="ml-auto flex items-center gap-1">
           <Tip label="Voice input — coming soon">
-            {/* A disabled button gets no pointer events, so the tooltip hangs on a wrapper
-                that can take focus and says why. */}
-            <span tabIndex={0} className="inline-flex rounded-full" aria-label="Voice input — coming soon">
-              <button type="button" disabled className={cn(round, "text-fg-3 hover:bg-transparent")} tabIndex={-1} aria-hidden>
-                <Mic className="size-5" />
-              </button>
-            </span>
+            {/* aria-disabled, not disabled: a disabled button takes no focus or hover, so
+                its tooltip — the reason — could never be read. Clicking does nothing. */}
+            <button
+              type="button"
+              aria-disabled="true"
+              aria-label="Voice input — coming soon"
+              onClick={(e) => e.preventDefault()}
+              className={cn(round, "cursor-not-allowed text-fg-3 hover:bg-transparent hover:text-fg-3")}
+            >
+              <Mic className="size-5" aria-hidden />
+            </button>
           </Tip>
           <Tip label={pending ? "Waiting for the answer" : "Send"}>
             <button

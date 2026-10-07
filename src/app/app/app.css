@@ -12,6 +12,7 @@
 
 .console,
 [data-slot] {
+  color-scheme: light;
   /* Ground and greys — five steps. */
   --c-ground: #ffffff;
   --c-wash: #fafafa;        /* sidebar, quiet surfaces */
@@ -70,6 +71,9 @@
   min-height: 100dvh;
   background: var(--c-ground);
   color: var(--c-fg);
+  /* The site's <html> is dark; native controls (checkbox, file input, scrollbars) follow
+     color-scheme, so the console says light. */
+  color-scheme: light;
 }
 
 .console a:focus-visible, .console button:focus-visible, .console [tabindex]:focus-visible,
@@ -128,7 +132,7 @@
 /* Forms */
 .console label { display: block; font-size: var(--text-ui); margin-bottom: 0.45rem; color: var(--c-fg-2); }
 .console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"],
-.console input[type="date"], .console input[type="search"]:not(.bare) {
+.console input[type="date"], .console input[type="search"]:not(.bare), .console select {
   width: 100%;
   min-height: 44px;
   background: var(--c-ground);
@@ -139,6 +143,33 @@
   padding: 0.6rem 0.8rem;
 }
 .console textarea:not(.pb-input) { min-height: 9rem; resize: vertical; font-size: 0.9375rem; line-height: 1.55; }
+.console select { width: auto; min-width: 12rem; padding-right: 2rem; }
+/* The native file control, in the system's button language. */
+.console input[type="file"] { font: inherit; font-size: var(--text-body); color: var(--c-fg-2); }
+.console input[type="file"]::file-selector-button {
+  min-height: 44px;
+  margin-right: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--c-line-control);
+  border-radius: 8px;
+  background: var(--c-ground);
+  color: var(--c-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.console input[type="file"]::file-selector-button:hover { background: var(--c-wash-2); }
+/* The search field inside the sidebar shows focus on its wrapper. */
+.console input.bare:focus-visible, [data-slot] input.bare:focus-visible { outline: none; }
+
+/* Sections on the form screens: a heading with air above it, so each block reads apart. */
+.console-main > h3, .console-main > section > h3, .console-main > form + h3 {
+  margin: 2.25rem 0 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--c-fg);
+}
+.console-main form button[type="submit"]:not(.pb-send) { margin-top: 0.9rem; }
 .console .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
 .console-main button[type="submit"]:not(.pb-send) {
   min-height: 44px;
@@ -171,9 +202,11 @@
 }
 .panel-head h3 { font-weight: 600; font-size: 1.0625rem; margin: 0; }
 .mono { font-family: var(--font-code); }
+/* Helper and meta text is prose, so it is sans. Mono is kept for identifiers and evidence
+   (`.mono`, `.evidence`, `.quoted`, hashes, dates). */
 .meta {
-  font-family: var(--font-code);
-  font-size: var(--text-caption);
+  font-size: var(--text-ui);
+  line-height: 1.5;
   color: var(--c-fg-3);
 }
 

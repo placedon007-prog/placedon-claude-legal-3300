@@ -20,3 +20,28 @@
 - node_modules was missing @radix-ui/react-tooltip/popover (in package.json, not installed);
   `npm install --cache $TMPDIR/npm-cache` fixed it with no lockfile change.
 - WAITING ON OWNER: pick A, B or C (and confirm the name "Wall System"). No hi-fi until then.
+
+## 2026-10-07 — iteration 3 (owner chose C)
+- PR #6 had merged; #7 (owner) merged the lab commits into main. New branch
+  claude/console-redesign-2026-10-07 from main, draft PR #8. PR #6 body restored.
+- Phase 0 finished: shadcn init (radix) — tokens scoped, init's global changes reverted.
+- Phase 4: tokens in app.css (`.console, [data-slot]`) + names in globals @theme. Font trial
+  on the live Ask screen (Inter / IBM Plex Sans / Geist) → Plex Sans (pairs with Plex Mono
+  evidence lines), subset woff2 69 KB.
+- Phase 5 (Ask): conversation.send/get + citation.get; Split workspace; sidebar; composer.
+  Recorded fixtures from a live gateway (in-memory store; placedon_dev lacks migrations
+  010–023 and was NOT migrated by hand).
+- Backend gaps found: no verb serves full section text; in_force_from always null;
+  /v2/ask/stream exists but wraps `ask` and emits steps only at completion.
+- NEXT: Phase 6 — screenshots of every screen/state at 1440/1024/390, axe, keyboard,
+  reduced motion, build; delete /app/design-lab; AGENTS.md /app section; hand-off.
+
+## 2026-10-07 — iteration 4 (verify + hand-off)
+- Phase 6: typecheck · lint · 61 tests · build all green. 56 screens at 1440/1024/390 against a
+  production build and the real gateway (docs/design/screens/). axe 0 violations; keyboard walk
+  recorded; reduced motion leaves 0 elements animating.
+- Self-critique fixes: dropped the header that repeated the question; marker never wraps away
+  from its sentence; abstention-with-citations set aside under its own label; native controls
+  forced light; sheet overlay blur removed (glass is banned); mono reserved for evidence.
+- /app/design-lab deleted. AGENTS.md has the "/app console" design system.
+- WAITING ON OWNER: approve the final screenshots in PR #8. Do not merge.

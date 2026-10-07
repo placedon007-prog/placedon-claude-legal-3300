@@ -91,7 +91,7 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
           </SheetTrigger>
           <SheetContent
             side="left"
-            className="w-[288px] gap-0 bg-wash p-3"
+            className="w-[288px] gap-0 bg-wash p-3 pt-14"
             // Following any link inside closes the sheet.
             onClickCapture={(e) => {
               if ((e.target as HTMLElement).closest("a")) setSheetOpen(false);
@@ -107,34 +107,37 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
         </Link>
       </header>
 
-      {/* desktop */}
-      <aside
-        aria-label="Console"
-        className={cn(
-          "sticky top-0 hidden h-dvh flex-none flex-col border-r border-line bg-wash md:flex",
-          expanded ? "w-[264px] p-3" : "w-14 items-center px-1.5 py-3",
-        )}
-      >
-        <div className={cn("flex items-center", expanded ? "justify-between pl-1" : "flex-col gap-1")}>
-          {expanded ? <Brand /> : <BrandMark />}
-          <Tip label={expanded ? "Collapse sidebar" : "Expand sidebar"}>
-            <button
-              type="button"
-              className={iconOnly}
-              aria-expanded={expanded}
-              aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? (
-                <PanelLeftClose className="size-[18px]" aria-hidden />
-              ) : (
-                <PanelLeftOpen className="size-[18px]" aria-hidden />
-              )}
-            </button>
-          </Tip>
-        </div>
-        {expanded ? <Expanded passcode={passcode} /> : <Rail passcode={passcode} />}
-      </aside>
+      {/* desktop: the outer column carries the wash and rule down the whole page; the
+          inner aside sticks to the viewport. */}
+      <div className="hidden flex-none border-r border-line bg-wash md:block">
+        <aside
+          aria-label="Console"
+          className={cn(
+            "sticky top-0 flex h-dvh flex-col",
+            expanded ? "w-[264px] p-3" : "w-14 items-center px-1.5 py-3",
+          )}
+        >
+          <div className={cn("flex items-center", expanded ? "justify-between pl-1" : "flex-col gap-1")}>
+            {expanded ? <Brand /> : <BrandMark />}
+            <Tip label={expanded ? "Collapse sidebar" : "Expand sidebar"}>
+              <button
+                type="button"
+                className={iconOnly}
+                aria-expanded={expanded}
+                aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? (
+                  <PanelLeftClose className="size-[18px]" aria-hidden />
+                ) : (
+                  <PanelLeftOpen className="size-[18px]" aria-hidden />
+                )}
+              </button>
+            </Tip>
+          </div>
+          {expanded ? <Expanded passcode={passcode} /> : <Rail passcode={passcode} />}
+        </aside>
+      </div>
     </>
   );
 }
@@ -226,7 +229,7 @@ function Threads() {
           aria-label="Search this browser’s threads"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search this browser’s threads"
+          placeholder="Search threads"
           className="bare w-full bg-transparent text-fg outline-none placeholder:text-fg-3"
         />
       </div>
