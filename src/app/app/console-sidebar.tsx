@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { PlacedonMark } from "@/components/brand/placedon-mark";
 import { groupThreads, type LocalThread } from "@/lib/thread";
 import { useLocalThreads, useSidebarExpanded } from "./local-store";
 import { logoutAction } from "./actions";
@@ -143,11 +144,7 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
 }
 
 function BrandMark() {
-  return (
-    <span aria-hidden className="grid size-7 place-items-center rounded-chip bg-fg text-caption font-semibold text-ground">
-      P
-    </span>
-  );
+  return <PlacedonMark className="size-7 flex-none text-fg" />;
 }
 
 function Brand() {
