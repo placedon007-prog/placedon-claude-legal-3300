@@ -17,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cleanName, greeting, persona } from "@/lib/greeting";
+import { CalendarDays, Moon, Sunrise } from "lucide-react";
+import { cleanName, greeting, PERSONA_NAME, recognise } from "@/lib/greeting";
 import { useActivity, useDisplayName, useNicknamesOn } from "./local-store";
 
 /** The current minute on the client; null on the server and during hydration. */
@@ -32,28 +33,49 @@ function useMinute(): number | null {
   );
 }
 
+const PERSONA_ICON = { "night-wolf": Moon, "early-riser": Sunrise, "weekend-warrior": CalendarDays } as const;
+
 export function Welcome() {
   const minute = useMinute();
   const [name] = useDisplayName();
   const [nicknames] = useNicknamesOn();
   const activity = useActivity();
 
-  const line =
-    minute === null
-      ? { hello: "", question: "What do you need to check?" }
-      : greeting({
-          name,
-          persona: nicknames ? persona(activity) : null,
-          now: new Date(minute * 60_000),
-        });
+  const now = minute === null ? null : new Date(minute * 60_000);
+  const recognition = now && nicknames ? recognise(activity, now) : null;
+  const line = now
+    ? greeting({ name, recognition, now })
+    : { hello: "", question: "What do you need to check?" };
+  const Icon = recognition ? PERSONA_ICON[recognition.persona] : null;
 
   return (
-    <p className="max-w-[720px] text-center text-display font-medium tracking-[-0.02em] text-fg">
-      {line.hello ? <>{line.hello} </> : null}
-      {line.question}
-    </p>
+    <div className="flex flex-col items-center gap-4 text-center">
+      <h2 className="max-w-[760px] text-display font-medium tracking-[-0.02em] text-fg">
+        {line.hello ? (
+          <>
+            <span className="block">{line.hello}</span>
+            <span className="block text-fg-2">{line.question}</span>
+          </>
+        ) : (
+          line.question
+        )}
+      </h2>
+      {recognition && Icon ? (
+        // What the screen noticed, said out loud — a nickname is never a secret score.
+        <p className="inline-flex items-center gap-2 rounded-full border border-line-2 bg-wash px-3 py-1.5 text-ui text-fg-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200">
+          <Icon className="size-3.5 text-fg" aria-hidden />
+          <span>
+            <span className="font-medium text-fg">{PERSONA_NAME[recognition.persona]}</span>
+            {" · "}
+            {capitalise(recognition.reason)}
+          </span>
+        </p>
+      ) : null}
+    </div>
   );
 }
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function NameDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [name, setName] = useDisplayName();

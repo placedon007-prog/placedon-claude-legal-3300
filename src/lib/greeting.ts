@@ -62,6 +62,38 @@ export function persona(log: readonly Activity[]): Persona | null {
   return null;
 }
 
+/**
+ * What the screen recognises about the person right now. A HABIT (their history shows it)
+ * beats the MOMENT (the clock says it): opening the console at 1 am makes you a Night Wolf
+ * tonight; asking mostly at night makes you one all day.
+ */
+export interface Recognition {
+  readonly persona: Persona;
+  readonly source: "habit" | "now";
+  /** Shown under the greeting, so the nickname is never a secret score. */
+  readonly reason: string;
+}
+
+const MOMENT_REASON: Record<Persona, string> = {
+  "night-wolf": "late-night session",
+  "early-riser": "early-morning session",
+  "weekend-warrior": "weekend session",
+};
+
+export function recognise(log: readonly Activity[], now: Date): Recognition | null {
+  const habit = persona(log);
+  if (habit) return { persona: habit, source: "habit", reason: PERSONA_REASON[habit] };
+  const h = now.getHours();
+  const moment: Persona | null = isNight(h)
+    ? "night-wolf"
+    : isEarly(h)
+      ? "early-riser"
+      : isWeekend(now.getDay())
+        ? "weekend-warrior"
+        : null;
+  return moment ? { persona: moment, source: "now", reason: MOMENT_REASON[moment] } : null;
+}
+
 function salutation(h: number): string {
   if (h >= 22 || h < 4) return "Burning the midnight oil";
   if (h < 12) return "Morning";
@@ -80,23 +112,28 @@ function pick<T>(list: readonly T[], seed: string): T {
 }
 
 /**
- * The welcome line. With a nickname: "Hey Night Wolf, what’s on your mind?". With a name:
- * "Evening, Nishant. What do you need to check?". With neither: the time and the question.
+ * The welcome line, in two parts so the screen can set them on two lines:
+ *   recognised + named    "Hey Nishant," / "Hey Night Wolf,"  (alternating by day)
+ *   recognised only       "Hey Night Wolf,"
+ *   named only            "Evening, Nishant."
+ *   neither               "Evening."
+ * When `hello` ends with a comma, `question` continues the sentence in lower case.
  */
-export function greeting(input: { name: string | null; persona: Persona | null; now: Date }): {
-  hello: string;
-  question: string;
-} {
-  const { now } = input;
+export function greeting(input: {
+  name: string | null;
+  recognition: Recognition | null;
+  now: Date;
+}): { hello: string; question: string } {
+  const { now, recognition } = input;
   const h = now.getHours();
   const day = activityAt(now).d;
-  const late = isNight(h);
-  const question = pick(late ? QUESTIONS_NIGHT : QUESTIONS_DAY, day);
+  const question = pick(isNight(h) ? QUESTIONS_NIGHT : QUESTIONS_DAY, day);
   const name = cleanName(input.name);
 
-  if (input.persona) {
-    const nick = PERSONA_NAME[input.persona];
-    return { hello: `Hey ${nick},`, question: lowerFirst(question) };
+  if (recognition) {
+    const nick = PERSONA_NAME[recognition.persona];
+    const who = name ? pick([name, nick], `${day}:who`) : nick;
+    return { hello: `Hey ${who},`, question: lowerFirst(question) };
   }
   if (name) return { hello: `${salutation(h)}, ${name}.`, question };
   return { hello: `${salutation(h)}.`, question };
