@@ -12,8 +12,9 @@
  */
 import * as React from "react";
 import { PromptBox, type AttachOutcome, type ComposerTool } from "@/components/ui/prompt-box";
+import { AskSources } from "./ask-sources";
 import { linkCitations, type CitationGroup } from "@/lib/thread";
-import { parseAnswer } from "@/lib/gateway/types";
+import { parseAnswer, type SourceCard } from "@/lib/gateway/types";
 import { sendAction } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
@@ -58,11 +59,14 @@ export function AskWorkspace({
   initialConversationId,
   initialTurns,
   loadProblem,
+  initialSources,
 }: {
   initialConversationId: string | null;
   initialTurns: readonly Turn[];
   /** Set when ?c= named a thread that could not be opened. */
   loadProblem: string | null;
+  /** The @-sources picker list from `sources.list`; empty when the gateway could not list. */
+  initialSources: readonly SourceCard[];
 }) {
   const [conversationId, setConversationId] = React.useState(initialConversationId);
   const [turns, setTurns] = React.useState<readonly Turn[]>(initialTurns);
@@ -73,6 +77,15 @@ export function AskWorkspace({
   const endRef = React.useRef<HTMLDivElement>(null);
   const composerRef = React.useRef<HTMLDivElement>(null);
   const docked = useDocked();
+
+  // The picked sources the next question searches. Default: the held corpus plus the vault
+  // when they are switchable — the backend's own default, shown so the chip never claims to
+  // search something it will not. The user adds or removes from the @-sources list.
+  const [picked, setPicked] = React.useState<readonly string[]>(() =>
+    initialSources
+      .filter((s) => s.switchable && (s.id === "held" || s.id === "vault"))
+      .map((s) => s.id),
+  );
 
   React.useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -97,6 +110,7 @@ export function AskWorkspace({
         conversationId,
         text,
         taskOverride: chosen === "draft" ? "DRAFT" : undefined,
+        sources: picked,
       });
       setTurns((t) => t.map((x) => (x.key === key ? { ...x, state } : x)));
       if (state.phase !== "answered" && state.phase !== "queued") return;
@@ -122,15 +136,18 @@ export function AskWorkspace({
   const empty = turns.length === 0;
 
   const composer = (
-    <PromptBox
-      onSubmit={(text, chosen) => send(text, chosen)}
-      onAttach={attachToWall}
-      pending={pending}
-      canDraft={canDraft}
-      tool={tool}
-      onToolChange={setTool}
-      className="w-full"
-    />
+    <div className="flex w-full flex-col gap-2">
+      <PromptBox
+        onSubmit={(text, chosen) => send(text, chosen)}
+        onAttach={attachToWall}
+        pending={pending}
+        canDraft={canDraft}
+        tool={tool}
+        onToolChange={setTool}
+        className="w-full"
+      />
+      <AskSources sources={initialSources} selected={picked} onChange={setPicked} />
+    </div>
   );
 
   return (

@@ -257,7 +257,7 @@ const SCREEN_VERBS = [
   "vaultUpload", "vaultStatus", "vaultFind", "vaultVerify",
   "tableCreate", "tableStatus", "tableExport", "tableCancel",
   "draftCreate", "draftRevise", "draftVersions", "draftDiff", "draftExport",
-  "calendarUpcoming",
+  "calendarUpcoming", "sourcesList",
 ];
 const httpProto = HttpGateway.prototype;
 for (const verb of SCREEN_VERBS) {
@@ -269,7 +269,7 @@ for (const route of [
   "vaultUpload", "vaultStatus", "vaultFind", "vaultVerify",
   "tableCreate", "tableStatus", "tableExport", "tableCancel",
   "draftCreate", "draftRevise", "draftVersions", "draftDiff", "draftExport",
-  "calendarUpcoming",
+  "calendarUpcoming", "sourcesList",
 ]) {
   check(
     typeof GATEWAY_ROUTES[route] === "string" && GATEWAY_ROUTES[route].startsWith("/v2/"),
@@ -281,6 +281,45 @@ for (const route of [
 check(
   GATEWAY_ROUTES.tableCreate === "/v2/review-table/create",
   "a dotted verb's head becomes a HYPHENATED path segment",
+);
+check(
+  GATEWAY_ROUTES.sourcesList === "/v2/sources/list",
+  "sources.list is POSTed at /v2/sources/list",
+);
+
+// ── the @-sources picker ─────────────────────────────────────────────────────
+const picker = await gw.sourcesList();
+check(
+  picker.ok && "picker" in picker.data && Array.isArray(picker.data.picker),
+  "sourcesList returns a picker array",
+);
+const pickCards = picker.ok && "picker" in picker.data ? picker.data.picker : [];
+const heldCard = pickCards.find((s) => s.id === "held");
+check(
+  heldCard && heldCard.tier === "HELD" && heldCard.switchable,
+  "...the held corpus is HELD and switchable",
+);
+const keyless = pickCards.find((s) => s.status === "KEY_MISSING");
+check(
+  keyless && !keyless.switchable && keyless.reason.length > 0,
+  "...a KEY_MISSING source is not switchable and NAMES a reason, never 'not found'",
+);
+check(
+  pickCards.length > 0 && pickCards.every((s) => ["HELD", "LICENSED", "PUBLIC"].includes(s.tier)),
+  "...every source's display tier is HELD, LICENSED or PUBLIC",
+);
+check(
+  pickCards.length > 0 && pickCards.every((s) => s.switchable || s.reason.length > 0),
+  "...every unavailable source carries a reason",
+);
+// conversationSend takes a sources pick (retrieval searches only those) and still answers.
+const pickedSend = await gw.conversationSend({
+  text: "What is the quorum for a meeting of the Board?",
+  sources: ["held"],
+});
+check(
+  pickedSend.ok && !gatewayTypes.isRefusal(pickedSend.data) && pickedSend.data.envelope,
+  "conversationSend accepts a `sources` pick and still returns an envelope",
 );
 
 // ── the vault: a state per file, and PENDING is not INGESTED ─────────────────

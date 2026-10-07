@@ -27,6 +27,7 @@ import type {
   ConversationSend,
   ConversationGet,
   CitationGet,
+  SourcesList,
 } from "./types";
 
 /**
@@ -181,7 +182,18 @@ export interface GatewayProvider {
     text: string;
     /** Name the task instead of letting intake classify it, e.g. `DRAFT`. */
     taskOverride?: string;
+    /**
+     * Source ids the turn should search, from `sourcesList`. Omitted lets the backend
+     * apply its default (the held corpus plus the vault). Retrieval searches only these.
+     */
+    sources?: readonly string[];
   }): Promise<EngineResult<ConversationSend>>;
+  /**
+   * The @-sources picker: every pickable source with its display tier (HELD / LICENSED /
+   * PUBLIC), switchable status (available / KEY_MISSING / NOT_ACQUIRED / BLOCKED, with the
+   * reason) and its terms record. Read-only; an unavailable source is listed, not hidden.
+   */
+  sourcesList(): Promise<EngineResult<SourcesList>>;
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>>;
   /** One citation for the source panel, its quote re-read from the corpus at call time. */
   citationGet(input: {

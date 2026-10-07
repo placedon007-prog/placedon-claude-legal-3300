@@ -9,6 +9,8 @@ import type {
   ConversationGet,
   ConversationMessage,
   ConversationSend,
+  SourcesList,
+  SourcesListOk,
   AskResponse,
   Calendar,
   CancelAck,
@@ -220,6 +222,36 @@ const THREADS = new Map<string, ConversationMessage[]>();
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
 const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
 
+/**
+ * The @-sources picker, as the real gateway's `sources.list` returns it — enough sources to
+ * show all three tiers (HELD / LICENSED / PUBLIC) and all four states. Mirrors the backend's
+ * `checker/source_picker.listing()`; an unavailable source is listed with `switchable: false`
+ * and a reason, never hidden.
+ */
+const SOURCES_PICKER: SourcesListOk = {
+  picker: [
+    { id: "held", label: "Companies Act 2013 (held corpus)", tier: "HELD",
+      status: "available", reason: "", switchable: true },
+    { id: "vault", label: "Your documents (vault)", tier: "PUBLIC",
+      status: "available", reason: "", switchable: true },
+    { id: "indiankanoon", label: "Indian Kanoon API", tier: "LICENSED",
+      status: "KEY_MISSING", switchable: false,
+      reason: "PLACEDON_INDIANKANOON_KEY is not set; the source permits us but no API key is configured" },
+    { id: "aws_sc_judgments", label: "Indian Supreme Court Judgments (AWS Open Data)",
+      tier: "LICENSED", status: "available", reason: "", switchable: true },
+    { id: "data_gov_in", label: "data.gov.in / Open Government Data (GODL)", tier: "PUBLIC",
+      status: "KEY_MISSING", switchable: false,
+      reason: "PLACEDON_DATA_GOV_IN_KEY is not set; the source permits us but no API key is configured" },
+    { id: "egazette", label: "e-Gazette (Department of Publication)", tier: "PUBLIC",
+      status: "NOT_ACQUIRED", switchable: false,
+      reason: "terms unread -- an unread term is OPEN, and OPEN is not permission" },
+    { id: "sebi", label: "SEBI (Securities and Exchange Board of India)", tier: "PUBLIC",
+      status: "BLOCKED", switchable: false,
+      reason: "robots: https://www.sebi.gov.in DISALLOW HTTP 200" },
+  ],
+  note: "Only HELD can make an answer VERIFIED. A greyed source is listed with why it is off.",
+};
+
 export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
@@ -274,6 +306,7 @@ export class MockGateway implements GatewayProvider {
     conversationId?: string;
     text: string;
     taskOverride?: string;
+    sources?: readonly string[];
   }): Promise<EngineResult<ConversationSend>> {
     if (input.taskOverride && input.taskOverride !== "RESEARCH_QUESTION") {
       // Only research replies were recorded. Composing a DRAFT or review envelope here
@@ -304,6 +337,10 @@ export class MockGateway implements GatewayProvider {
       reply,
     ]);
     return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id });
+  }
+
+  async sourcesList(): Promise<EngineResult<SourcesList>> {
+    return engineOk(SOURCES_PICKER);
   }
 
   async conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {

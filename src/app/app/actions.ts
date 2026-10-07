@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, SourceCard } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { endSession, passcodeAccepted, startSession } from "@/lib/auth/session";
 import { rememberRun } from "@/lib/auth/recent-runs";
@@ -51,6 +51,8 @@ export async function sendAction(input: {
   conversationId: string | null;
   text: string;
   taskOverride?: "DRAFT";
+  /** Source ids the picker has switched on. Omitted lets the backend default (held + vault). */
+  sources?: readonly string[];
 }): Promise<TurnState> {
   const text = questionSchema.safeParse(input.text);
   if (!text.success) return { phase: "invalid", message: text.error.issues[0].message };
@@ -64,6 +66,7 @@ export async function sendAction(input: {
     text: text.data,
     conversationId: cid?.data,
     taskOverride: override.data,
+    ...(input.sources && input.sources.length > 0 ? { sources: input.sources } : {}),
   });
   if (!result.ok) return { phase: "failed", error: result.error };
   const data = result.data;
@@ -106,6 +109,18 @@ export async function loadThread(conversationId: string): Promise<ThreadLoad> {
   if (!result.ok) return { phase: "failed", error: result.error };
   if (isRefusal(result.data)) return { phase: "refused", code: result.data.code, detail: result.data.detail };
   return { phase: "loaded", title: result.data.conversation.title, messages: result.data.messages };
+}
+
+/**
+ * The @-sources picker list. Returns the cards (tier, switchable status, terms) or an empty
+ * list when the gateway refuses or cannot be reached — the picker then says so and retrieval
+ * falls back to the held corpus. Never throws into the UI.
+ */
+export async function loadSources(): Promise<readonly SourceCard[]> {
+  const result = await (await getGateway()).sourcesList();
+  if (!result.ok) return [];
+  const data = result.data;
+  return "picker" in data ? data.picker : [];
 }
 
 export type CitationState =
