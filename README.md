@@ -4,6 +4,11 @@
 this project — a fresh Claude on any machine/account should be productive from
 this file alone, without re-analysing the codebase.**
 
+> **Where things stand (2026-10-08):** the `/app` console has been redesigned as the
+> Split workspace. What is complete, what is waiting on the owner, and what comes next is
+> in [`docs/STATUS.md`](docs/STATUS.md); the console's design system is in AGENTS.md →
+> "/app console".
+
 Placedon is an evidence-first legal-intelligence product for **Indian corporate
 law (Companies Act, 2013)**. Voice: *"a witness, not a tool."* Golden rule:
 *"the model explains, the code decides, the record verifies."* Every answer
