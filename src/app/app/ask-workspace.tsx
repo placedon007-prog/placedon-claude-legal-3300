@@ -19,7 +19,7 @@ import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
 import { recordActivity, rememberThread } from "./local-store";
-import { NameHint, Welcome } from "./welcome";
+import { Welcome } from "./welcome";
 
 const DOCKED = "(min-width: 1024px)";
 
@@ -152,7 +152,6 @@ export function AskWorkspace({
               Answers quote the exact provision, or say plainly what cannot be answered. Not legal
               advice.
             </p>
-            <NameHint />
           </div>
         ) : (
           <>

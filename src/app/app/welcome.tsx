@@ -55,55 +55,6 @@ export function Welcome() {
   );
 }
 
-/** Asks for a name inline, on the welcome screen itself, until one is set. */
-export function NameHint() {
-  const minute = useMinute();
-  const [name, setName] = useDisplayName();
-  const [draft, setDraft] = React.useState("");
-  const [problem, setProblem] = React.useState<string | null>(null);
-  if (minute === null || name) return null;
-
-  function save(e: React.FormEvent) {
-    e.preventDefault();
-    const clean = cleanName(draft);
-    if (!clean) {
-      setProblem("Letters and spaces only, up to 40 characters.");
-      return;
-    }
-    setName(clean);
-  }
-
-  return (
-    <form onSubmit={save} className="flex flex-col items-center gap-1.5">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <label htmlFor="your-name" className="text-ui text-fg-2">
-          What should we call you?
-        </label>
-        <input
-          id="your-name"
-          value={draft}
-          maxLength={40}
-          autoComplete="given-name"
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setProblem(null);
-          }}
-          placeholder="Your first name"
-          className="bare h-9 w-44 rounded-full border border-line-2 bg-ground px-3.5 text-ui text-fg outline-none transition-colors duration-150 placeholder:text-fg-3 focus-visible:border-fg"
-        />
-        <button
-          type="submit"
-          disabled={!draft.trim()}
-          className="bare h-9 rounded-full bg-fg px-3.5 text-ui font-medium text-ground transition-opacity duration-150 hover:opacity-85 disabled:bg-line-2 disabled:text-fg-3"
-        >
-          Save
-        </button>
-      </div>
-      <p className="text-caption text-fg-3">{problem ?? "Kept in this browser only."}</p>
-    </form>
-  );
-}
-
 export function NameDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [name, setName] = useDisplayName();
   const [draft, setDraft] = React.useState("");

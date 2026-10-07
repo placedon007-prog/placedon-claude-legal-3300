@@ -130,7 +130,6 @@
 }
 
 /* Forms */
-.console label[for="your-name"] { display: inline; margin: 0; font-size: var(--text-ui); }
 .console label { display: block; font-size: var(--text-ui); margin-bottom: 0.45rem; color: var(--c-fg-2); }
 .console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"],
 .console input[type="date"], .console input[type="search"]:not(.bare), .console select {
