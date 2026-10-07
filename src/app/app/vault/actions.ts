@@ -19,8 +19,8 @@ import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 export type VaultState =
   | { readonly phase: "idle" }
   | { readonly phase: "listed"; readonly data: VaultStatus }
-  | { readonly phase: "uploaded"; readonly name: string; readonly state: string;
-      readonly note: string; readonly data: VaultStatus }
+  | { readonly phase: "uploaded"; readonly documentId: string; readonly name: string;
+      readonly state: string; readonly note: string; readonly data: VaultStatus }
   | { readonly phase: "found"; readonly query: string; readonly data: VaultFind }
   | { readonly phase: "verified"; readonly documentId: string; readonly data: VaultVerify }
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
@@ -85,6 +85,7 @@ export async function vaultUploadAction(
   if (!after.ok) return { phase: "failed", error: after.error };
   return {
     phase: "uploaded",
+    documentId: result.data.document_id,
     name: result.data.name,
     state: result.data.state,
     note: result.data.note ?? "",

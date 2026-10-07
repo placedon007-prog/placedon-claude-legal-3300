@@ -810,8 +810,9 @@ export const conversationGetOkSchema = z.object({
   conversation: z.object({
     conversation_id: z.string(),
     title: z.string(),
-    created_at: z.string().optional(),
-    updated_at: z.string().optional(),
+    // null on the gateway's in-memory store (recorded 2026-10-07).
+    created_at: z.string().nullable().optional(),
+    updated_at: z.string().nullable().optional(),
   }),
   messages: z.array(conversationMessageSchema),
 });

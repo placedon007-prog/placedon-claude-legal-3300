@@ -35,7 +35,7 @@ const inputSchema = z.object({
   documentId: z
     .string()
     .trim()
-    .min(1, "A document id is required. Copy it from the Vault screen.")
+    .min(1, "A document id is required. Copy it from Wall System.")
     .max(128, "That is too long to be a document id."),
   asOf: isoDate,
   revokedOn: isoDate,

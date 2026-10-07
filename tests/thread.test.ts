@@ -121,3 +121,10 @@ test("malformed stored threads are ignored, not thrown on", () => {
   const { today } = groupThreads([{ id: 1, title: null } as never], new Date());
   assert.equal(today.length, 0);
 });
+
+test("every recorded live reply parses against the contract", async () => {
+  const { conversationGetOkSchema, citationGetOkSchema } = await import("../src/lib/gateway/types");
+  assert.ok(conversationGetOkSchema.safeParse(RECORDED.conversation).success);
+  assert.ok(conversationSendOkSchema.safeParse(RECORDED.send_abstained).success);
+  for (const c of Object.values(RECORDED.citations)) assert.ok(citationGetOkSchema.safeParse(c).success);
+});

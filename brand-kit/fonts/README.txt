@@ -27,3 +27,9 @@ No specific family was ever locked in for this one — just "a clean sans-serif 
 wide letter-spacing for small print." Not included here since it was never pinned
 down. Inter or Archivo (both free, Google Fonts) would fit the existing palette if
 you want one specified.
+
+CONSOLE FONT (/app only, 2026-10-07)
+IBM Plex Sans, variable (weights 100-700), subset to Latin + ₹ + punctuation and
+converted to woff2 (IBMPlexSans-Variable-latin.woff2, 69 KB). SIL OFL 1.1 — licence in
+IBMPlexSans-OFL-LICENSE.txt. Source: github.com/google/fonts ofl/ibmplexsans. Chosen over
+Inter and Geist on the live Ask screen; see docs/design/LOOP.md.

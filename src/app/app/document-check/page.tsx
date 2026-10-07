@@ -4,7 +4,14 @@ import { DocumentCheckConsole } from "./document-check-console";
 export const metadata: Metadata = { title: "Document Check", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
-export default function DocumentCheckPage() {
+export default async function DocumentCheckPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ doc?: string }>;
+}) {
+  // Only an id-shaped value is prefilled; anything else is ignored rather than echoed.
+  const { doc } = await searchParams;
+  const initial = doc && /^[A-Za-z0-9-]{1,100}$/.test(doc) ? doc : "";
   return (
     <>
       <h2>Document Check</h2>
@@ -17,7 +24,7 @@ export default function DocumentCheckPage() {
         nothing wrong. The row is append-only: a check in March and a check in October on the
         same bytes are two records, because the answer can change.
       </p>
-      <DocumentCheckConsole />
+      <DocumentCheckConsole initialDocumentId={initial} />
     </>
   );
 }

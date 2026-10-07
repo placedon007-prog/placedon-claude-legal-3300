@@ -28,7 +28,8 @@ function lineGlyph(result: string): { glyph: string; cls: string } {
   return { glyph: "·", cls: "" };
 }
 
-export function DocumentCheckConsole() {
+/** `initialDocumentId` arrives from the composer's attach flow (Wall System → here). */
+export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocumentId?: string }) {
   const [state, action, pending] = useActionState(documentCheckAction, initial);
 
   return (
@@ -39,12 +40,13 @@ export function DocumentCheckConsole() {
           id="document_id"
           name="document_id"
           type="text"
-          placeholder="the sha256 or vault id — copy it from the Vault screen"
+          defaultValue={initialDocumentId}
+          placeholder="the sha256 or vault id — copy it from Wall System"
           aria-describedby="doc-help"
         />
         <p className="meta" id="doc-help">
           This checks a document already in your vault. It reads the stored bytes, so the
-          document is never re-uploaded here. Upload first on the Vault screen and paste its
+          document is never re-uploaded here. Upload first in Wall System and paste its
           id.
         </p>
 
