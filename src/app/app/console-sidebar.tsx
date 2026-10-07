@@ -356,7 +356,7 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
             {nicknames && earned
               ? `You’re a ${PERSONA_NAME[earned]}: ${PERSONA_REASON[earned]}.`
-              : "Earned after a few days of questions. Read from this browser only; never sent anywhere."}
+              : "From the time you open the console, and from your habits over a few days. Read in this browser only; never sent anywhere."}
           </DropdownMenuLabel>
           <DropdownMenuItem className="min-h-10" onSelect={() => forgetActivity()}>
             <History className="size-4" aria-hidden />

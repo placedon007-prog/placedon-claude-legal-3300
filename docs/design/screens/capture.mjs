@@ -99,6 +99,32 @@ if (mode === "live") {
     await ctx.close();
   }
 
+  // The welcome line: the clock and this browser's storage are set; nothing is asked.
+  {
+    const habit = JSON.stringify(Array.from({ length: 9 }, (_, i) => ({ d: `2026-10-0${1 + (i % 4)}`, h: 1, w: 3 })));
+    const states = [
+      ["greeting-first-midnight", "2026-10-08T00:40:00+05:30", {}],
+      ["greeting-named-midnight", "2026-10-09T01:10:00+05:30", { "placedon.console.name.v1": "Nishant" }],
+      ["greeting-habit-afternoon", "2026-10-08T15:00:00+05:30", { "placedon.console.activity.v1": habit }],
+      ["greeting-plain-evening", "2026-10-08T19:30:00+05:30", { "placedon.console.name.v1": "Nishant" }],
+    ];
+    for (const w of WIDTHS) for (const [name, time, store] of states) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: HEIGHT[w] }, timezoneId: "Asia/Kolkata" });
+      const p = await ctx.newPage();
+      await p.clock.install({ time: new Date(time) });
+      await p.addInitScript((kv) => { for (const [k, v] of Object.entries(kv)) localStorage.setItem(k, v); }, store);
+      await p.goto(`${BASE}/app`, { waitUntil: "networkidle" });
+      await dismissConsent(p);
+      await shot(p, name, w);
+      if (name === "greeting-first-midnight") await scan(p, name, w);
+      if (name === "greeting-plain-evening" && w === 1440) {
+        await p.getByRole("button", { name: /^Account/ }).click();
+        await shot(p, "account-menu", w);
+      }
+      await ctx.close();
+    }
+  }
+
   // Reduced motion: the pending dot and panel must render their end state.
   {
     const { ctx, p } = await fresh(1440, { reducedMotion: "reduce" });
