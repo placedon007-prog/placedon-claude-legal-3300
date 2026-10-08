@@ -3,10 +3,19 @@ import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import RECORDED from "./fixtures/conversation.json" with { type: "json" };
-import { citationGetOkSchema, conversationSendOkSchema } from "./types";
+import SOURCES from "./fixtures/sources.json" with { type: "json" };
+import {
+  citationGetOkSchema,
+  conversationSendOkSchema,
+  mattersListSchema,
+  runTraceSchema,
+  sourcesListSchema,
+} from "./types";
 import type {
   CitationGet,
   ConversationGet,
+  MattersList,
+  SourcesList,
   ConversationMessage,
   ConversationSend,
   AskResponse,
@@ -218,6 +227,18 @@ const DOCUMENT_MINUTES: DocumentResponse = {
 const THREADS = new Map<string, ConversationMessage[]>();
 // Parsed, not cast: a fixture that drifted from the contract fails here, loudly.
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
+// Composer v2 (backend PR #84): replies recorded live WITH sources chosen. Each carries
+// envelope.searched. A combination that was not recorded is refused, never composed.
+const SOURCES_LIST = sourcesListSchema.parse(SOURCES.sources_list.body);
+const MATTERS = mattersListSchema.parse(SOURCES.matters_list.body);
+const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
+  "": conversationSendOkSchema.parse(SOURCES.send_default.body),
+  CA2013: conversationSendOkSchema.parse(SOURCES.send_default.body),
+  "CA2013,LLP2008": conversationSendOkSchema.parse(SOURCES.send_ca_llp.body),
+  LLP2008: conversationSendOkSchema.parse(SOURCES.send_llp_only.body),
+};
+const RECORDED_TRACE = runTraceSchema.parse(SOURCES.trace_default.body);
+const RECORDED_RUN_IDS = new Set(Object.values(BY_SOURCES).map((r) => r.run_id ?? ""));
 const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
 
 export class MockGateway implements GatewayProvider {
@@ -274,7 +295,33 @@ export class MockGateway implements GatewayProvider {
     conversationId?: string;
     text: string;
     taskOverride?: string;
+    sources?: readonly string[];
+    matterId?: string;
   }): Promise<EngineResult<ConversationSend>> {
+    if (input.sources) {
+      const known = new Set(SOURCES_LIST.bodies.map((b) => b.id));
+      const unknown = input.sources.filter((id) => !known.has(id));
+      if (unknown.length) {
+        // The gateway's own refusal, recorded; only the named id is the caller's.
+        return engineFail({
+          kind: "bad_request",
+          route: GATEWAY_ROUTES.conversationSend,
+          status: 400,
+          message: "The gateway answered 400.",
+          detail: `${unknown.map((u) => `'${u}'`).join(", ")} is not a source. The ids are listed by sources.list: ${[...known].join(", ")}`,
+        });
+      }
+      const key = SOURCES_LIST.bodies.filter((b) => input.sources!.includes(b.id)).map((b) => b.id).join(",");
+      const hit = BY_SOURCES[key];
+      if (!hit) {
+        return engineOk({
+          status: "REFUSED",
+          code: "NOT_RECORDED",
+          detail: `The demo gateway has no recorded reply for the sources ${key || "(none)"}. Run against the real gateway (docs/RUN_LOCALLY.md) to use this choice.`,
+        });
+      }
+      return engineOk({ ...hit, conversation_id: input.conversationId ?? hit.conversation_id });
+    }
     if (input.taskOverride && input.taskOverride !== "RESEARCH_QUESTION") {
       // Only research replies were recorded. Composing a DRAFT or review envelope here
       // would put text on screen that no gateway produced.
@@ -304,6 +351,14 @@ export class MockGateway implements GatewayProvider {
       reply,
     ]);
     return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id });
+  }
+
+  async sourcesList(): Promise<EngineResult<SourcesList>> {
+    return engineOk(SOURCES_LIST);
+  }
+
+  async mattersList(): Promise<EngineResult<MattersList>> {
+    return engineOk(MATTERS);
   }
 
   async conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {
@@ -445,6 +500,8 @@ export class MockGateway implements GatewayProvider {
   }
 
   async trace(runId: string): Promise<EngineResult<RunTrace>> {
+    // A run from the composer recordings has its recorded trace (with the model's region).
+    if (RECORDED_RUN_IDS.has(runId)) return engineOk({ ...RECORDED_TRACE, run_id: runId });
     return engineOk({
       run_id: runId,
       steps: [

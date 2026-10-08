@@ -21,6 +21,10 @@ import {
   vaultVerifySchema,
   documentCheckSchema,
   conversationSendSchema,
+  sourcesListSchema,
+  mattersListSchema,
+  type SourcesList,
+  type MattersList,
   conversationGetSchema,
   citationGetSchema,
   type ConversationSend,
@@ -343,6 +347,8 @@ export class HttpGateway implements GatewayProvider {
     conversationId?: string;
     text: string;
     taskOverride?: string;
+    sources?: readonly string[];
+    matterId?: string;
   }): Promise<EngineResult<ConversationSend>> {
     return this.call(GATEWAY_ROUTES.conversationSend, GATEWAY_ROUTES.conversationSend,
       conversationSendSchema, {
@@ -351,8 +357,20 @@ export class HttpGateway implements GatewayProvider {
           text: input.text,
           ...(input.conversationId ? { conversation_id: input.conversationId } : {}),
           ...(input.taskOverride ? { task_override: input.taskOverride } : {}),
+          ...(input.sources ? { sources: [...input.sources] } : {}),
+          ...(input.matterId ? { matter_id: input.matterId } : {}),
         },
       });
+  }
+
+  sourcesList(): Promise<EngineResult<SourcesList>> {
+    return this.call(GATEWAY_ROUTES.sourcesList, GATEWAY_ROUTES.sourcesList, sourcesListSchema,
+      { method: "POST", body: {} });
+  }
+
+  mattersList(): Promise<EngineResult<MattersList>> {
+    return this.call(GATEWAY_ROUTES.mattersList, GATEWAY_ROUTES.mattersList, mattersListSchema,
+      { method: "POST", body: {} });
   }
 
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {

@@ -67,6 +67,10 @@ export const GATEWAY_ROUTES = {
   conversationSend: "/v2/conversation/send",
   conversationGet: "/v2/conversation/{conversation_id}",
   citationGet: "/v2/citation",
+  // sources.list / matters.list: dotted verbs without `.get`, so `rest_path()` keeps the
+  // head as a path segment. Measured against a live gateway on 2026-10-08.
+  sourcesList: "/v2/sources/list",
+  mattersList: "/v2/matters/list",
 } as const;
 
 export type EngineV1Route = (typeof ENGINE_ROUTES)[keyof typeof ENGINE_ROUTES];
