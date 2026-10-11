@@ -34,6 +34,8 @@ export const askResponseSchema = z.object({
   answer: z.string().optional(),
   run_id: z.string().nullable().optional(),
   error: z.string().optional(),
+  /** The source-picker report. The console reads it via conversationSend, not here. */
+  sources: z.unknown().optional(),
 });
 export type AskResponse = z.infer<typeof askResponseSchema>;
 
@@ -783,6 +785,83 @@ export type Envelope = z.infer<typeof envelopeSchema>;
  * One turn. `envelope: null` with a `run_id` means the work was QUEUED and the reply has
  * not arrived — which is not an empty answer.
  */
+/* ── sources.list — the @-sources picker ───────────────────────────────────── */
+
+/** The three display tiers the picker groups sources into. Only HELD can VERIFY. */
+export const sourceTierSchema = z.enum(["HELD", "LICENSED", "PUBLIC"]);
+export type SourceTier = z.infer<typeof sourceTierSchema>;
+
+/** Whether a source can be switched on, and why not when it cannot. */
+export const sourceStatusSchema = z.enum([
+  "available",
+  "KEY_MISSING",
+  "NOT_ACQUIRED",
+  "BLOCKED",
+]);
+export type SourceStatus = z.infer<typeof sourceStatusSchema>;
+
+export const sourceCardSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  tier: sourceTierSchema,
+  status: sourceStatusSchema,
+  /** Empty for an available source; the reason it cannot be switched on otherwise. */
+  reason: z.string(),
+  switchable: z.boolean(),
+  terms: z
+    .object({
+      url: z.string().nullable().optional(),
+      read: z.string().nullable().optional(),
+      clauses: z.record(z.string(), z.string()).optional(),
+    })
+    .optional(),
+});
+export type SourceCard = z.infer<typeof sourceCardSchema>;
+
+/**
+ * `sources.list` carries more than the picker (tiers, adapters, external terms records,
+ * fetchable/cacheable lists); the picker view is all this app renders. The other keys are
+ * modelled loosely rather than dropped so a strict parse does not reject the real response.
+ */
+export const sourcesListOkSchema = z.object({
+  picker: z.array(sourceCardSchema),
+  tiers: z.array(z.string()).optional(),
+  adapters: z.array(z.unknown()).optional(),
+  external: z.array(z.unknown()).optional(),
+  fetchable: z.array(z.string()).optional(),
+  cacheable: z.array(z.string()).optional(),
+  note: z.string().optional(),
+});
+export const sourcesListSchema = z.union([sourcesListOkSchema, verbRefusalSchema]);
+export type SourcesList = z.infer<typeof sourcesListSchema>;
+export type SourcesListOk = z.infer<typeof sourcesListOkSchema>;
+
+/**
+ * The per-source report an answer carries: which picked sources were searched, searched
+ * with no hit, or not searched (with a named state). Modelled so it PARSES wherever the
+ * backend returns it; rendering it on the answer is a deliberate follow-up.
+ */
+export const sourceOutcomeSchema = z.enum([
+  "SEARCHED_HITS",
+  "SEARCHED_EMPTY",
+  "NOT_SEARCHED",
+]);
+export const sourceReportRowSchema = z.object({
+  id: z.string(),
+  tier: z.string(),
+  status: z.string(),
+  outcome: sourceOutcomeSchema,
+  hits: z.number().int().nonnegative(),
+  reason: z.string(),
+});
+export const sourcesReportSchema = z.object({
+  picked: z.array(z.string()),
+  searched: z.array(z.string()),
+  report: z.array(sourceReportRowSchema),
+  note: z.string().optional(),
+});
+export type SourcesReport = z.infer<typeof sourcesReportSchema>;
+
 export const conversationSendOkSchema = z.object({
   conversation_id: z.string(),
   message_id: z.string(),
@@ -791,6 +870,8 @@ export const conversationSendOkSchema = z.object({
   envelope: envelopeSchema.nullable(),
   draft_id: z.string().optional(),
   note: z.string().optional(),
+  /** The source-picker report (follow-up: parsed now, rendered later). */
+  sources: sourcesReportSchema.optional(),
 });
 export const conversationSendSchema = z.union([conversationSendOkSchema, verbRefusalSchema]);
 export type ConversationSend = z.infer<typeof conversationSendSchema>;

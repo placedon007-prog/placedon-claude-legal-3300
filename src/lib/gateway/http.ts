@@ -23,7 +23,9 @@ import {
   conversationSendSchema,
   conversationGetSchema,
   citationGetSchema,
+  sourcesListSchema,
   type ConversationSend,
+  type SourcesList,
   type ConversationGet,
   type CitationGet,
   cancelSchema,
@@ -343,6 +345,7 @@ export class HttpGateway implements GatewayProvider {
     conversationId?: string;
     text: string;
     taskOverride?: string;
+    sources?: readonly string[];
   }): Promise<EngineResult<ConversationSend>> {
     return this.call(GATEWAY_ROUTES.conversationSend, GATEWAY_ROUTES.conversationSend,
       conversationSendSchema, {
@@ -351,8 +354,14 @@ export class HttpGateway implements GatewayProvider {
           text: input.text,
           ...(input.conversationId ? { conversation_id: input.conversationId } : {}),
           ...(input.taskOverride ? { task_override: input.taskOverride } : {}),
+          ...(input.sources ? { sources: input.sources } : {}),
         },
       });
+  }
+
+  sourcesList(): Promise<EngineResult<SourcesList>> {
+    return this.call(GATEWAY_ROUTES.sourcesList, GATEWAY_ROUTES.sourcesList,
+      sourcesListSchema, { method: "POST", body: {} });
   }
 
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {

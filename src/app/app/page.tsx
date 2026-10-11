@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadThread } from "./actions";
+import { loadThread, loadSources } from "./actions";
 import { AskWorkspace } from "./ask-workspace";
 import type { Turn } from "./answer";
 import type { ConversationMessage } from "@/lib/gateway/types";
@@ -29,8 +29,16 @@ function toTurns(conversationId: string, messages: readonly ConversationMessage[
 
 export default async function AskPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const { c } = await searchParams;
+  const sources = await loadSources();
   if (!c) {
-    return <AskWorkspace initialConversationId={null} initialTurns={[]} loadProblem={null} />;
+    return (
+      <AskWorkspace
+        initialConversationId={null}
+        initialTurns={[]}
+        loadProblem={null}
+        initialSources={sources}
+      />
+    );
   }
   const loaded = await loadThread(c);
   if (loaded.phase === "loaded") {
@@ -39,6 +47,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         initialConversationId={c}
         initialTurns={toTurns(c, loaded.messages)}
         loadProblem={null}
+        initialSources={sources}
       />
     );
   }
@@ -49,5 +58,12 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         ? "That thread is not on this gateway — it may have been started against a different deployment. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
-  return <AskWorkspace initialConversationId={null} initialTurns={[]} loadProblem={problem} />;
+  return (
+    <AskWorkspace
+      initialConversationId={null}
+      initialTurns={[]}
+      loadProblem={problem}
+      initialSources={sources}
+    />
+  );
 }

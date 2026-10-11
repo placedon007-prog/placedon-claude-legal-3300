@@ -61,6 +61,9 @@ export const GATEWAY_ROUTES = {
   draftDiff: "/v2/draft/diff",
   draftExport: "/v2/draft/export",
   calendarUpcoming: "/v2/calendar/upcoming",
+  // `sources.list` -> head `sources/list`. The @-sources picker reads it for each source's
+  // tier, switchable status and terms. POST, like every /v2 verb. Verified against rest_path().
+  sourcesList: "/v2/sources/list",
   // C2, the conversation layer. `conversation.get` and `citation.get` end in `.get`, so
   // `rest_path()` drops the `/get` head: `/v2/conversation/{id}` and `/v2/citation`.
   // Verified against a live gateway on 2026-10-07.
