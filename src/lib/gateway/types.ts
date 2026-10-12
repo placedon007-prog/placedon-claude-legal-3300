@@ -926,6 +926,24 @@ export const sourceBodySchema = z.object({
 });
 export type SourceBody = z.infer<typeof sourceBodySchema>;
 
+/** The source-list card used by the source-picker control. */
+export const sourceTierSchema = z.enum(["HELD", "LICENSED", "PUBLIC"]);
+export const sourceStatusSchema = z.enum(["available", "KEY_MISSING", "NOT_ACQUIRED", "BLOCKED"]);
+export const sourceCardSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  tier: sourceTierSchema,
+  status: sourceStatusSchema,
+  reason: z.string(),
+  switchable: z.boolean(),
+  terms: z.object({
+    url: z.string().nullable().optional(),
+    read: z.string().nullable().optional(),
+    clauses: z.record(z.string(), z.string()).optional(),
+  }).optional(),
+});
+export type SourceCard = z.infer<typeof sourceCardSchema>;
+
 /** Main gateway source provider contract. Body-of-law IDs are coverage, not picker IDs. */
 export const sourcePickerSchema = z.object({
   id: z.string(), label: z.string(), tier: z.string(), status: z.string(),
