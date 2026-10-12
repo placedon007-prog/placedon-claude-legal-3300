@@ -1,4 +1,5 @@
 import { demoModeEnabled } from "@/lib/auth/config";
+import { gateEnabled } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { loadComposerContext, loadMatterHistory, loadThread } from "./actions";
 import { AskWorkspace } from "./ask-workspace";
@@ -10,8 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function AskPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const { c } = await searchParams;
   const composer = await loadComposerContext();
+  const demo = demoModeEnabled();
+  const sharedPasscode = !demo && gateEnabled();
   if (!c) {
-    return <AskWorkspace key="new" demo={demoModeEnabled()} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
+    return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
   }
   const loaded = await loadThread(c);
   if (loaded.phase === "loaded") {
@@ -19,7 +22,8 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
       <AskWorkspace
         key={c}
         initialHistory={loaded.matterId ? await loadMatterHistory(loaded.matterId) : null}
-        demo={demoModeEnabled()}
+        demo={demo}
+        sharedPasscode={sharedPasscode}
         initialConversationId={c}
         initialTurns={conversationTurns(c, loaded.messages)}
         initialMatterId={loaded.matterId}
@@ -36,5 +40,5 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         ? "That thread is not on this gateway — it may have been started against a different deployment. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
-  return <AskWorkspace key="new" demo={demoModeEnabled()} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
+  return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
 }

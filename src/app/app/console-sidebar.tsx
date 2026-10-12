@@ -316,7 +316,7 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
       <Avatar name={name} />
       {compact ? null : (
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-body font-medium text-fg">{name ?? "Set your name"}</span>
+          <span className="truncate text-body font-medium text-fg">{name ?? "Set browser display name"}</span>
           <span className="truncate text-caption text-fg-3">{access}</span>
         </span>
       )}
@@ -365,7 +365,7 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
             {passcode
-              ? "There are no personal accounts yet: everyone signs in with the shared passcode."
+              ? "There are no personal accounts yet: everyone signs in with the shared passcode. Your display name is stored in this browser only; it is not your account identity."
               : "Demo workspace: recorded examples and synthetic data only. No live legal research or client documents."}
           </DropdownMenuLabel>
           <form action={logoutAction}>

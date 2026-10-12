@@ -98,7 +98,7 @@ export function SourcesChip({ bodies, failed, chosen, onToggle, onRetry, onBrows
         {unavailable.length > 0 && <details className="source-picker-unavailable"><summary><span>Other sources <span className="text-fg-3">· {unavailable.length} unavailable</span></span><ChevronDown className="size-4" aria-hidden /></summary>
           <ul>{unavailable.map((body) => <li key={body.id} className="source-picker-unavailable-row"><SourceMark body={body} /><span><strong>{body.name}</strong><small>{statusLine(body)}</small></span></li>)}</ul></details>}
       </div>
-      <div className="source-picker-footer"><p id={constraintId}>Keep at least one source selected. Saved for this thread.</p><p>Selection does not mean a source was searched or cited.</p></div>
+      <div className="source-picker-footer"><p id={constraintId}>Keep at least one source selected. Unsent choices are remembered in this browser; each sent question records its sources.</p><p>Selection does not mean a source was searched or cited.</p></div>
     </PopoverContent>
   </Popover>;
 }
