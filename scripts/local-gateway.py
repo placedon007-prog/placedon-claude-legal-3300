@@ -46,14 +46,23 @@ if not db_url:
         "runs on an in-memory store and every run vanishes when you stop it."
     )
 
-# The tenant row must exist: runs and documents reference tenants(tenant_id).
+# The tenant AND the actor rows must exist: conversations.actor_id and runs.actor_id are
+# FOREIGN KEYS to actors, so conversation.send FK-fails on Postgres without the actor (R-019).
+# Both use the fixed ids the key is minted with below. app.tenant_id is set first because the
+# actors insert is under FORCE ROW LEVEL SECURITY, which checks tenant_id against it.
 import psycopg  # noqa: E402
 
 with psycopg.connect(db_url, autocommit=True) as conn:
+    conn.execute("SELECT set_config('app.tenant_id', %s, false)", (TENANT,))
     conn.execute(
         "INSERT INTO tenants (tenant_id, name) VALUES (%s, 'local-console') "
         "ON CONFLICT DO NOTHING",
         (TENANT,),
+    )
+    conn.execute(
+        "INSERT INTO actors (actor_id, tenant_id, label) VALUES (%s, %s, 'local-console') "
+        "ON CONFLICT DO NOTHING",
+        (ACTOR, TENANT),
     )
 
 keys = KeyStore()
