@@ -17,7 +17,7 @@ import Link from "next/link";
 import { CalendarPlus, Check, Copy, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, linkCitations, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { envelopeKind, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { cn } from "@/lib/utils";
 import type { TurnState } from "./actions";
 
@@ -210,7 +210,7 @@ function Answered({
         </section>
       ) : null}
 
-      {sources ? <SearchCoverage report={sources} /> : null}
+      {sources ? <Searched report={sources} /> : null}
       {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
         {envelope.files.map((file) => <li key={file.file_id}>{file.name} — {file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}{file.reason ? ` · ${file.reason}` : ""}</li>)}
       </ul> : null}
@@ -227,16 +227,37 @@ function Answered({
   );
 }
 
-function SearchCoverage({ report }: { report: SourceReport }) {
-  const label = (id: string) => id === "held" ? "Held law" : id === "vault" ? "Your documents" : id.replaceAll("_", " ");
-  return <details className="rounded-card border border-line px-4 py-1 text-ui text-fg-2">
-    <summary className="min-h-11 cursor-pointer content-center font-medium text-fg">Search coverage · {report.searched.length} searched</summary>
-    <ul className="space-y-2 pb-3">{report.report.map((row) => <li key={row.id}>
-      <span className="font-medium">{label(row.id)}</span> — {row.outcome === "NOT_SEARCHED" ? "not searched" : row.outcome === "SEARCHED_EMPTY" ? "searched · no matches" : `searched · ${row.hits ?? 0} matches`}
-      {row.reason ? <p className="text-caption text-fg-3">{row.reason}</p> : null}
-    </li>)}</ul>
-    <p className="border-t border-line py-3 text-caption text-fg-3">Search matches are not automatically evidence used in the answer. The numbered citations above identify the passages used.</p>
-  </details>;
+/**
+ * What the question was actually searched against — a sibling of the answer, not part of it.
+ * "Searched" and "Not searched" are told apart in words (`searchedSummary`): a search that ran
+ * and found nothing is not the same as a source that was never consulted, and the console must
+ * not read the first as the second. Colour carries nothing here, as everywhere on this screen.
+ */
+function Searched({ report }: { report: SourceReport }) {
+  const { searched, notSearched } = searchedSummary(report);
+  return (
+    <section aria-label="Sources searched" className="flex flex-col gap-1 border-t border-line pt-3 text-ui">
+      <h3 className="font-medium text-fg">Sources searched</h3>
+      {searched.length > 0 ? (
+        <p className="text-fg-2">
+          <span className="font-medium text-fg">Searched:</span>{" "}
+          {searched.map((l, i) => (
+            <React.Fragment key={l.id}>{i > 0 ? "; " : ""}{l.text}</React.Fragment>
+          ))}
+        </p>
+      ) : null}
+      {notSearched.length > 0 ? (
+        <p className="text-fg-2">
+          <span className="font-medium text-fg">Not searched:</span>{" "}
+          {notSearched.map((l, i) => (
+            <React.Fragment key={l.id}>{i > 0 ? "; " : ""}{l.text}</React.Fragment>
+          ))}
+        </p>
+      ) : null}
+      {report.note ? <p className="text-caption text-fg-3">{report.note}</p> : null}
+      <p className="border-t border-line pt-2 text-caption text-fg-3">A source search is not evidence used in the answer by itself. Numbered citations identify the passages shown with the answer.</p>
+    </section>
+  );
 }
 
 function Sources({ groups, onOpen }: { groups: readonly CitationGroup[]; onOpen: (g: CitationGroup) => void }) {
