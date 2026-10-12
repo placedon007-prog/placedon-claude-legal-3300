@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  if (!(await hasSession())) redirect("/app/login");
+  if (!(await hasSession())) redirect("/login");
   const passcode = gateEnabled();
 
   return (

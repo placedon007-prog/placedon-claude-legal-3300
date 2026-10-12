@@ -113,9 +113,9 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
           </SheetContent>
         </Sheet>
         <Brand />
-        <Link href="/app" aria-label="New question" className={cn(iconOnly, "ml-auto")}>
+        <a href="/app" aria-label="New question" className={cn(iconOnly, "ml-auto")}>
           <SquarePen className="size-5" aria-hidden />
-        </Link>
+        </a>
       </header>
 
       {/* desktop: the outer column carries the wash and rule down the whole page; the
@@ -171,9 +171,9 @@ function Rail({ passcode }: { passcode: boolean }) {
   return (
     <nav aria-label="Console" className="mt-2 flex flex-1 flex-col items-center gap-0.5">
       <Tip label="New question">
-        <Link href="/app" className={iconOnly} aria-label="New question">
+        <a href="/app" className={iconOnly} aria-label="New question">
           <SquarePen className="size-[18px]" aria-hidden />
-        </Link>
+        </a>
       </Tip>
       <span aria-hidden className="my-2 h-px w-6 bg-line" />
       {LINKS.map(({ href, label, icon: Icon }) => (
@@ -194,10 +194,10 @@ function Expanded({ passcode }: { passcode: boolean }) {
   const current = useCurrent();
   return (
     <div className="mt-2 flex min-h-0 flex-1 flex-col">
-      <Link href="/app" className="flex min-h-11 items-center gap-2.5 rounded-lg border border-line-2 bg-ground px-3 text-body font-medium text-fg transition-colors duration-150 hover:border-line-control">
+      <a href="/app" className="flex min-h-11 items-center gap-2.5 rounded-lg border border-line-2 bg-ground px-3 text-body font-medium text-fg transition-colors duration-150 hover:border-line-control">
         <SquarePen className="size-4" aria-hidden />
         New question
-      </Link>
+      </a>
       <Threads />
       <nav aria-label="Console" className="mt-3 flex flex-col gap-0.5 border-t border-line pt-3">
         {LINKS.map(({ href, label, icon: Icon }) => (
@@ -265,7 +265,7 @@ function Group({ title, threads, open }: { title: string; threads: LocalThread[]
             <Link
               href={`/app?c=${encodeURIComponent(t.id)}`}
               aria-current={open === t.id ? "page" : undefined}
-              className="flex min-h-10 items-center truncate rounded-lg px-3 text-body text-fg-2 transition-colors duration-150 hover:bg-wash-2 hover:text-fg aria-[current=page]:bg-wash-2 aria-[current=page]:text-fg"
+              className="flex min-h-11 items-center truncate rounded-lg px-3 text-body text-fg-2 transition-colors duration-150 hover:bg-wash-2 hover:text-fg aria-[current=page]:bg-wash-2 aria-[current=page]:text-fg"
             >
               <span className="truncate">{t.title}</span>
             </Link>
@@ -302,7 +302,7 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
   const [nicknames, setNicknames] = useNicknamesOn();
   const earned = persona(useActivity());
   const [naming, setNaming] = React.useState(false);
-  const access = passcode ? "Shared passcode" : "No passcode set";
+  const access = passcode ? "Shared passcode" : "Demo · synthetic data";
   const trigger = (
     <button
       type="button"
@@ -366,7 +366,7 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
             {passcode
               ? "There are no personal accounts yet: everyone signs in with the shared passcode."
-              : "No passcode is set: anyone who can reach this console can use it."}
+              : "Demo workspace: recorded examples and synthetic data only. No live legal research or client documents."}
           </DropdownMenuLabel>
           <form action={logoutAction}>
             <DropdownMenuItem asChild>

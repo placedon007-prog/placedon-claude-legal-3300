@@ -17,6 +17,8 @@ import {
   tableStatusSchema,
   vaultFindSchema,
   vaultStatusSchema,
+  vaultDocumentSchema,
+  vaultListSchema,
   vaultUploadSchema,
   vaultVerifySchema,
   documentCheckSchema,
@@ -26,6 +28,7 @@ import {
   type SourcesList,
   type MattersList,
   conversationGetSchema,
+  conversationListSchema,
   citationGetSchema,
   type ConversationSend,
   type ConversationGet,
@@ -75,10 +78,12 @@ const TIMEOUT_MS = 120_000; // a live model answer, not a page load
 export class HttpGateway implements GatewayProvider {
   readonly name = "http" as const;
 
-  constructor(
-    private readonly origin: string,
-    private readonly key: string,
-  ) {
+  private readonly origin: string;
+  private readonly key: string;
+
+  constructor(origin: string, key: string) {
+    this.origin = origin;
+    this.key = key;
     let parsed: URL;
     try {
       parsed = new URL(origin);
@@ -104,6 +109,7 @@ export class HttpGateway implements GatewayProvider {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     let response: Response;
+    let text: string;
     try {
       response = await fetch(new URL(path, this.origin), {
         method: init?.method ?? "GET",
@@ -115,21 +121,23 @@ export class HttpGateway implements GatewayProvider {
         signal: controller.signal,
         cache: "no-store",
       });
+      // Fetch resolves at headers. Keep the same deadline until every body byte arrives;
+      // a stalled stream must not hold a server action open forever.
+      text = await response.text();
     } catch (cause) {
-      const aborted = cause instanceof Error && cause.name === "AbortError";
+      const aborted = controller.signal.aborted || cause instanceof Error && cause.name === "AbortError";
       return engineFail({
         kind: aborted ? "timeout" : "transport_error",
         route,
         message: aborted
           ? `The gateway did not answer within ${TIMEOUT_MS / 1000}s.`
-          : "The gateway could not be reached.",
+          : "The gateway response was interrupted before it could be read.",
       });
     } finally {
       clearTimeout(timer);
     }
 
     let body: unknown;
-    const text = await response.text();
     try {
       body = JSON.parse(text);
     } catch {
@@ -163,6 +171,7 @@ export class HttpGateway implements GatewayProvider {
                 : "bad_request",
         route,
         status: response.status,
+        retryAfterSeconds: Math.min(60, Math.max(1, Number(response.headers.get("retry-after")) || 5)),
         message:
           response.status === 401
             ? "The gateway rejected this deployment's API key."
@@ -327,6 +336,18 @@ export class HttpGateway implements GatewayProvider {
       });
   }
 
+  vaultList(input: import("./types").VaultListInput): Promise<EngineResult<import("./types").VaultList>> {
+    return this.call(GATEWAY_ROUTES.vaultList, GATEWAY_ROUTES.vaultList, vaultListSchema, {
+      method: "POST", body: { ...(input.matterId ? { matter_id: input.matterId } : {}), query: input.query ?? "",
+        limit: String(input.limit ?? 30), offset: String(input.offset ?? 0) },
+    });
+  }
+
+  vaultDocument(documentId: string): Promise<EngineResult<import("./types").VaultDocument>> {
+    return this.call(GATEWAY_ROUTES.vaultStatus, GATEWAY_ROUTES.vaultStatus,
+      vaultDocumentSchema, { method: "POST", body: { document_id: documentId } });
+  }
+
   vaultFind(input: { query: string; limit?: number }): Promise<EngineResult<VaultFind>> {
     return this.call(GATEWAY_ROUTES.vaultFind, GATEWAY_ROUTES.vaultFind, vaultFindSchema, {
       method: "POST",
@@ -344,6 +365,8 @@ export class HttpGateway implements GatewayProvider {
   }
 
   conversationSend(input: {
+    requestId?: string;
+    fileIds?: readonly string[];
     conversationId?: string;
     text: string;
     taskOverride?: string;
@@ -355,6 +378,8 @@ export class HttpGateway implements GatewayProvider {
         method: "POST",
         body: {
           text: input.text,
+          ...(input.requestId ? { request_id: input.requestId } : {}),
+          ...(input.fileIds?.length ? { file_ids: [...input.fileIds] } : {}),
           ...(input.conversationId ? { conversation_id: input.conversationId } : {}),
           ...(input.taskOverride ? { task_override: input.taskOverride } : {}),
           ...(input.sources ? { sources: [...input.sources] } : {}),
@@ -371,6 +396,11 @@ export class HttpGateway implements GatewayProvider {
   mattersList(): Promise<EngineResult<MattersList>> {
     return this.call(GATEWAY_ROUTES.mattersList, GATEWAY_ROUTES.mattersList, mattersListSchema,
       { method: "POST", body: {} });
+  }
+
+  conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>> {
+    return this.call(GATEWAY_ROUTES.conversationList, GATEWAY_ROUTES.conversationList,
+      conversationListSchema, { method: "POST", body: { matter_id: matterId, limit: "50" } });
   }
 
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {

@@ -1,0 +1,23 @@
+{
+  "usage": "Source identification in local product preview; no partnership claim. High Courts artwork identifies eCourts service, not a single court.",
+  "assets": [
+    {
+      "file": "sebi.png",
+      "source": "https://www.sebi.gov.in/images/icons/sebi-icon.png",
+      "retrieved": "2026-10-11",
+      "sha256": "0540b138570ec5567c6eb3d3901e6593619742d3bfe0c29e5306400fdf529b21"
+    },
+    {
+      "file": "supreme-court.png",
+      "source": "https://cdnbbsr.s3waas.gov.in/s3ec0490f1f4972d133619a60c30f3559e/uploads/2025/06/2025062185-192x192.png",
+      "retrieved": "2026-10-11",
+      "sha256": "2c98eb6e3a0d6c2cda4fb6cb04973658760192462bc9ba16d696699c594580b8"
+    },
+    {
+      "file": "high-courts.png",
+      "source": "https://ecourts.gov.in/ecourts2.0/images/highcourt.png",
+      "retrieved": "2026-10-11",
+      "sha256": "d683978a9325894b9f1aac391c92479e7cd732985c3c7fa109cd05ed35d65100"
+    }
+  ]
+}

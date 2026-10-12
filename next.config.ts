@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
    * (e.g. Azure) by setting BUILD_STANDALONE=1.
    */
   output: process.env.BUILD_STANDALONE ? "standalone" : undefined,
+  // The application accepts one file up to 10 MiB. The framework must admit that
+  // file plus multipart boundaries, action metadata, and other bounded fields.
+  // Individual upload actions still enforce the tighter 10 MiB file limit.
+  experimental: { serverActions: { bodySizeLimit: 11 * 1024 * 1024 } },
   /**
    * The development-only route badge sits bottom-left, exactly where the console's account
    * avatar is, and reads as a broken avatar. Off; compile and runtime errors still show.

@@ -1,0 +1,112 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { HttpGateway } from "../src/lib/gateway/http";
+import { conversationGetOkSchema, conversationSendOkSchema, sourcesListSchema, vaultUploadSchema, vaultDocumentSchema } from "../src/lib/gateway/types";
+import { chosenOrDefault, defaultSourceIds, toggleSource } from "../src/lib/sources";
+import { conversationTurns, conversationPollDelay } from "../src/lib/conversation";
+import PICKER from "../src/lib/gateway/fixtures/main-sources.json" with { type: "json" };
+import RECORDED from "../src/lib/gateway/fixtures/conversation.json" with { type: "json" };
+
+const bodies = sourcesListSchema.parse(PICKER).bodies;
+const report = { picked: ["held", "vault"], searched: ["held"], report: [
+  { id: "held", tier: "HELD", status: "available", outcome: "SEARCHED_HITS", hits: 2, reason: "" },
+  { id: "vault", tier: "PUBLIC", status: "available", outcome: "NOT_SEARCHED", hits: 0, reason: "Document retrieval unavailable." },
+] };
+const metadata = { schema: "conversation_turn.v1", request_id: "request-12345678", sources: report,
+  artifacts: [{ type: "draft", id: "draft-123", version: 2 }, { type: "review_table", id: "table-123" }] };
+
+test("main source picker uses provider IDs and never submits law-body IDs", () => {
+  assert.deepEqual(defaultSourceIds(bodies), ["held", "vault"]);
+  assert.deepEqual(chosenOrDefault(bodies, ["CA2013"]), ["held", "vault"]);
+  assert.deepEqual(toggleSource(["held"], "held", bodies), ["held"], "zero means defaults at gateway, so keep the last selection on");
+  const unavailable = bodies.find((body) => !body.selectable)!;
+  assert.deepEqual(toggleSource(["held"], unavailable.id, bodies), ["held"]);
+  assert.equal(sourcesListSchema.safeParse({ bodies: [] }).success, false, "unmerged body contract cannot silently masquerade as main");
+});
+
+test("reload preserves outcome, per-turn source report, document IDs, and work products", () => {
+  const payload = conversationGetOkSchema.parse({ conversation: { conversation_id: "thread", title: "Question", matter_id: "matter" }, messages: [
+    { message_id: "user", ordinal: 1, role: "user", text: "Question about a meeting", file_ids: ["doc"] },
+    { message_id: "assistant", ordinal: 2, role: "assistant", text: "", envelope: { ...RECORDED.send_answered.envelope, status: "PARTIAL" }, metadata },
+  ] });
+  const [turn] = conversationTurns("thread", payload.messages);
+  assert.equal(turn.key, "request-12345678");
+  assert.equal(turn.state?.phase, "answered");
+  if (turn.state?.phase !== "answered") throw new Error("missing answer");
+  assert.equal(turn.state.envelope.status, "PARTIAL");
+  assert.equal(turn.state.draftId, "draft-123");
+  assert.deepEqual(turn.state.artifacts, metadata.artifacts);
+  assert.deepEqual(turn.state.sources?.report, report.report);
+});
+
+test("an accepted reservation with no run yet remains queued and can reconcile by request ID", () => {
+  const result = conversationSendOkSchema.parse({ conversation_id: "thread", message_id: "assistant", envelope: null, run_id: null, metadata });
+  const [turn] = conversationTurns(result.conversation_id, [
+    { message_id: "user", ordinal: 0, role: "user", text: "Question" },
+    { message_id: result.message_id, ordinal: 1, role: "assistant", text: "", envelope: null, run_id: null, metadata: result.metadata },
+  ]);
+  assert.equal(turn.state?.phase, "queued");
+  assert.equal(turn.key, metadata.request_id);
+  assert.equal(conversationPollDelay(0), 1500);
+  assert.equal(conversationPollDelay(20), 30000);
+});
+
+test("send serializes stable request ID, all selected documents, matter and 8000-character text", async () => {
+  const original = globalThis.fetch;
+  let sent: Record<string, unknown> = {};
+  globalThis.fetch = async (_input, init) => {
+    sent = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ conversation_id: "thread", message_id: "assistant", envelope: null, run_id: "run" }), { status: 200 });
+  };
+  try {
+    const result = await new HttpGateway("http://127.0.0.1:8021", "test-key").conversationSend({
+      requestId: "request-12345678", text: "q".repeat(8000), fileIds: ["doc1", "doc2"], sources: ["held"], matterId: "matter",
+    });
+    assert.equal(result.ok, true);
+    assert.equal(sent.request_id, "request-12345678");
+    assert.deepEqual(sent.file_ids, ["doc1", "doc2"]);
+    assert.deepEqual(sent.sources, ["held"]);
+    assert.equal(String(sent.text).length, 8000);
+    assert.equal(sent.matter_id, "matter");
+  } finally { globalThis.fetch = original; }
+});
+
+test("busy gateway stays a transport state and preserves bounded Retry-After", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "BUSY" }), { status: 429, headers: { "retry-after": "4" } });
+  try {
+    const result = await new HttpGateway("http://127.0.0.1:8021", "test-key").conversationSend({ text: "Question", requestId: "request-12345678" });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("busy is not an answer");
+    assert.equal(result.error.status, 429);
+    assert.equal(result.error.retryAfterSeconds, 4);
+  } finally { globalThis.fetch = original; }
+});
+
+test("vault upload and individual readiness parse actual main shapes without aggregate counts", () => {
+  assert.equal(vaultUploadSchema.safeParse({ document_id: "doc", sha256: "hash", state: "PENDING", note: "Queued" }).success, true);
+  assert.equal(vaultDocumentSchema.safeParse({ document_id: "doc", name: "Minutes.pdf", state: "INGESTED" }).success, true);
+});
+
+import { analyticsAllowed } from "../src/lib/analytics-policy";
+test("private workspace and sign-in routes never participate in marketing analytics", () => {
+  for (const path of ["/app", "/app/drafts/123", "/login", "/login/reset", null]) assert.equal(analyticsAllowed(path), false);
+  assert.equal(analyticsAllowed("/product"), true);
+});
+
+test("matter history calls the scoped server verb and parses saved thread identities", async () => {
+  const original = globalThis.fetch;
+  let sent;
+  globalThis.fetch = async (url, init) => {
+    assert.match(String(url), /\/v2\/conversation\/list$/);
+    sent = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ matter_id: "matter-1", conversations: [{ conversation_id: "thread-1", title: "Saved meeting research", matter_id: "matter-1" }] }));
+  };
+  try {
+    const result = await new HttpGateway("http://127.0.0.1:8021", "test-key").conversationList("matter-1");
+    assert.equal(result.ok, true);
+    assert.deepEqual(sent, { matter_id: "matter-1", limit: "50" });
+    if (result.ok && "conversations" in result.data) assert.equal(result.data.conversations[0].conversation_id, "thread-1");
+    else throw new Error("saved matter history is unavailable");
+  } finally { globalThis.fetch = original; }
+});

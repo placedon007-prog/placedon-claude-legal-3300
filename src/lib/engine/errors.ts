@@ -22,6 +22,8 @@ export interface EngineError {
   readonly route: EngineRoute;
   /** Present only when a response was actually received. */
   readonly status?: number;
+  /** Bounded server retry hint; no automatic mutation retries. */
+  readonly retryAfterSeconds?: number;
   /** The backend's `detail` — on a 400 it names the exact offending field. */
   readonly detail?: string;
   /** 404 route list. Absent on the event-detail 404 (drift 3). */

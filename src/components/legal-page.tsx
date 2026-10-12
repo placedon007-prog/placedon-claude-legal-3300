@@ -9,13 +9,13 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
   if (kind === "cookies")
     source = `## Analytics
 
-This site uses **Google Analytics 4** (provided by Google LLC) to understand, in aggregate, how the site is used: which pages are visited and where visitors arrive from. It is **off by default**. Nothing loads and no analytics cookies are set until you select **Accept analytics** on the consent banner.
+Optional analytics is disabled in this build. No Google Analytics script or analytics event collector is loaded, and the site does not set new analytics cookies. The legal workspace and sign-in screen are excluded from marketing analytics.
 
-When you accept, Google Analytics sets first-party cookies (\`_ga\` and \`_ga_*\`) that expire after up to two years. They hold a random identifier, not your name or email. Google may process this data on servers outside India, including the United States, under its own terms. The site does not use advertising, cross-site tracking, or session recording, and analytics never receives your email address, a workflow description, or URL query parameters.
+Marketing pages and the legal workspace currently share an origin. Collection remains disabled until their browser documents can be isolated and that isolation has been verified.
 
-## Your choice, and how to change it
+## Existing choices and browser storage
 
-Your accept-or-decline choice is stored on this device under \`placedon-analytics-consent\`. If you decline, Google Analytics never loads. To change your choice later, clear this site's data in your browser and the banner will appear again. Declining does not affect your ability to use the site.
+An analytics choice or cookies from an earlier version may remain on this device. They do not enable collection in this build. You may remove them through your browser's site-data controls; doing so does not delete records held by the operator.
 
 ## Appearance preference
 

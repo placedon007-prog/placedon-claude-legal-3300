@@ -25,6 +25,8 @@ export function chosenOrDefault(bodies: readonly SourceBody[], stored: unknown):
 export function toggleSource(chosen: readonly string[], id: string, bodies: readonly SourceBody[]): string[] {
   const target = bodies.find((b) => b.id === id);
   if (!target?.selectable) return bodies.filter((b) => chosen.includes(b.id)).map((b) => b.id);
+  // The gateway treats [] as defaults; keep the final source on instead of lying about none.
+  if (chosen.includes(id) && chosen.length === 1) return [...chosen];
   const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
   return bodies.filter((b) => next.includes(b.id)).map((b) => b.id);
 }
@@ -32,6 +34,9 @@ export function toggleSource(chosen: readonly string[], id: string, bodies: read
 /** What choosing a source means, in words. Status is never carried by colour. */
 export function statusLine(b: SourceBody): string {
   if (!b.available) return b.reason ?? b.note;
+  if (b.id === "vault") return "Selected documents can support a review; they are not legal authority.";
+  if (b.id === "held") return "Held law · exact passages and coverage limits";
+  if (b.status === "available") return b.reason ?? b.note;
   switch (b.status) {
     case "IN_CORPUS":
       return "Held";

@@ -1,0 +1,185 @@
+{
+  "recorded_from": "backend main source_picker.listing, 2026-10-10",
+  "picker": [
+    {
+      "id": "held",
+      "label": "Companies Act 2013 (held corpus)",
+      "tier": "HELD",
+      "status": "available",
+      "reason": "held and hash-stamped; the only tier that can make an answer VERIFIED",
+      "switchable": true,
+      "terms": {}
+    },
+    {
+      "id": "vault",
+      "label": "Your documents (vault)",
+      "tier": "PUBLIC",
+      "status": "available",
+      "reason": "the tenant's own uploaded documents, searched as support, never VERIFIED",
+      "switchable": true,
+      "terms": {}
+    },
+    {
+      "id": "aws_hc_judgments",
+      "label": "Indian High Court Judgments (AWS Open Data, Dattam Labs)",
+      "tier": "LICENSED",
+      "status": "available",
+      "reason": "robots permit, terms read 2026-10-05",
+      "switchable": true,
+      "terms": {
+        "url": "https://registry.opendata.aws/indian-high-court-judgments/",
+        "read": "2026-10-05",
+        "clauses": {
+          "CACHING": "READ",
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "aws_sc_judgments",
+      "label": "Indian Supreme Court Judgments (AWS Open Data, Dattam Labs)",
+      "tier": "LICENSED",
+      "status": "available",
+      "reason": "robots permit, terms read 2026-10-05",
+      "switchable": true,
+      "terms": {
+        "url": "https://registry.opendata.aws/indian-supreme-court-judgments/",
+        "read": "2026-10-05",
+        "clauses": {
+          "CACHING": "READ",
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "bse",
+      "label": "BSE (Bombay Stock Exchange) announcements",
+      "tier": "PUBLIC",
+      "status": "BLOCKED",
+      "reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+      "switchable": false,
+      "terms": {
+        "url": null,
+        "read": null,
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "data_gov_in",
+      "label": "data.gov.in / Open Government Data platform (GODL)",
+      "tier": "PUBLIC",
+      "status": "BLOCKED",
+      "reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+      "switchable": false,
+      "terms": {
+        "url": null,
+        "read": null,
+        "clauses": {
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "CACHING": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "egazette",
+      "label": "e-Gazette (Department of Publication)",
+      "tier": "PUBLIC",
+      "status": "NOT_ACQUIRED",
+      "reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+      "switchable": false,
+      "terms": {
+        "url": null,
+        "read": null,
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "indiankanoon",
+      "label": "Indian Kanoon API",
+      "tier": "LICENSED",
+      "status": "KEY_MISSING",
+      "reason": "PLACEDON_INDIANKANOON_KEY is not set; the source permits us but no API key is configured",
+      "switchable": false,
+      "terms": {
+        "url": "https://api.indiankanoon.org/terms/",
+        "read": "2026-09-30",
+        "clauses": {
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN",
+          "CACHING": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "nse",
+      "label": "NSE (National Stock Exchange) announcements",
+      "tier": "PUBLIC",
+      "status": "NOT_ACQUIRED",
+      "reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+      "switchable": false,
+      "terms": {
+        "url": null,
+        "read": null,
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "rbi",
+      "label": "Reserve Bank of India",
+      "tier": "PUBLIC",
+      "status": "BLOCKED",
+      "reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+      "switchable": false,
+      "terms": {
+        "url": "https://www.rbi.org.in/Scripts/Disclaimer.aspx",
+        "read": "2026-09-30",
+        "clauses": {
+          "CACHING": "PROHIBITED",
+          "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+          "ATTRIBUTION": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      }
+    },
+    {
+      "id": "sebi",
+      "label": "SEBI (Securities and Exchange Board of India)",
+      "tier": "PUBLIC",
+      "status": "available",
+      "reason": "robots permit, terms read 2026-09-30",
+      "switchable": true,
+      "terms": {
+        "url": "https://www.sebi.gov.in/website-policy.html",
+        "read": "2026-09-30",
+        "clauses": {
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+          "RATE_LIMIT": "OPEN",
+          "CACHING": "OPEN"
+        }
+      }
+    }
+  ]
+}

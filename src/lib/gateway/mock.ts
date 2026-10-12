@@ -1,3 +1,4 @@
+import MAIN_SOURCES from "./fixtures/main-sources.json" with { type: "json" };
 import "../engine/server-guard";
 import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES } from "../engine/types";
@@ -225,17 +226,13 @@ const DOCUMENT_MINUTES: DocumentResponse = {
  * ponytail: unbounded and per-process, fine for a demo with no backend; the real store is the gateway's.
  */
 const THREADS = new Map<string, ConversationMessage[]>();
+const REQUESTS = new Map<string, { conversationId: string; payload: string }>();
 // Parsed, not cast: a fixture that drifted from the contract fails here, loudly.
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
-// Composer v2 (backend PR #84): replies recorded live WITH sources chosen. Each carries
-// envelope.searched. A combination that was not recorded is refused, never composed.
-const SOURCES_LIST = sourcesListSchema.parse(SOURCES.sources_list.body);
+const SOURCES_LIST = sourcesListSchema.parse(MAIN_SOURCES);
 const MATTERS = mattersListSchema.parse(SOURCES.matters_list.body);
 const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
-  "": conversationSendOkSchema.parse(SOURCES.send_default.body),
-  CA2013: conversationSendOkSchema.parse(SOURCES.send_default.body),
-  "CA2013,LLP2008": conversationSendOkSchema.parse(SOURCES.send_ca_llp.body),
-  LLP2008: conversationSendOkSchema.parse(SOURCES.send_llp_only.body),
+  "held,vault": ANSWERED, held: ANSWERED,
 };
 const RECORDED_TRACE = runTraceSchema.parse(SOURCES.trace_default.body);
 const RECORDED_RUN_IDS = new Set(Object.values(BY_SOURCES).map((r) => r.run_id ?? ""));
@@ -292,36 +289,18 @@ export class MockGateway implements GatewayProvider {
   }
 
   async conversationSend(input: {
+    requestId?: string;
+    fileIds?: readonly string[];
     conversationId?: string;
     text: string;
     taskOverride?: string;
     sources?: readonly string[];
     matterId?: string;
   }): Promise<EngineResult<ConversationSend>> {
-    if (input.sources) {
-      const known = new Set(SOURCES_LIST.bodies.map((b) => b.id));
-      const unknown = input.sources.filter((id) => !known.has(id));
-      if (unknown.length) {
-        // The gateway's own refusal, recorded; only the named id is the caller's.
-        return engineFail({
-          kind: "bad_request",
-          route: GATEWAY_ROUTES.conversationSend,
-          status: 400,
-          message: "The gateway answered 400.",
-          detail: `${unknown.map((u) => `'${u}'`).join(", ")} is not a source. The ids are listed by sources.list: ${[...known].join(", ")}`,
-        });
-      }
-      const key = SOURCES_LIST.bodies.filter((b) => input.sources!.includes(b.id)).map((b) => b.id).join(",");
-      const hit = BY_SOURCES[key];
-      if (!hit) {
-        return engineOk({
-          status: "REFUSED",
-          code: "NOT_RECORDED",
-          detail: `The demo gateway has no recorded reply for the sources ${key || "(none)"}. Run against the real gateway (docs/RUN_LOCALLY.md) to use this choice.`,
-        });
-      }
-      return engineOk({ ...hit, conversation_id: input.conversationId ?? hit.conversation_id });
+    if (input.sources?.some((id) => !["held", "vault"].includes(id)) || input.sources?.join(",") === "vault") {
+      return engineOk({ status: "REFUSED", code: "NOT_RECORDED", detail: "No recorded reply exists for this source selection in the demo." });
     }
+    if (input.fileIds?.length) return engineOk({ status: "REFUSED", code: "NOT_RECORDED", detail: "Document reading requires the connected gateway." });
     if (input.taskOverride && input.taskOverride !== "RESEARCH_QUESTION") {
       // Only research replies were recorded. Composing a DRAFT or review envelope here
       // would put text on screen that no gateway produced.
@@ -335,8 +314,13 @@ export class MockGateway implements GatewayProvider {
     const recorded = /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
       ? ABSTAINED
       : ANSWERED;
-    const id = input.conversationId ?? crypto.randomUUID();
+    const payload = JSON.stringify(input);
+    const previous = input.requestId ? REQUESTS.get(input.requestId) : undefined;
+    if (previous && previous.payload !== payload) return engineOk({ status: "REFUSED", code: "REQUEST_ID_CONFLICT", detail: "This request ID belongs to a different request." });
+    const id = previous?.conversationId ?? input.conversationId ?? crypto.randomUUID();
     const thread = THREADS.get(id) ?? [];
+    const existing = thread.find((m) => m.role === "assistant" && m.metadata?.request_id === input.requestId);
+    if (input.requestId && existing) return engineOk({ ...recorded, conversation_id: id, message_id: existing.message_id, envelope: existing.envelope ?? null, metadata: existing.metadata ?? undefined });
     const reply: ConversationMessage = {
       message_id: crypto.randomUUID(),
       ordinal: thread.length + 1,
@@ -344,13 +328,21 @@ export class MockGateway implements GatewayProvider {
       text: "",
       run_id: recorded.run_id ?? null,
       envelope: recorded.envelope,
+      metadata: { schema: "conversation_turn.v1", request_id: input.requestId, artifacts: [],
+        // Synthetic coverage for the explicitly labelled demo workspace; never live retrieval.
+        sources: { picked: [...input.sources ?? ["held", "vault"]], searched: ["held"], report: [
+          { id: "held", tier: "HELD", status: "available", outcome: "SEARCHED_HITS", hits: recorded.envelope?.citations.length ?? 0, reason: "Recorded example passages in this demo." },
+          ...(!input.sources || input.sources.includes("vault") ? [{ id: "vault", tier: "PUBLIC", status: "NOT_CONNECTED", outcome: "NOT_SEARCHED" as const, hits: 0, reason: "This demo has no connected document retrieval." }] : []),
+        ] },
+      },
     };
     THREADS.set(id, [
       ...thread,
       { message_id: crypto.randomUUID(), ordinal: thread.length, role: "user", text: input.text },
       reply,
     ]);
-    return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id });
+    if (input.requestId) REQUESTS.set(input.requestId, { conversationId: id, payload });
+    return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id, metadata: reply.metadata ?? undefined });
   }
 
   async sourcesList(): Promise<EngineResult<SourcesList>> {
@@ -359,6 +351,10 @@ export class MockGateway implements GatewayProvider {
 
   async mattersList(): Promise<EngineResult<MattersList>> {
     return engineOk(MATTERS);
+  }
+
+  async conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>> {
+    return engineOk({ matter_id: matterId, conversations: [] });
   }
 
   async conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {
@@ -698,7 +694,7 @@ export class MockGateway implements GatewayProvider {
    */
   private readonly vault = new Map<
     string,
-    { name: string; state: string; sha256: string; text: string }
+    { name: string; state: string; sha256: string; text: string; matterId?: string }
   >([
     [
       "a".repeat(64),
@@ -737,6 +733,7 @@ export class MockGateway implements GatewayProvider {
       state: "PENDING",
       sha256: id,
       text: input.text,
+      matterId: input.matterId,
     });
     return engineOk({
       document_id: id,
@@ -748,6 +745,24 @@ export class MockGateway implements GatewayProvider {
         "Queued for ingestion. PENDING is not INGESTED: nothing in this document is " +
         "searchable until a worker has read it.",
     });
+  }
+
+  async vaultList(input: import("./types").VaultListInput): Promise<EngineResult<import("./types").VaultList>> {
+    const query = (input.query ?? "").toLowerCase();
+    const rows = [...this.vault.entries()]
+      .filter(([, d]) => (d.matterId ?? null) === input.matterId && d.name.toLowerCase().includes(query))
+      .map(([id, d]) => ({ document_id: id, name: d.name, state: d.state,
+        matter_id: d.matterId ?? null, byte_count: new TextEncoder().encode(d.text).length, doc_class: null }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.document_id.localeCompare(b.document_id));
+    const start = input.offset ?? 0, limit = input.limit ?? 30;
+    return engineOk({ documents: rows.slice(start, start + limit),
+      next_offset: rows.length > start + limit ? start + limit : null, truncated: false,
+      scope: input.matterId ? "matter" : "unfiled", matter_id: input.matterId,
+      note: "Recorded example documents in this synthetic workspace." });
+  }
+
+  async vaultDocument(documentId: string): Promise<EngineResult<import("./types").VaultDocument>> {
+    return engineOk({ status: "REFUSED", code: "NOT_RECORDED", detail: `No recorded document state for ${documentId}.` });
   }
 
   async vaultStatus(input?: { documentId?: string }): Promise<EngineResult<VaultStatus>> {

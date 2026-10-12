@@ -46,6 +46,7 @@ export const GATEWAY_ROUTES = {
   // on 2026-10-04. A dotted verb's head becomes the path segment, so `review_table.create`
   // is `/v2/review-table/create` -- hyphen, not underscore, and not a REST noun.
   vaultUpload: "/v2/vault/upload",
+  vaultList: "/v2/vault/list",
   vaultStatus: "/v2/vault/status",
   vaultFind: "/v2/vault/find",
   vaultVerify: "/v2/vault/verify",
@@ -65,6 +66,7 @@ export const GATEWAY_ROUTES = {
   // `rest_path()` drops the `/get` head: `/v2/conversation/{id}` and `/v2/citation`.
   // Verified against a live gateway on 2026-10-07.
   conversationSend: "/v2/conversation/send",
+  conversationList: "/v2/conversation/list",
   conversationGet: "/v2/conversation/{conversation_id}",
   citationGet: "/v2/citation",
   // sources.list / matters.list: dotted verbs without `.get`, so `rest_path()` keeps the

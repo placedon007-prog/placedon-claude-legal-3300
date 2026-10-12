@@ -322,7 +322,7 @@ export type VerbRefusal = z.infer<typeof verbRefusalSchema>;
 export const vaultUploadOkSchema = z.object({
   document_id: z.string(),
   sha256: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
   state: z.string(),
   queued: z.boolean().optional(),
   note: z.string().optional(),
@@ -345,6 +345,28 @@ export const vaultStatusSchema = z.object({
   tags: z.array(z.unknown()).optional(),
 });
 export type VaultStatus = z.infer<typeof vaultStatusSchema>;
+export const vaultFileSchema = z.object({
+  document_id: z.string(), name: z.string(), state: z.string(),
+  matter_id: z.string().nullable(), byte_count: z.number().int().nonnegative(),
+  doc_class: z.string().nullable(),
+});
+export type VaultFile = z.infer<typeof vaultFileSchema>;
+export const vaultListPageSchema = z.object({
+  documents: z.array(vaultFileSchema), next_offset: z.number().int().nonnegative().nullable(),
+  truncated: z.boolean(), scope: z.enum(["matter", "unfiled"]),
+  matter_id: z.string().nullable(), note: z.string(),
+});
+export type VaultListPage = z.infer<typeof vaultListPageSchema>;
+export const vaultListSchema = z.union([vaultListPageSchema, verbRefusalSchema]);
+export type VaultList = z.infer<typeof vaultListSchema>;
+export type VaultListInput = { matterId: string | null; query?: string; limit?: number; offset?: number };
+
+export const vaultDocumentSchema = z.union([z.object({
+  document_id: z.string(), name: z.string(), state: z.string(),
+  matter_id: z.string().nullable().optional(), class_reason: z.string().nullable().optional(),
+}), verbRefusalSchema]);
+export type VaultDocument = z.infer<typeof vaultDocumentSchema>;
+
 
 export const vaultHitSchema = z.object({
   document_id: z.string(),
@@ -785,6 +807,30 @@ export type Envelope = z.infer<typeof envelopeSchema>;
  * One turn. `envelope: null` with a `run_id` means the work was QUEUED and the reply has
  * not arrived — which is not an empty answer.
  */
+export const sourceReportSchema = z.object({
+  picked: z.array(z.string()),
+  searched: z.array(z.string()),
+  report: z.array(z.object({
+    id: z.string(), tier: z.string().optional(), status: z.string(),
+    outcome: z.enum(["SEARCHED_HITS", "SEARCHED_EMPTY", "NOT_SEARCHED"]),
+    hits: z.number().int().nonnegative().optional(), reason: z.string().optional(),
+  })),
+  note: z.string().optional(),
+});
+export type SourceReport = z.infer<typeof sourceReportSchema>;
+export const artifactSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("draft"), id: z.string(), version: z.number().int().optional() }),
+  z.object({ type: z.literal("review_table"), id: z.string() }),
+]);
+export type ConversationArtifact = z.infer<typeof artifactSchema>;
+export const turnMetadataSchema = z.object({
+  schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
+  classification: z.record(z.string(), z.unknown()).optional(),
+  sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
+  files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
+});
+export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
+
 export const conversationSendOkSchema = z.object({
   conversation_id: z.string(),
   message_id: z.string(),
@@ -792,6 +838,10 @@ export const conversationSendOkSchema = z.object({
   run_id: z.string().nullable().optional(),
   envelope: envelopeSchema.nullable(),
   draft_id: z.string().optional(),
+  version: z.number().int().optional(),
+  grid_id: z.string().optional(),
+  sources: sourceReportSchema.optional(),
+  metadata: turnMetadataSchema.optional(),
   note: z.string().optional(),
 });
 export const conversationSendSchema = z.union([conversationSendOkSchema, verbRefusalSchema]);
@@ -805,6 +855,8 @@ export const conversationMessageSchema = z.object({
   text: z.string(),
   run_id: z.string().nullable().optional(),
   envelope: envelopeSchema.nullable().optional(),
+  file_ids: z.array(z.string()).optional(),
+  metadata: turnMetadataSchema.nullable().optional(),
 });
 export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 
@@ -812,6 +864,7 @@ export const conversationGetOkSchema = z.object({
   conversation: z.object({
     conversation_id: z.string(),
     title: z.string(),
+    matter_id: z.string().nullable().optional(),
     // null on the gateway's in-memory store (recorded 2026-10-07).
     created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
@@ -820,6 +873,14 @@ export const conversationGetOkSchema = z.object({
 });
 export const conversationGetSchema = z.union([conversationGetOkSchema, verbRefusalSchema]);
 export type ConversationGet = z.infer<typeof conversationGetSchema>;
+export const conversationListSchema = z.union([z.object({
+  matter_id: z.string(), conversations: z.array(z.object({
+    conversation_id: z.string(), title: z.string(), matter_id: z.string().nullable().optional(),
+    updated_at: z.string().nullable().optional(), created_at: z.string().nullable().optional(),
+  })),
+}), verbRefusalSchema]);
+export type ConversationList = z.infer<typeof conversationListSchema>;
+
 
 /** The source panel's read: the stored citation, with its quote RE-READ from the corpus. */
 export const citationGetOkSchema = z.object({
@@ -865,8 +926,20 @@ export const sourceBodySchema = z.object({
 });
 export type SourceBody = z.infer<typeof sourceBodySchema>;
 
-/** Only `bodies` is read; the data-feed fields beside it are not this screen's concern. */
-export const sourcesListSchema = z.object({ bodies: z.array(sourceBodySchema) });
+/** Main gateway source provider contract. Body-of-law IDs are coverage, not picker IDs. */
+export const sourcePickerSchema = z.object({
+  id: z.string(), label: z.string(), tier: z.string(), status: z.string(),
+  reason: z.string(), switchable: z.boolean(),
+});
+export const sourcesListSchema = z.object({ picker: z.array(sourcePickerSchema) }).transform(({ picker }) => ({
+  picker,
+  bodies: picker.map((p): SourceBody => ({
+    id: p.id, name: p.label, short: p.id === "held" ? "Law" : p.id === "vault" ? "Files" : p.tier,
+    issuer: p.tier, status: p.status, covers: p.reason, note: p.reason,
+    selectable: p.switchable, available: p.switchable, reason: p.reason,
+    default_on: p.id === "held" || p.id === "vault",
+  })),
+}));
 export type SourcesList = z.infer<typeof sourcesListSchema>;
 
 /** `envelope.searched` — optional: absent on envelopes from gateways before PR #84. */

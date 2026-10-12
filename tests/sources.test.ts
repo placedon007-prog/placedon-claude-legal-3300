@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import RECORDED from "../src/lib/gateway/fixtures/sources.json" with { type: "json" };
-import { sourcesListSchema } from "../src/lib/gateway/types";
+import { sourceBodySchema } from "../src/lib/gateway/types";
 import {
   chosenOrDefault,
   defaultSourceIds,
@@ -13,7 +13,7 @@ import {
   type MentionItem,
 } from "../src/lib/sources";
 
-const bodies = sourcesListSchema.parse(RECORDED.sources_list.body).bodies;
+const bodies = RECORDED.sources_list.body.bodies.map((b) => sourceBodySchema.parse(b));
 const byId = (id: string) => bodies.find((b) => b.id === id)!;
 
 test("the recorded list parses, in register order, ending with documents and web", () => {

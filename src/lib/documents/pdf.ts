@@ -1,4 +1,5 @@
 import { inflateSync } from "node:zlib";
+import { EXPANSION_LIMIT_REASON, MAX_EXPANDED_BYTES, MAX_PDF_STREAMS } from "./limits";
 
 /**
  * The TEXT LAYER of a PDF, or an honest refusal.
@@ -110,6 +111,8 @@ function inflateStreams(buf: Buffer): string[] {
   const out: string[] = [];
   const marker = Buffer.from("stream");
   let from = 0;
+  let expandedBytes = 0;
+  let streamCount = 0;
   for (;;) {
     const at = buf.indexOf(marker, from);
     if (at === -1) break;
@@ -118,9 +121,19 @@ function inflateStreams(buf: Buffer): string[] {
     if (buf[start] === 0x0a) start++;
     const end = buf.indexOf(Buffer.from("endstream"), start);
     if (end === -1) break;
+    if (++streamCount > MAX_PDF_STREAMS) {
+      throw new PdfError("This PDF has too many streams to read here. Split it into smaller documents.");
+    }
+    const remaining = MAX_EXPANDED_BYTES - expandedBytes;
+    if (remaining <= 0) throw new PdfError(EXPANSION_LIMIT_REASON);
     try {
-      out.push(inflateSync(buf.subarray(start, end)).toString("latin1"));
-    } catch {
+      const inflated = inflateSync(buf.subarray(start, end), { maxOutputLength: remaining });
+      expandedBytes += inflated.length;
+      out.push(inflated.toString("latin1"));
+    } catch (cause) {
+      if (cause instanceof Error && "code" in cause && cause.code === "ERR_BUFFER_TOO_LARGE") {
+        throw new PdfError(EXPANSION_LIMIT_REASON);
+      }
       // Not a flate stream (an image, a font, an object stream). Skipped, never guessed at.
     }
     from = end + 9;

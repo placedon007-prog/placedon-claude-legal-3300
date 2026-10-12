@@ -16,7 +16,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type Envelope } from "@/lib/gateway/types";
+import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, linkCitations, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { cn } from "@/lib/utils";
 import type { TurnState } from "./actions";
@@ -26,6 +26,7 @@ export interface Turn {
   readonly question: string;
   /** null while the request is in flight. */
   readonly state: TurnState | null;
+  readonly request?: { text: string; tool: "research" | "draft"; fileIds: readonly string[]; sources: readonly string[]; matterId: string | null; conversationId: string | null };
 }
 
 const BODY_STATUS: Record<string, string> = {
@@ -43,11 +44,13 @@ const tail = (t: string) => t.match(/\S+$/)?.[0] ?? "";
 export function TurnView({
   turn,
   onRetry,
+  retryDisabled = false,
   onOpenSource,
   onDraft,
 }: {
   turn: Turn;
   onRetry: () => void;
+  retryDisabled?: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
 }) {
@@ -67,16 +70,16 @@ export function TurnView({
         <div role="alert" className="flex flex-col items-start gap-3 rounded-card border border-dashed border-fg p-4">
           <StatusLine kind="failed" />
           <p className="text-read text-fg">
-            The answer never arrived, so nothing is known about the question either way.
+            {s.error.status === 429 || s.error.status === 503
+              ? "The service is busy. Your question is kept here; try again shortly. A retry uses the same request, so it will not start duplicate work."
+              : "The connection was interrupted. Your question is kept here. Try again to recover the same request."}
           </p>
-          <p className="font-mono text-caption text-fg-3">
-            {s.error.kind} · {s.error.message}
-            {s.error.status ? ` (HTTP ${s.error.status})` : ""}
-          </p>
+          <p className="text-caption text-fg-3">{s.error.retryAfterSeconds ? `Try again in about ${s.error.retryAfterSeconds} seconds.` : "This does not decide your legal question."}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="min-h-11 rounded-lg border border-fg px-4 text-body font-medium text-fg transition-colors duration-150 hover:bg-wash-2"
+            disabled={retryDisabled}
+            className="min-h-11 rounded-lg border border-fg px-4 text-body font-medium text-fg transition-colors duration-150 hover:bg-wash-2 disabled:cursor-wait disabled:opacity-50"
           >
             Try again
           </button>
@@ -90,14 +93,14 @@ export function TurnView({
         <div className="flex flex-col gap-2">
           <StatusLine kind="queued" />
           <p className="text-read text-fg-2">
-            The work is on the queue. The answer is written when it finishes; open the run to
-            watch it.
+            Your request is saved. The answer will appear here when the work finishes.
+            {s.note ? ` ${s.note}` : ""}
           </p>
           {s.runId ? <RunLink runId={s.runId} /> : null}
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          onOpenSource={onOpenSource} onDraft={onDraft} />
+          sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
     </section>
   );
@@ -107,12 +110,20 @@ function Answered({
   envelope,
   conversationId,
   draftId,
+  sources,
+  artifacts,
+  onRetry,
+  retryDisabled,
   onOpenSource,
   onDraft,
 }: {
   envelope: Envelope;
   conversationId: string;
   draftId: string | null;
+  sources?: SourceReport;
+  artifacts?: readonly ConversationArtifact[];
+  onRetry?: () => void;
+  retryDisabled: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
 }) {
@@ -141,7 +152,7 @@ function Answered({
                       type="button"
                       onClick={() => open(group, active[i])}
                       aria-label={`Source ${n}${group.section ? `, Section ${group.section}` : ""}`}
-                      className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-line-control px-1 align-[2px] text-[11px] leading-none font-medium text-fg-2 transition-colors duration-150 hover:border-fg hover:bg-fg hover:text-ground"
+                      className="mx-1 inline-flex h-11 min-w-11 items-center justify-center rounded-chip border border-line-control px-1 align-middle text-caption leading-none font-medium text-fg-2 transition-colors duration-150 hover:border-fg hover:bg-fg hover:text-ground"
                     >
                       {n}
                     </button>
@@ -164,6 +175,8 @@ function Answered({
         {envelope.text_blocks.map((b, i) => (
           <p key={i} className="text-body text-fg-2">{b.text}</p>
         ))}
+        {onRetry ? <button type="button" onClick={onRetry} disabled={retryDisabled} className="min-h-11 self-start rounded-chip border border-line-control px-4 text-body text-fg hover:bg-wash disabled:cursor-wait disabled:opacity-50">Start a new attempt</button>
+          : <p className="text-body text-fg-2">To try again, copy your question into the composer and select its documents, sources and task again. This saved record does not include every original request setting.</p>}
       </div>
     );
   }
@@ -197,16 +210,33 @@ function Answered({
         </section>
       ) : null}
 
-      {draftId ? (
-        <Link href={`/app/drafts/${encodeURIComponent(draftId)}`} className="self-start text-body font-medium underline underline-offset-4">
-          Open the draft
+      {sources ? <SearchCoverage report={sources} /> : null}
+      {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
+        {envelope.files.map((file) => <li key={file.file_id}>{file.name} — {file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}{file.reason ? ` · ${file.reason}` : ""}</li>)}
+      </ul> : null}
+      {(artifacts?.length ? artifacts : draftId ? [{ type: "draft" as const, id: draftId }] : []).map((artifact) => (
+        <Link key={`${artifact.type}:${artifact.id}`} href={artifact.type === "draft" ? `/app/drafts/${encodeURIComponent(artifact.id)}` : `/app/tables?grid=${encodeURIComponent(artifact.id)}`}
+          className="flex min-h-14 items-center justify-between gap-4 rounded-card border border-line-2 px-4 py-3 text-body text-fg hover:bg-wash">
+          <span><span className="font-medium">{artifact.type === "draft" ? "Draft document" : "Review table"}</span><span className="ml-2 text-caption text-fg-3">{artifact.type === "draft" && "version" in artifact && artifact.version ? `Version ${artifact.version} · ` : ""}Requires review</span></span><span>Open →</span>
         </Link>
-      ) : null}
+      ))}
 
       <ResultLine envelope={envelope} />
       <Actions envelope={envelope} onDraft={onDraft} />
     </article>
   );
+}
+
+function SearchCoverage({ report }: { report: SourceReport }) {
+  const label = (id: string) => id === "held" ? "Held law" : id === "vault" ? "Your documents" : id.replaceAll("_", " ");
+  return <details className="rounded-card border border-line px-4 py-1 text-ui text-fg-2">
+    <summary className="min-h-11 cursor-pointer content-center font-medium text-fg">Search coverage · {report.searched.length} searched</summary>
+    <ul className="space-y-2 pb-3">{report.report.map((row) => <li key={row.id}>
+      <span className="font-medium">{label(row.id)}</span> — {row.outcome === "NOT_SEARCHED" ? "not searched" : row.outcome === "SEARCHED_EMPTY" ? "searched · no matches" : `searched · ${row.hits ?? 0} matches`}
+      {row.reason ? <p className="text-caption text-fg-3">{row.reason}</p> : null}
+    </li>)}</ul>
+    <p className="border-t border-line py-3 text-caption text-fg-3">Search matches are not automatically evidence used in the answer. The numbered citations above identify the passages used.</p>
+  </details>;
 }
 
 function Sources({ groups, onOpen }: { groups: readonly CitationGroup[]; onOpen: (g: CitationGroup) => void }) {
@@ -261,8 +291,8 @@ function Bodies({ envelope }: { envelope: Envelope }) {
 function ResultLine({ envelope }: { envelope: Envelope }) {
   return (
     <p className="text-caption text-fg-3">
-      Law read as at <span className="font-mono">{envelope.as_of}</span> · Playbook DRAFT — not
-      approved by a lawyer · Model hosted in UAE North — test documents only · Not legal advice
+      {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span> · Playbook DRAFT — not
+      approved by a lawyer · Model region not shown in this response · Test documents only · Not legal advice
     </p>
   );
 }

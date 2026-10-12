@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { deflateRawSync } from "node:zlib";
+import { deflateRawSync, deflateSync } from "node:zlib";
 
 import { docxToText, extractText, looksLikeProse } from "../src/lib/documents";
+import { MAX_EXPANDED_BYTES, MAX_PDF_STREAMS } from "../src/lib/documents/limits";
 
 /**
  * A minimal but REAL .docx — a zip whose central directory the reader must walk. Built
@@ -122,4 +123,57 @@ test("the prose gate accepts a contract and rejects a font dump", () => {
 
   assert.equal(looksLikeProse("AAAA".repeat(200)), false, "no spaces is not prose");
   assert.equal(looksLikeProse("short"), false, "too short to judge");
+});
+
+test("a small DOCX that expands past the budget is refused even when it lies about its size", () => {
+  const docx = Buffer.from(makeDocx("x".repeat(MAX_EXPANDED_BYTES + 1)));
+  assert.ok(docx.length < 100_000, "the compressed upload is small");
+  const declared = extractText("oversized.docx", docx);
+  assert.equal(declared.ok, false);
+  if (!declared.ok) assert.match(declared.reason, /expanded-content limit/);
+
+  const centralOffset = docx.readUInt32LE(docx.length - 6);
+  docx.writeUInt32LE(1, centralOffset + 24);
+  const dishonest = extractText("dishonest.docx", docx);
+  assert.equal(dishonest.ok, false);
+  if (!dishonest.ok) assert.match(dishonest.reason, /expanded-content limit/);
+});
+
+function pdfWithStreams(streams: readonly Buffer[]): Buffer {
+  return Buffer.concat([
+    Buffer.from("%PDF-1.7\n"),
+    ...streams.flatMap((stream) => [
+      Buffer.from("1 0 obj\n<< /Filter /FlateDecode >>\nstream\n"),
+      stream,
+      Buffer.from("\nendstream\nendobj\n"),
+    ]),
+  ]);
+}
+
+test("a PDF expansion over the budget is refused, never silently skipped", () => {
+  const stream = deflateSync(Buffer.alloc(MAX_EXPANDED_BYTES + 1, "x"));
+  const result = extractText("oversized.pdf", pdfWithStreams([stream]));
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.reason, /expanded-content limit/);
+});
+
+test("the PDF expansion budget is shared across all streams", () => {
+  const stream = deflateSync(Buffer.alloc(MAX_EXPANDED_BYTES / 2 + 1, "x"));
+  const result = extractText("aggregate.pdf", pdfWithStreams([stream, stream]));
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.reason, /expanded-content limit/);
+});
+
+test("PDF stream processing is bounded even when every stream is tiny", () => {
+  const stream = deflateSync(Buffer.from("x"));
+  const result = extractText("many-streams.pdf", pdfWithStreams(Array(MAX_PDF_STREAMS + 1).fill(stream)));
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.reason, /too many streams/);
+});
+
+test("an ordinary compressed PDF still produces complete prose", () => {
+  const prose = "This agreement is made between Acme Limited and Beta Limited. Each party shall keep the other party information confidential and shall not disclose it without prior written consent. ".repeat(4);
+  const result = extractText("normal.pdf", pdfWithStreams([deflateSync(Buffer.from(`BT (${prose}) Tj ET`))]));
+  assert.ok(result.ok);
+  if (result.ok) assert.equal(result.text, prose.trim());
 });
