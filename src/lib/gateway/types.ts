@@ -968,8 +968,16 @@ export const sourcePickerSchema = z.object({
   id: z.string(), label: z.string(), tier: z.string(), status: z.string(),
   reason: z.string(), switchable: z.boolean(),
 });
-export const sourcesListSchema = z.object({ picker: z.array(sourcePickerSchema) }).transform(({ picker }) => ({
-  picker,
+export const sourceIntegrationSchema = z.object({
+  id: z.string(), label: z.string(), kind: z.string(), status: z.string(),
+  message: z.string(), can_connect: z.boolean(),
+});
+export type SourceIntegration = z.infer<typeof sourceIntegrationSchema>;
+export const sourcesListSchema = z.object({
+  picker: z.array(sourcePickerSchema),
+  integrations: z.array(sourceIntegrationSchema).optional().default([]),
+}).transform(({ picker, integrations }) => ({
+  picker, integrations,
   bodies: picker.map((p): SourceBody => ({
     id: p.id, name: p.label, short: p.id === "held" ? "Law" : p.id === "vault" ? "Files" : p.tier,
     issuer: p.tier, status: p.status, covers: p.reason, note: p.reason,

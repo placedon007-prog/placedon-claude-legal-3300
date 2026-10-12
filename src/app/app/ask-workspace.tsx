@@ -173,7 +173,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const input = <PromptBox onSubmit={(text, selectedTool, ids) => { void send(text, selectedTool, ids); }}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
-    tool={tool} onToolChange={setTool} sources={{ bodies, failed: context.sources.phase !== "loaded" }}
+    tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded" }}
     onRetrySources={() => { loadComposerContext().then(setContext).catch(() => { /* Existing visible failure remains; the draft stays in memory. */ }); }}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
     matters={context.matters} matterId={matterId} onMatter={setMatterId} matterLocked={Boolean(conversationId) || pending || Boolean(uncertain)}

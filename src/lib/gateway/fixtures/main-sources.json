@@ -20,6 +20,15 @@
       "terms": {}
     },
     {
+      "id": "lexisnexis_india",
+      "label": "LexisNexis India",
+      "tier": "LICENSED",
+      "status": "NOT_ACQUIRED",
+      "reason": "Not connected: Placedon needs a confirmed India-content API agreement, permitted AI use, citation display and retention terms before searching",
+      "switchable": false,
+      "terms": {}
+    },
+    {
       "id": "aws_hc_judgments",
       "label": "Indian High Court Judgments (AWS Open Data, Dattam Labs)",
       "tier": "LICENSED",
@@ -180,6 +189,16 @@
           "CACHING": "OPEN"
         }
       }
+    }
+  ],
+  "integrations": [
+    {
+      "id": "imanage",
+      "label": "iManage",
+      "kind": "document_management",
+      "status": "NOT_CONFIGURED",
+      "message": "A firm administrator must register and authorize Placedon in iManage. No files have been imported.",
+      "can_connect": false
     }
   ]
 }

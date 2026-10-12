@@ -4,10 +4,10 @@ import * as React from "react";
 import Image from "next/image";
 import { ChevronDown, FileText, FolderOpen, Library, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { SourceBody } from "@/lib/gateway/types";
+import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { statusLine } from "@/lib/sources";
 
-const INDIA_SOURCE_IDS = new Set(["held", "aws_sc_judgments", "aws_hc_judgments", "sebi", "bse", "data_gov_in", "egazette", "indiankanoon", "nse", "rbi"]);
+const INDIA_SOURCE_IDS = new Set(["held", "aws_sc_judgments", "aws_hc_judgments", "sebi", "bse", "data_gov_in", "egazette", "indiankanoon", "lexisnexis_india", "nse", "rbi"]);
 const SOURCE_MARKS: Record<string, string> = {
   bse: "BSE", data_gov_in: "DATA", egazette: "GZ", indiankanoon: "IK", nse: "NSE", rbi: "RBI",
 };
@@ -39,6 +39,9 @@ function IndiaFlag({ decorative = false }: { decorative?: boolean }) {
 
 function SourceMark({ body }: { body: SourceBody }) {
   if (body.id === "vault") return <span className="source-identity source-identity-file"><FolderOpen className="size-5" aria-hidden /></span>;
+  // Do not invent a vendor logo/monogram. Until an approved official asset is available,
+  // LexisNexis is identified by its name and license state alone.
+  if (body.id === "lexisnexis_india") return null;
   const logo = SOURCE_LOGOS[body.id];
   if (logo) return <SourceLogo {...logo} />;
   const letters = SOURCE_MARKS[body.id];
@@ -54,8 +57,9 @@ function SourceLogo({ name, width, height }: { name: string; width: number; heig
   </span>;
 }
 
-export function SourcesChip({ bodies, failed, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
+export function SourcesChip({ bodies, integrations, failed, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
   bodies: readonly SourceBody[];
+  integrations: readonly SourceIntegration[];
   failed: boolean;
   chosen: readonly string[];
   onToggle: (id: string) => void;
@@ -70,9 +74,10 @@ export function SourcesChip({ bodies, failed, chosen, onToggle, onRetry, onBrows
   const titleId = React.useId();
   const constraintId = React.useId();
   const india = bodies.filter((body) => body.selectable && INDIA_SOURCE_IDS.has(body.id));
+  const indiaUnavailable = bodies.filter((body) => !body.selectable && INDIA_SOURCE_IDS.has(body.id));
   const documents = bodies.filter((body) => body.selectable && body.id === "vault");
   const otherAvailable = bodies.filter((body) => body.selectable && !INDIA_SOURCE_IDS.has(body.id) && body.id !== "vault");
-  const unavailable = bodies.filter((body) => !body.selectable);
+  const unavailable = bodies.filter((body) => !body.selectable && !INDIA_SOURCE_IDS.has(body.id));
   const n = chosen.length;
   const indiaSelected = chosen.some((id) => INDIA_SOURCE_IDS.has(id));
   const inputEvents = { onPointerDownCapture: () => setMotion("pointer"), onKeyDownCapture: () => setMotion("keyboard") };
@@ -92,8 +97,8 @@ export function SourcesChip({ bodies, failed, chosen, onToggle, onRetry, onBrows
       <div className="source-picker-heading"><div><h2 id={titleId} className="text-title font-medium">Search sources</h2><p className="text-ui text-fg-3">Chosen for your next question.</p></div>
         <button type="button" className="source-picker-close" onClick={() => setOpen(false)} aria-label="Close source picker"><X className="size-4" aria-hidden /></button></div>
       <div className="source-picker-catalog">
-        {india.length > 0 && <section className="source-picker-group" aria-label="India sources"><h3 className="source-picker-country"><IndiaFlag decorative /><span>India</span><span>{india.length} sources</span></h3><ul className="source-picker-list">{india.map(renderRow)}</ul></section>}
-        {documents.length > 0 && <section className="source-picker-group" aria-label="Your documents"><h3 className="source-picker-section-label">Your workspace</h3><ul className="source-picker-list">{documents.map(renderRow)}</ul>{onBrowseFiles && <button type="button" className="source-vault-browse" onClick={() => { browsing.current = true; setOpen(false); onBrowseFiles(); }}><FolderOpen className="size-4" aria-hidden /><span>Choose stored files</span><span>{fileCount ? `${fileCount} attached` : "Browse"}</span></button>}</section>}
+        {india.length + indiaUnavailable.length > 0 && <section className="source-picker-group" aria-label="India sources"><h3 className="source-picker-country"><IndiaFlag decorative /><span>India</span><span>{india.length + indiaUnavailable.length} sources</span></h3><ul className="source-picker-list">{india.map(renderRow)}{indiaUnavailable.map((body) => <li key={body.id} className="source-picker-unavailable-row"><SourceMark body={body} /><span><strong>{body.name}</strong><small>{statusLine(body)}</small></span></li>)}</ul></section>}
+        {documents.length > 0 && <section className="source-picker-group" aria-label="Your documents"><h3 className="source-picker-section-label">Your workspace</h3><ul className="source-picker-list">{documents.map(renderRow)}</ul>{onBrowseFiles && <button type="button" className="source-vault-browse" onClick={() => { browsing.current = true; setOpen(false); onBrowseFiles(); }}><FolderOpen className="size-4" aria-hidden /><span>Choose stored files</span><span>{fileCount ? `${fileCount} attached` : "Browse"}</span></button>}{integrations.filter((item) => item.id === "imanage").map((item) => <div key={item.id} className="source-integration-note" role="note"><span className="source-integration-brand" aria-hidden="true">iManage</span><span><strong>iManage integration</strong><small>{item.message}</small></span><span className="source-integration-state">{item.can_connect ? "Ready" : "Admin setup"}</span></div>)}</section>}
         {otherAvailable.length > 0 && <section className="source-picker-group" aria-label="Additional sources"><h3 className="source-picker-section-label">Additional sources</h3><ul className="source-picker-list">{otherAvailable.map(renderRow)}</ul></section>}
         {unavailable.length > 0 && <details className="source-picker-unavailable"><summary><span>Other sources <span className="text-fg-3">· {unavailable.length} unavailable</span></span><ChevronDown className="size-4" aria-hidden /></summary>
           <ul>{unavailable.map((body) => <li key={body.id} className="source-picker-unavailable-row"><SourceMark body={body} /><span><strong>{body.name}</strong><small>{statusLine(body)}</small></span></li>)}</ul></details>}

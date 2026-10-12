@@ -21,6 +21,13 @@ test("main source picker uses provider IDs and never submits law-body IDs", () =
   assert.deepEqual(toggleSource(["held"], "held", bodies), ["held"], "zero means defaults at gateway, so keep the last selection on");
   const unavailable = bodies.find((body) => !body.selectable)!;
   assert.deepEqual(toggleSource(["held"], unavailable.id, bodies), ["held"]);
+  const lexis = bodies.find((body) => body.id === "lexisnexis_india");
+  assert.ok(lexis, "LexisNexis is discoverable in the picker");
+  assert.equal(lexis.selectable, false, "no source pick can search without configured rights");
+  assert.match(lexis.reason ?? "", /agreement.*AI use.*citation.*retention/i);
+  const listed = sourcesListSchema.parse(PICKER);
+  assert.equal(listed.integrations.find((item) => item.id === "imanage")?.can_connect, false);
+  assert.match(listed.integrations.find((item) => item.id === "imanage")?.message ?? "", /firm administrator/i);
   assert.equal(sourcesListSchema.safeParse({ bodies: [] }).success, false, "unmerged body contract cannot silently masquerade as main");
 });
 

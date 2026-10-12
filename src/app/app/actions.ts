@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
-import { isRefusal, type SourceBody, type SourceReport, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
+import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
@@ -539,7 +539,7 @@ export async function logoutAction(): Promise<void> {
 export type ComposerContext = {
   /** sources.list `bodies`, or why they did not load. A failure is not a refusal. */
   readonly sources:
-    | { readonly phase: "loaded"; readonly bodies: readonly SourceBody[] }
+    | { readonly phase: "loaded"; readonly bodies: readonly SourceBody[]; readonly integrations: readonly SourceIntegration[] }
     | { readonly phase: "failed"; readonly kind: string };
   readonly matters: readonly { matter_id: string; name: string }[];
 };
@@ -551,7 +551,7 @@ export async function loadComposerContext(): Promise<ComposerContext> {
   const [sources, matters] = await Promise.all([gateway.sourcesList(), gateway.mattersList()]);
   return {
     sources: sources.ok
-      ? { phase: "loaded", bodies: sources.data.bodies }
+      ? { phase: "loaded", bodies: sources.data.bodies, integrations: sources.data.integrations }
       : { phase: "failed", kind: sources.error.kind },
     // A matters failure only hides the optional matter chip; it never blocks asking.
     matters: matters.ok ? matters.data.matters.map(({ matter_id, name }) => ({ matter_id, name })) : [],
