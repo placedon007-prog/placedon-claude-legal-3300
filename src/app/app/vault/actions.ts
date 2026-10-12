@@ -6,6 +6,7 @@ import { isRefusal } from "@/lib/gateway/types";
 import type { VaultFind, VaultStatus, VaultVerify } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
+import { hasSession, requireSession } from "@/lib/auth/session";
 
 /**
  * The vault's four verbs.
@@ -28,6 +29,7 @@ export type VaultState =
   | { readonly phase: "invalid"; readonly message: string };
 
 export async function vaultListAction(): Promise<VaultState> {
+  await requireSession();
   const gateway = await getGateway();
   const result = await gateway.vaultStatus();
   if (!result.ok) return { phase: "failed", error: result.error };
@@ -40,6 +42,12 @@ export async function vaultUploadAction(
   _prev: VaultState,
   formData: FormData,
 ): Promise<VaultState> {
+  await requireSession();
+  const matter = String(formData.get("matter_id") ?? "").trim();
+  const matterId = matter ? z.uuid().safeParse(matter) : null;
+  if (matterId && !matterId.success) {
+    return { phase: "invalid", message: "Choose a valid matter before uploading." };
+  }
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { phase: "invalid", message: "Choose a file to upload." };
@@ -74,7 +82,11 @@ export async function vaultUploadAction(
   }
 
   const gateway = await getGateway();
-  const result = await gateway.vaultUpload({ name: parsedName.data, text });
+  const result = await gateway.vaultUpload({
+    name: parsedName.data,
+    text,
+    ...(matterId?.success ? { matterId: matterId.data } : {}),
+  });
   if (!result.ok) return { phase: "failed", error: result.error };
   if (isRefusal(result.data)) {
     return { phase: "refused", code: result.data.code, detail: result.data.detail };
@@ -86,7 +98,7 @@ export async function vaultUploadAction(
   return {
     phase: "uploaded",
     documentId: result.data.document_id,
-    name: result.data.name,
+    name: result.data.name ?? parsedName.data,
     state: result.data.state,
     note: result.data.note ?? "",
     data: after.data,
@@ -99,6 +111,7 @@ export async function vaultFindAction(
   _prev: VaultState,
   formData: FormData,
 ): Promise<VaultState> {
+  await requireSession();
   const parsed = querySchema.safeParse(formData.get("query"));
   if (!parsed.success) {
     return { phase: "invalid", message: parsed.error.issues[0].message };
@@ -113,6 +126,7 @@ export async function vaultVerifyAction(
   _prev: VaultState,
   formData: FormData,
 ): Promise<VaultState> {
+  await requireSession();
   const documentId = String(formData.get("document_id") ?? "").trim();
   if (!documentId) return { phase: "invalid", message: "Choose a document to verify." };
   const gateway = await getGateway();
@@ -122,4 +136,19 @@ export async function vaultVerifyAction(
     return { phase: "refused", code: result.data.code, detail: result.data.detail };
   }
   return { phase: "verified", documentId, data: result.data };
+}
+
+export type VaultBrowseResult =
+  | { ok: true; data: import("@/lib/gateway/types").VaultListPage }
+  | { ok: false; message: string };
+
+export async function browseVaultAction(input: { matterId: string | null; query?: string; offset?: number }): Promise<VaultBrowseResult> {
+  if (!(await hasSession())) return { ok: false, message: "Your session has ended. Sign in to browse documents." };
+  const parsed = z.object({ matterId: z.uuid().nullable(), query: z.string().trim().max(120).default(""),
+    offset: z.number().int().min(0).max(10000).default(0) }).safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Choose a valid matter and search with at most 120 characters." };
+  const result = await (await getGateway()).vaultList({ ...parsed.data, limit: 30 });
+  if (!result.ok) return { ok: false, message: "Stored files could not be loaded. Please retry." };
+  if (isRefusal(result.data)) return { ok: false, message: result.data.detail };
+  return { ok: true, data: result.data };
 }

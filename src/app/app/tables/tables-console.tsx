@@ -112,9 +112,9 @@ function Grid({ data }: { data: TableStatus }) {
   );
 }
 
-export function TablesConsole() {
+export function TablesConsole({ initialGridId = "", initialStatus = initial }: { initialGridId?: string; initialStatus?: TableState }) {
   const [created, createAction, creating] = useActionState(tableCreateAction, initial);
-  const [status, statusAction, loading] = useActionState(tableStatusAction, initial);
+  const [status, statusAction, loading] = useActionState(tableStatusAction, initialStatus);
   const [exported, exportAction, exporting] = useActionState(tableExportAction, initial);
   const [cancelled, cancelAction, cancelling] = useActionState(tableCancelAction, initial);
 
@@ -192,7 +192,7 @@ export function TablesConsole() {
         <form action={statusAction} className="inline-form">
           <label htmlFor="grid_id">Grid id</label>
           <input id="grid_id" name="grid_id" type="text"
-                 defaultValue={created.phase === "created" ? created.data.grid_id : ""} />
+                 defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={loading}>
             {loading ? "Reading…" : "Read"}
           </button>
@@ -227,7 +227,7 @@ export function TablesConsole() {
         <form action={exportAction} className="inline-form">
           <label htmlFor="export_grid">Grid id</label>
           <input id="export_grid" name="grid_id" type="text"
-                 defaultValue={created.phase === "created" ? created.data.grid_id : ""} />
+                 defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={exporting}>
             {exporting ? "Building…" : "Export CSV"}
           </button>
@@ -247,7 +247,7 @@ export function TablesConsole() {
         <form action={cancelAction} className="inline-form">
           <label htmlFor="cancel_grid">Grid id</label>
           <input id="cancel_grid" name="grid_id" type="text"
-                 defaultValue={created.phase === "created" ? created.data.grid_id : ""} />
+                 defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={cancelling}>
             {cancelling ? "Stopping…" : "Stop scheduling"}
           </button>

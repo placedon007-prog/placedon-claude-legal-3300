@@ -34,8 +34,6 @@ export const askResponseSchema = z.object({
   answer: z.string().optional(),
   run_id: z.string().nullable().optional(),
   error: z.string().optional(),
-  /** The source-picker report. The console reads it via conversationSend, not here. */
-  sources: z.unknown().optional(),
 });
 export type AskResponse = z.infer<typeof askResponseSchema>;
 
@@ -324,7 +322,7 @@ export type VerbRefusal = z.infer<typeof verbRefusalSchema>;
 export const vaultUploadOkSchema = z.object({
   document_id: z.string(),
   sha256: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
   state: z.string(),
   queued: z.boolean().optional(),
   note: z.string().optional(),
@@ -347,6 +345,28 @@ export const vaultStatusSchema = z.object({
   tags: z.array(z.unknown()).optional(),
 });
 export type VaultStatus = z.infer<typeof vaultStatusSchema>;
+export const vaultFileSchema = z.object({
+  document_id: z.string(), name: z.string(), state: z.string(),
+  matter_id: z.string().nullable(), byte_count: z.number().int().nonnegative(),
+  doc_class: z.string().nullable(),
+});
+export type VaultFile = z.infer<typeof vaultFileSchema>;
+export const vaultListPageSchema = z.object({
+  documents: z.array(vaultFileSchema), next_offset: z.number().int().nonnegative().nullable(),
+  truncated: z.boolean(), scope: z.enum(["matter", "unfiled"]),
+  matter_id: z.string().nullable(), note: z.string(),
+});
+export type VaultListPage = z.infer<typeof vaultListPageSchema>;
+export const vaultListSchema = z.union([vaultListPageSchema, verbRefusalSchema]);
+export type VaultList = z.infer<typeof vaultListSchema>;
+export type VaultListInput = { matterId: string | null; query?: string; limit?: number; offset?: number };
+
+export const vaultDocumentSchema = z.union([z.object({
+  document_id: z.string(), name: z.string(), state: z.string(),
+  matter_id: z.string().nullable().optional(), class_reason: z.string().nullable().optional(),
+}), verbRefusalSchema]);
+export type VaultDocument = z.infer<typeof vaultDocumentSchema>;
+
 
 export const vaultHitSchema = z.object({
   document_id: z.string(),
@@ -778,6 +798,8 @@ export const envelopeSchema = z.object({
   ),
   run_id: z.string().nullable().optional(),
   trace_url: z.string().nullable().optional(),
+  // Declared lazily: `searchedSchema` is defined further down this file.
+  searched: z.lazy(() => searchedSchema).optional(),
 });
 export type Envelope = z.infer<typeof envelopeSchema>;
 
@@ -785,82 +807,29 @@ export type Envelope = z.infer<typeof envelopeSchema>;
  * One turn. `envelope: null` with a `run_id` means the work was QUEUED and the reply has
  * not arrived — which is not an empty answer.
  */
-/* ── sources.list — the @-sources picker ───────────────────────────────────── */
-
-/** The three display tiers the picker groups sources into. Only HELD can VERIFY. */
-export const sourceTierSchema = z.enum(["HELD", "LICENSED", "PUBLIC"]);
-export type SourceTier = z.infer<typeof sourceTierSchema>;
-
-/** Whether a source can be switched on, and why not when it cannot. */
-export const sourceStatusSchema = z.enum([
-  "available",
-  "KEY_MISSING",
-  "NOT_ACQUIRED",
-  "BLOCKED",
-]);
-export type SourceStatus = z.infer<typeof sourceStatusSchema>;
-
-export const sourceCardSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  tier: sourceTierSchema,
-  status: sourceStatusSchema,
-  /** Empty for an available source; the reason it cannot be switched on otherwise. */
-  reason: z.string(),
-  switchable: z.boolean(),
-  terms: z
-    .object({
-      url: z.string().nullable().optional(),
-      read: z.string().nullable().optional(),
-      clauses: z.record(z.string(), z.string()).optional(),
-    })
-    .optional(),
-});
-export type SourceCard = z.infer<typeof sourceCardSchema>;
-
-/**
- * `sources.list` carries more than the picker (tiers, adapters, external terms records,
- * fetchable/cacheable lists); the picker view is all this app renders. The other keys are
- * modelled loosely rather than dropped so a strict parse does not reject the real response.
- */
-export const sourcesListOkSchema = z.object({
-  picker: z.array(sourceCardSchema),
-  tiers: z.array(z.string()).optional(),
-  adapters: z.array(z.unknown()).optional(),
-  external: z.array(z.unknown()).optional(),
-  fetchable: z.array(z.string()).optional(),
-  cacheable: z.array(z.string()).optional(),
-  note: z.string().optional(),
-});
-export const sourcesListSchema = z.union([sourcesListOkSchema, verbRefusalSchema]);
-export type SourcesList = z.infer<typeof sourcesListSchema>;
-export type SourcesListOk = z.infer<typeof sourcesListOkSchema>;
-
-/**
- * The per-source report an answer carries: which picked sources were searched, searched
- * with no hit, or not searched (with a named state). Modelled so it PARSES wherever the
- * backend returns it; rendering it on the answer is a deliberate follow-up.
- */
-export const sourceOutcomeSchema = z.enum([
-  "SEARCHED_HITS",
-  "SEARCHED_EMPTY",
-  "NOT_SEARCHED",
-]);
-export const sourceReportRowSchema = z.object({
-  id: z.string(),
-  tier: z.string(),
-  status: z.string(),
-  outcome: sourceOutcomeSchema,
-  hits: z.number().int().nonnegative(),
-  reason: z.string(),
-});
-export const sourcesReportSchema = z.object({
+export const sourceReportSchema = z.object({
   picked: z.array(z.string()),
   searched: z.array(z.string()),
-  report: z.array(sourceReportRowSchema),
+  report: z.array(z.object({
+    id: z.string(), tier: z.string().optional(), status: z.string(),
+    outcome: z.enum(["SEARCHED_HITS", "SEARCHED_EMPTY", "NOT_SEARCHED"]),
+    hits: z.number().int().nonnegative().optional(), reason: z.string().optional(),
+  })),
   note: z.string().optional(),
 });
-export type SourcesReport = z.infer<typeof sourcesReportSchema>;
+export type SourceReport = z.infer<typeof sourceReportSchema>;
+export const artifactSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("draft"), id: z.string(), version: z.number().int().optional() }),
+  z.object({ type: z.literal("review_table"), id: z.string() }),
+]);
+export type ConversationArtifact = z.infer<typeof artifactSchema>;
+export const turnMetadataSchema = z.object({
+  schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
+  classification: z.record(z.string(), z.unknown()).optional(),
+  sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
+  files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
+});
+export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 
 export const conversationSendOkSchema = z.object({
   conversation_id: z.string(),
@@ -869,9 +838,11 @@ export const conversationSendOkSchema = z.object({
   run_id: z.string().nullable().optional(),
   envelope: envelopeSchema.nullable(),
   draft_id: z.string().optional(),
+  version: z.number().int().optional(),
+  grid_id: z.string().optional(),
+  sources: sourceReportSchema.optional(),
+  metadata: turnMetadataSchema.optional(),
   note: z.string().optional(),
-  /** The source-picker report (follow-up: parsed now, rendered later). */
-  sources: sourcesReportSchema.optional(),
 });
 export const conversationSendSchema = z.union([conversationSendOkSchema, verbRefusalSchema]);
 export type ConversationSend = z.infer<typeof conversationSendSchema>;
@@ -884,6 +855,8 @@ export const conversationMessageSchema = z.object({
   text: z.string(),
   run_id: z.string().nullable().optional(),
   envelope: envelopeSchema.nullable().optional(),
+  file_ids: z.array(z.string()).optional(),
+  metadata: turnMetadataSchema.nullable().optional(),
 });
 export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 
@@ -891,6 +864,7 @@ export const conversationGetOkSchema = z.object({
   conversation: z.object({
     conversation_id: z.string(),
     title: z.string(),
+    matter_id: z.string().nullable().optional(),
     // null on the gateway's in-memory store (recorded 2026-10-07).
     created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
@@ -899,6 +873,14 @@ export const conversationGetOkSchema = z.object({
 });
 export const conversationGetSchema = z.union([conversationGetOkSchema, verbRefusalSchema]);
 export type ConversationGet = z.infer<typeof conversationGetSchema>;
+export const conversationListSchema = z.union([z.object({
+  matter_id: z.string(), conversations: z.array(z.object({
+    conversation_id: z.string(), title: z.string(), matter_id: z.string().nullable().optional(),
+    updated_at: z.string().nullable().optional(), created_at: z.string().nullable().optional(),
+  })),
+}), verbRefusalSchema]);
+export type ConversationList = z.infer<typeof conversationListSchema>;
+
 
 /** The source panel's read: the stored citation, with its quote RE-READ from the corpus. */
 export const citationGetOkSchema = z.object({
@@ -920,3 +902,78 @@ export const citationGetOkSchema = z.object({
 export const citationGetSchema = z.union([citationGetOkSchema, verbRefusalSchema]);
 export type CitationGet = z.infer<typeof citationGetSchema>;
 export type CitationGetOk = z.infer<typeof citationGetOkSchema>;
+
+/* ── sources (backend PR #84) ─────────────────────────────────────────────── */
+
+/**
+ * One row of `sources.list` `bodies`: generated by the gateway from checker/scope.BODIES,
+ * so names, statuses and coverage are the register's own, then `client_documents` and
+ * `web`. Recorded live 2026-10-08 (`fixtures/sources.json`).
+ */
+export const sourceBodySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  short: z.string().min(1),
+  issuer: z.string(),
+  /** IN_CORPUS · CURRENT_ONLY · DECLARED · OUT_OF_SCOPE, or CLIENT / UNAVAILABLE. */
+  status: z.string().min(1),
+  covers: z.string(),
+  note: z.string(),
+  selectable: z.boolean(),
+  default_on: z.boolean(),
+  available: z.boolean(),
+  reason: z.string().optional(),
+});
+export type SourceBody = z.infer<typeof sourceBodySchema>;
+
+/** The source-list card used by the source-picker control. */
+export const sourceTierSchema = z.enum(["HELD", "LICENSED", "PUBLIC"]);
+export const sourceStatusSchema = z.enum(["available", "KEY_MISSING", "NOT_ACQUIRED", "BLOCKED"]);
+export const sourceCardSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  tier: sourceTierSchema,
+  status: sourceStatusSchema,
+  reason: z.string(),
+  switchable: z.boolean(),
+  terms: z.object({
+    url: z.string().nullable().optional(),
+    read: z.string().nullable().optional(),
+    clauses: z.record(z.string(), z.string()).optional(),
+  }).optional(),
+});
+export type SourceCard = z.infer<typeof sourceCardSchema>;
+
+/** Main gateway source provider contract. Body-of-law IDs are coverage, not picker IDs. */
+export const sourcePickerSchema = z.object({
+  id: z.string(), label: z.string(), tier: z.string(), status: z.string(),
+  reason: z.string(), switchable: z.boolean(),
+});
+export const sourcesListSchema = z.object({ picker: z.array(sourcePickerSchema) }).transform(({ picker }) => ({
+  picker,
+  bodies: picker.map((p): SourceBody => ({
+    id: p.id, name: p.label, short: p.id === "held" ? "Law" : p.id === "vault" ? "Files" : p.tier,
+    issuer: p.tier, status: p.status, covers: p.reason, note: p.reason,
+    selectable: p.switchable, available: p.switchable, reason: p.reason,
+    default_on: p.id === "held" || p.id === "vault",
+  })),
+}));
+export type SourcesList = z.infer<typeof sourcesListSchema>;
+
+/** `envelope.searched` — optional: absent on envelopes from gateways before PR #84. */
+export const searchedSchema = z.object({
+  bodies: z.array(
+    z.object({ id: z.string(), status: z.string(), read: z.boolean(), note: z.string().optional() }),
+  ),
+  as_of: z.string(),
+  defaulted: z.boolean(),
+});
+export type Searched = z.infer<typeof searchedSchema>;
+
+/** `matters.list`: this firm's matters. A thread may be filed to one (`matter_id`). */
+export const mattersListSchema = z.object({
+  matters: z.array(
+    z.object({ matter_id: z.string(), name: z.string(), client_ref: z.string().optional() }),
+  ),
+});
+export type MattersList = z.infer<typeof mattersListSchema>;

@@ -1,5 +1,8 @@
 import "../engine/server-guard";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { demoModeEnabled, sessionConfigurationIssue } from "./config";
+import { consumeLoginAttempt, trustedLoginClientKey } from "./login-limiter";
 import { MAX_AGE_SECONDS, mintToken, sameSecret, tokenIsValid } from "./token";
 
 /**
@@ -33,25 +36,35 @@ function passcode(): string | null {
   return p ? p : null;
 }
 
-/** True when this deployment demands a passcode at all. */
+/** Live deployments require sign-in; only explicit isolated demos can open without it. */
 export function gateEnabled(): boolean {
-  return passcode() !== null;
+  return !demoModeEnabled();
 }
 
 /**
  * Check a submitted passcode.
  *
- * With no `APP_PASSCODE` configured the gate is OPEN, and that is a deliberate local
- * -development choice rather than an accident — `/app` renders a standing banner saying so,
- * because an unprotected prototype that looks protected is worse than one that admits it.
+ * Missing live credentials fail closed. Explicit demo mode serves fixtures only and cannot
+ * be combined with a live gateway URL or deployment key.
  */
-export function passcodeAccepted(submitted: string): boolean {
+export async function authenticatePasscode(submitted: string): Promise<{
+  accepted: boolean;
+  retryAfterSeconds?: number;
+  configurationIssue?: boolean;
+}> {
+  const configuredHeader = process.env.APP_TRUSTED_CLIENT_IP_HEADER;
+  const clientKey = configuredHeader ? trustedLoginClientKey(await headers(), configuredHeader) : null;
+  const limit = consumeLoginAttempt(clientKey);
+  if (!limit.allowed) return { accepted: false, retryAfterSeconds: limit.retryAfterSeconds };
+  if (submitted.length > 4096) return { accepted: false };
   const expected = passcode();
-  if (expected === null) return true;
-  return sameSecret(submitted, expected);
+  if (sessionConfigurationIssue()) return { accepted: false, configurationIssue: true };
+  if (expected === null) return { accepted: demoModeEnabled() };
+  return { accepted: sameSecret(submitted, expected) };
 }
 
 export async function startSession(): Promise<void> {
+  if (demoModeEnabled()) return;
   const jar = await cookies();
   jar.set(SESSION_COOKIE, mintToken(secret()), {
     httpOnly: true,
@@ -69,7 +82,13 @@ export async function endSession(): Promise<void> {
 
 /** True when this request may see `/app`. */
 export async function hasSession(): Promise<boolean> {
-  if (!gateEnabled()) return true;
+  if (sessionConfigurationIssue()) return false;
+  if (demoModeEnabled()) return true;
   const jar = await cookies();
   return tokenIsValid(jar.get(SESSION_COOKIE)?.value, secret());
+}
+
+/** Enforced at the data boundary, including direct Server Action requests. */
+export async function requireSession(): Promise<void> {
+  if (!(await hasSession())) redirect("/login");
 }

@@ -82,7 +82,7 @@ export function rememberThread(id: string, title: string): void {
 export function useSidebarExpanded(): [boolean, (v: boolean) => void] {
   const raw = useStored(SIDEBAR_KEY);
   const set = React.useCallback((v: boolean) => write(SIDEBAR_KEY, v ? "expanded" : "collapsed"), []);
-  return [raw === "expanded", set];
+  return [raw !== "collapsed", set];
 }
 
 /* ── the welcome line: name, switch, and when questions are asked ─────────── */
@@ -146,4 +146,36 @@ export function forgetActivity(): void {
     // nothing to forget
   }
   window.dispatchEvent(new Event(CHANGED));
+}
+
+/* ── which sources each thread searches ───────────────────────────────────── */
+
+const SOURCES_KEY = "placedon.console.sources.v1";
+/** The choice made before a thread exists; copied to the thread when it gets an id. */
+export const NEW_THREAD = "new";
+
+/** The raw stored choice for a thread (validated by `chosenOrDefault` against sources.list). */
+export function useThreadSources(thread: string): [unknown, (ids: readonly string[]) => void] {
+  const raw = useStored(SOURCES_KEY);
+  const stored = React.useMemo(() => {
+    try {
+      const map: unknown = raw ? JSON.parse(raw) : {};
+      return map && typeof map === "object" ? (map as Record<string, unknown>)[thread] : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [raw, thread]);
+  const set = React.useCallback((ids: readonly string[]) => rememberThreadSources(thread, ids), [thread]);
+  return [stored, set];
+}
+
+export function rememberThreadSources(thread: string, ids: readonly string[]): void {
+  let map: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(read(SOURCES_KEY) ?? "{}");
+    if (parsed && typeof parsed === "object") map = parsed as Record<string, unknown>;
+  } catch {
+    map = {};
+  }
+  write(SOURCES_KEY, JSON.stringify({ ...map, [thread]: [...ids] }));
 }

@@ -1,3 +1,4 @@
+import { ANALYTICS_COLLECTION_ENABLED, analyticsAllowed } from "./analytics-policy";
 /**
  * Fire a Google Analytics event — safely.
  *
@@ -10,7 +11,7 @@
 type TrackParams = Record<string, string | number | boolean>;
 
 export function track(event: string, params?: TrackParams): void {
-  if (typeof window === "undefined") return;
+  if (!ANALYTICS_COLLECTION_ENABLED || typeof window === "undefined" || !analyticsAllowed(window.location.pathname)) return;
   const w = window as unknown as {
     gtag?: (command: string, event: string, params?: TrackParams) => void;
   };

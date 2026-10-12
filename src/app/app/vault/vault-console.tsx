@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { VaultFileBrowser } from "@/components/ui/vault-browser";
 import {
   vaultFindAction,
   vaultUploadAction,
   vaultVerifyAction,
   type VaultState,
 } from "./actions";
-import type { VaultStatus } from "@/lib/gateway/types";
+import type { VaultStatus, MattersList } from "@/lib/gateway/types";
 
 const initial: VaultState = { phase: "idle" };
 
@@ -113,7 +114,10 @@ function Refusal({ state }: { state: Extract<VaultState, { phase: "refused" }> }
   );
 }
 
-export function VaultConsole({ initialList }: { initialList: VaultStatus | null }) {
+export function VaultConsole({ initialList, matters, mattersUnavailable }: {
+  initialList: VaultStatus | null; matters: MattersList["matters"]; mattersUnavailable: boolean;
+}) {
+  const [matterId, setMatterId] = useState("");
   const [upload, uploadAction, uploading] = useActionState(vaultUploadAction, initial);
   const [find, findAction, finding] = useActionState(vaultFindAction, initial);
   const [verify, verifyAction, verifying] = useActionState(vaultVerifyAction, initial);
@@ -122,15 +126,26 @@ export function VaultConsole({ initialList }: { initialList: VaultStatus | null 
 
   return (
     <>
+      <section aria-label="Stored documents">
+        <h3>Your stored files</h3>
+        <label htmlFor="vault-matter">Document scope</label>
+        <select id="vault-matter" className="vault-scope" value={matterId} onChange={(event) => setMatterId(event.target.value)} disabled={uploading}>
+          <option value="">Unfiled workspace documents</option>
+          {matters.map((matter) => <option key={matter.matter_id} value={matter.matter_id}>{matter.name}</option>)}
+        </select>
+        {mattersUnavailable && <p role="status" className="meta">Matters could not be loaded. Reload to choose a matter.</p>}
+        <VaultFileBrowser key={matterId} matterId={matterId || null} refreshKey={upload.phase === "uploaded" ? upload.documentId : ""} />
+      </section>
       <section aria-label="Upload">
         <h3>Add a document</h3>
         <form action={uploadAction}>
+          <input type="hidden" name="matter_id" value={matterId} />
           <label htmlFor="file">File</label>
           <input id="file" name="file" type="file" accept=".docx,.pdf,.txt,.md"
                  aria-describedby="vault-file-help" />
           <p className="meta" id="vault-file-help">
-            .docx, or a .pdf with a real text layer. A scan is refused rather than stored:
-            bytes no search can reach are not a document in a vault.
+            PDF with a text layer, DOCX, TXT or Markdown. Stored in the scope selected above.
+            Scans need OCR, which is not available yet. Original files are not archived here.
           </p>
           <label htmlFor="name">Name</label>
           <input id="name" name="name" type="text"
@@ -164,7 +179,7 @@ export function VaultConsole({ initialList }: { initialList: VaultStatus | null 
       </section>
 
       <section aria-label="Search">
-        <h3>Search</h3>
+        <h3>Search document text across this workspace</h3>
         <form action={findAction}>
           <label htmlFor="query">Words to find</label>
           <input id="query" name="query" type="text" placeholder="governing law" />

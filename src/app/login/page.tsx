@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { gateEnabled, hasSession } from "@/lib/auth/session";
+import { hasSession } from "@/lib/auth/session";
+import { sessionConfigurationIssue } from "@/lib/auth/config";
 import { LoginForm } from "./login-form";
-import "../app.css";
+import "../app/app.css";
 
 export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  if (!gateEnabled() || (await hasSession())) redirect("/app");
+  if (await hasSession()) redirect("/app");
+  const configurationIssue = sessionConfigurationIssue();
   return (
     <div className="console console-single">
       <header className="console-bar">
@@ -26,7 +28,11 @@ export default async function LoginPage() {
       <main className="console-main">
         <h2>Sign in</h2>
         <p className="lede">This console is not public.</p>
-        <LoginForm />
+        {configurationIssue ? (
+          <p role="status">{configurationIssue}</p>
+        ) : (
+          <LoginForm />
+        )}
       </main>
     </div>
   );

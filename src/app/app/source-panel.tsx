@@ -38,10 +38,17 @@ export function SourcePanel({
   docked: boolean;
   onClose: () => void;
 }) {
+  const panelRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    if (!source || !docked) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panelRef.current?.focus();
+    return () => { opener?.focus(); };
+  }, [source, docked]);
   if (docked) {
     if (!source) return null;
     return (
-      <aside
+      <aside ref={panelRef} tabIndex={-1} onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}
         aria-label="Source"
         className="sticky top-0 flex h-dvh w-[440px] flex-none flex-col border-l border-line bg-ground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-4 motion-safe:duration-200"
       >
@@ -102,6 +109,10 @@ function useReads(citations: readonly EnvelopeCitation[], conversationId: string
     for (const c of citations) {
       citationAction({ citationId: c.id, conversationId }).then((s) => {
         if (live) setReads((r) => ({ ...r, [c.id]: s }));
+      }).catch(() => {
+        if (live) setReads((r) => ({ ...r, [c.id]: { phase: "failed", error: {
+          kind: "transport_error", route: "/v2/citation", message: "The source re-read was interrupted.",
+        } } }));
       });
     }
     return () => {
@@ -308,33 +319,22 @@ function Evidence({ citation }: { citation: EnvelopeCitation }) {
     }
   }
   return (
-    <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-line pt-3 font-mono text-caption text-fg-2">
-      <dt className="text-fg-3">provision</dt>
-      <dd>
-        {citation.instrument}, {citation.provision}
-      </dd>
-      <dt className="text-fg-3">in force from</dt>
-      <dd>{citation.in_force_from ?? "not recorded"}</dd>
-      <dt className="text-fg-3">fetched</dt>
-      <dd>{citation.fetched_at}</dd>
-      <dt className="text-fg-3">sha256</dt>
-      <dd className="flex min-w-0 items-center gap-1">
-        <span className="truncate" title={citation.sha256}>
-          {citation.sha256 ? `${citation.sha256.slice(0, 16)}…` : "not recorded"}
-        </span>
-        {citation.sha256 ? (
-          <button
-            type="button"
-            onClick={copy}
-            className="grid size-8 flex-none place-items-center rounded-chip text-fg-2 hover:bg-wash-2 hover:text-fg"
-            aria-label={copied ? "Copied" : "Copy the full sha256"}
-          >
-            {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-          </button>
-        ) : null}
-      </dd>
-      <dt className="text-fg-3">file</dt>
-      <dd className="truncate">{citation.source}</dd>
-    </dl>
+    <div className="mt-3 border-t border-line pt-3">
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-caption text-fg-2">
+        <dt className="text-fg-3">provision</dt><dd>{citation.instrument}, {citation.provision}</dd>
+        <dt className="text-fg-3">in force from</dt><dd>{citation.in_force_from ?? "not recorded"}</dd>
+      </dl>
+      <details className="mt-2 text-caption text-fg-2">
+        <summary className="min-h-11 cursor-pointer content-center">Verification details</summary>
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 pb-2 font-mono">
+          <dt className="text-fg-3">fetched</dt><dd className="break-all">{citation.fetched_at}</dd>
+          <dt className="text-fg-3">sha256</dt>
+          <dd className="flex min-w-0 items-center gap-1"><span className="truncate" title={citation.sha256}>{citation.sha256 ? `${citation.sha256.slice(0, 16)}…` : "not recorded"}</span>
+            {citation.sha256 ? <button type="button" onClick={copy} className="grid size-11 flex-none place-items-center rounded-chip text-fg-2 hover:bg-wash-2 hover:text-fg" aria-label={copied ? "Copied" : "Copy the full sha256"}>{copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}</button> : null}
+          </dd>
+          <dt className="text-fg-3">file</dt><dd className="break-all">{citation.source}</dd>
+        </dl>
+      </details>
+    </div>
   );
 }

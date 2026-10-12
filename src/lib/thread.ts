@@ -6,7 +6,7 @@
  * parsed from the served prose, so the same provision cited by two sentences shows as one
  * numbered source instead of two.
  */
-import type { CitedSentence, EnvelopeCitation, EnvelopeStatus, SourcesReport } from "./gateway/types";
+import type { CitedSentence, EnvelopeCitation, EnvelopeStatus, SourceReport } from "./gateway/types";
 
 export interface ThreadSource {
   /** 1-based number shown on the citation chip and in the source list. */
@@ -294,7 +294,7 @@ export interface SearchedSummary {
  * consulted and found nothing is not the same as one that was never consulted, and the words
  * have to keep them apart — collapsing them would read silence as a finding.
  */
-export function searchedSummary(report: SourcesReport): SearchedSummary {
+export function searchedSummary(report: SourceReport): SearchedSummary {
   const label = (id: string) => SOURCE_LABEL[id] ?? id;
   const searched: SearchedLine[] = [];
   const notSearched: SearchedLine[] = [];
@@ -302,8 +302,11 @@ export function searchedSummary(report: SourcesReport): SearchedSummary {
     if (r.outcome === "NOT_SEARCHED") {
       notSearched.push({ id: r.id, text: r.reason ? `${label(r.id)} — ${r.reason}` : label(r.id) });
     } else {
-      const detail =
-        r.outcome === "SEARCHED_HITS" ? `${r.hits} passage${r.hits === 1 ? "" : "s"}` : "nothing matched";
+      const detail = r.outcome === "SEARCHED_EMPTY"
+        ? "nothing matched"
+        : r.hits === undefined
+          ? "matches found"
+          : `${r.hits} passage${r.hits === 1 ? "" : "s"}`;
       searched.push({ id: r.id, text: `${label(r.id)} — ${detail}` });
     }
   }

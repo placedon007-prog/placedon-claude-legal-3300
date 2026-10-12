@@ -1,0 +1,55 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { HttpGateway } from "../src/lib/gateway/http";
+
+const request = { text: "What can be answered?", requestId: "transport-test-1" };
+
+test("a body stream failure is returned as transport failure, never thrown or an abstention", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(new ReadableStream({
+    start(controller) { controller.error(new Error("socket closed")); },
+  }));
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key").conversationSend(request);
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("Interrupted body cannot be an answer");
+    assert.equal(result.error.kind, "transport_error");
+    assert.equal(result.error.route, "/v2/conversation/send");
+    assert.ok(!result.error.message.includes("socket closed"), "internal transport details are not leaked");
+  } finally { globalThis.fetch = original; }
+});
+
+test("the deadline still aborts a stalled response after headers have arrived", { timeout: 2000 }, async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, init) => new Response(new ReadableStream({
+    start(controller) {
+      init?.signal?.addEventListener("abort", () => controller.error(new DOMException("deadline", "AbortError")), { once: true });
+    },
+  }));
+  try {
+    const pending = new HttpGateway("http://localhost:8021", "fixture-key").conversationSend(request);
+    await Promise.resolve(); // fetch headers resolve; body remains open
+    t.mock.timers.tick(120_000);
+    const result = await pending;
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("A stalled body cannot be an answer");
+    assert.equal(result.error.kind, "timeout");
+  } finally { globalThis.fetch = original; }
+});
+
+test("a fully consumed response clears its deadline", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const original = globalThis.fetch;
+  let signal: AbortSignal | null | undefined;
+  globalThis.fetch = async (_url, init) => {
+    signal = init?.signal;
+    return new Response(JSON.stringify({ conversation_id: "thread", message_id: "message", envelope: null }));
+  };
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key").conversationSend(request);
+    assert.equal(result.ok, true);
+    t.mock.timers.tick(120_000);
+    assert.equal(signal?.aborted, false);
+  } finally { globalThis.fetch = original; }
+});
