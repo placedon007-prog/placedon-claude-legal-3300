@@ -14,7 +14,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
-import { CalendarPlus, Check, Copy, History, PenLine } from "lucide-react";
+import { CalendarPlus, Check, Copy, GitBranch, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
@@ -36,6 +36,21 @@ const BODY_STATUS: Record<string, string> = {
   NEED_FACT: "a fact is missing",
   NOT_ENGAGED: "not engaged by this question",
 };
+
+const TRACE_SOURCE_NAMES: Record<string, string> = {
+  held: "Companies Act 2013",
+  vault: "Wall System",
+  aws_sc_judgments: "Supreme Court judgments",
+  aws_hc_judgments: "High Court judgments",
+  sebi: "SEBI",
+  bse: "BSE",
+  nse: "NSE",
+  rbi: "Reserve Bank of India",
+  data_gov_in: "data.gov.in",
+  egazette: "eGazette",
+  indiankanoon: "Indian Kanoon",
+};
+const traceSourceName = (id: string) => TRACE_SOURCE_NAMES[id] ?? id;
 
 /** "a b c." → "a b " and "c." — the head keeps its trailing space. */
 const lead = (t: string) => t.replace(/\S+$/, "");
@@ -102,7 +117,130 @@ export function TurnView({
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
           sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
+      <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
+  );
+}
+
+/** A compact, inspectable trace of the stages represented by this turn's actual records. */
+function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void }) {
+  const state = turn.state;
+  const envelope = state?.phase === "answered" ? state.envelope : null;
+  const report = state?.phase === "answered" ? state.sources : undefined;
+  const citationGroups = envelope
+    ? linkCitations(parseAnswer(envelope.text_blocks[0]?.text ?? "").sentences, envelope.citations).groups
+    : [];
+  const picked = report?.picked ?? turn.request?.sources;
+  const hasScope = Boolean(report || turn.request);
+  const files = envelope?.files ?? [];
+  const fileCount = turn.request?.fileIds.length ?? files.length;
+
+  const questionStatus = state === null ? "Sending" : state.phase === "invalid" ? "Not sent" : "Recorded";
+  const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
+  const searchStatus = report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
+  const evidenceStatus = envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
+  const answerStatus = state === null
+    ? "Sending"
+    : state.phase === "answered"
+      ? statusLabel(envelopeKind(state.envelope.status))
+      : state.phase === "queued"
+        ? statusLabel("queued")
+        : state.phase === "failed"
+          ? statusLabel("failed")
+          : state.phase === "refused"
+            ? `Declined · ${state.code}`
+            : state.message;
+
+  const searchDetails = report
+    ? report.report.map((item) => {
+        const name = traceSourceName(item.id);
+        if (item.outcome === "SEARCHED_EMPTY") return `${name}: searched; no matches`;
+        if (item.outcome === "NOT_SEARCHED") return `${name}: not searched${item.reason ? ` — ${item.reason}` : ""}`;
+        const count = item.hits === undefined ? "" : `; ${item.hits} match${item.hits === 1 ? "" : "es"}`;
+        return `${name}: searched${count}`;
+      }).join(" · ") || "The gateway returned an empty source report."
+    : envelope?.searched
+      ? `${envelope.searched.bodies.map((body) => `${traceSourceName(body.id)}: ${body.read ? "read" : "not read"}${body.note ? ` — ${body.note}` : ""}`).join(" · ") || "No legal bodies are listed."} · As of ${envelope.searched.as_of}${envelope.searched.defaulted ? " · source scope defaulted" : ""}`
+      : state?.phase === "failed"
+        ? "No response was received. The backend may have accepted the request; recover the same request before sending another."
+        : state?.phase === "queued"
+          ? "Search outcomes will appear when the queued answer arrives."
+          : "Search outcomes were not included in this turn record.";
+
+  const scopeDetails = hasScope
+    ? [
+        picked ? `Selected sources: ${picked.length ? picked.map(traceSourceName).join(", ") : "none recorded"}` : "Selected sources: not recorded",
+        turn.request ? `Matter: ${turn.request.matterId ? "filed matter (name not recorded on this turn)" : "unfiled workspace"}` : "Matter: not recorded on this saved turn",
+        `Files selected: ${fileCount}`,
+        turn.request ? `Task: ${turn.request.tool === "draft" ? "draft" : "research"}` : null,
+      ].filter(Boolean).join(" · ")
+    : "This saved turn does not include its original source, file, or matter selection.";
+
+  const fileDetails = files.length
+    ? files.map((file) => `${file.name}: ${file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}${file.reason ? ` — ${file.reason}` : ""}`).join(" · ")
+    : fileCount > 0
+      ? `${fileCount} file${fileCount === 1 ? " was" : "s were"} selected; per-file processing results are not available yet.`
+      : "No file processing result is recorded for this turn.";
+
+  const citationDetails = envelope
+    ? envelope.citations.length
+      ? Array.from(new Set(envelope.citations.map((citation) => `${citation.instrument}${citation.provision ? `, ${citation.provision}` : ""}`))).join(" · ")
+      : "The answer returned no citations. A source search alone does not show that evidence supported the answer."
+    : state?.phase === "queued"
+      ? "Citations are not available until the queued response arrives."
+      : state?.phase === "failed"
+        ? "No response arrived, so citation results are unknown."
+        : "Citation details are not available for this turn.";
+
+  const evidenceDetail = (
+    <div className="space-y-2">
+      <p>{citationDetails} {fileDetails}</p>
+      {state?.phase === "answered" && citationGroups.length > 0 ? (
+        <ul className="flex flex-wrap gap-2" aria-label="Open cited evidence">
+          {citationGroups.map((group) => (
+            <li key={group.n}>
+              <button type="button" onClick={() => onOpenSource(group, null, state.conversationId)}
+                className="min-h-11 rounded-chip border border-line-control px-3 text-caption font-medium text-fg hover:bg-wash-2">
+                {group.section ? `Open Section ${group.section}` : `Open ${group.label}`}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <details className="answer-path rounded-card border border-line">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-card px-3 py-2 text-ui text-fg-2 hover:bg-wash">
+        <GitBranch className="size-4 flex-none" aria-hidden />
+        <span className="font-medium text-fg">How this answer was built</span>
+        <span className="ml-auto text-caption text-fg-3">Inspect the trace</span>
+      </summary>
+      <ol className="grid gap-2 border-t border-line p-3 sm:grid-cols-2">
+        <TraceStage number="1" title="Question" status={questionStatus} detail={state?.phase === "failed" ? "The connection failed. The request may still be running; recover the same request before sending another." : "The question text is the input recorded for this conversation turn."} />
+        <TraceStage number="2" title="Scope" status={scopeStatus} detail={scopeDetails} />
+        <TraceStage number="3" title="Search" status={searchStatus} detail={searchDetails} />
+        <TraceStage number="4" title="Evidence" status={evidenceStatus} detail={evidenceDetail} />
+        <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for the gateway response."} />
+      </ol>
+      <p className="border-t border-line px-3 py-2 text-caption text-fg-3">This trace shows recorded workflow data. It does not prove that every searched source was used or that an answer is legally correct.</p>
+    </details>
+  );
+}
+
+function TraceStage({ number, title, status, detail }: { number: string; title: string; status: string; detail: React.ReactNode }) {
+  return (
+    <li className="min-w-0 rounded-card border border-line bg-ground">
+      <details>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-ui">
+          <span aria-hidden="true" className="grid size-6 flex-none place-items-center rounded-full border border-line-control font-mono text-caption">{number}</span>
+          <span className="font-medium text-fg">{title}</span>
+          <span className="ml-auto min-w-0 truncate text-right text-caption text-fg-3">{status}</span>
+        </summary>
+        <div className="break-words px-3 pb-3 text-caption leading-5 text-fg-2">{detail}</div>
+      </details>
+    </li>
   );
 }
 
