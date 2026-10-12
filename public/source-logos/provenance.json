@@ -1,5 +1,5 @@
 {
-  "usage": "Source identification in local product preview; no partnership claim. High Courts artwork identifies eCourts service, not a single court.",
+  "usage": "Source identification in a product preview; no partnership claim. The High Court mark identifies the eCourts collection, not a single court. Confirm brand and State Emblem usage before commercial release.",
   "assets": [
     {
       "file": "sebi.png",
@@ -14,10 +14,22 @@
       "sha256": "2c98eb6e3a0d6c2cda4fb6cb04973658760192462bc9ba16d696699c594580b8"
     },
     {
-      "file": "high-courts.png",
-      "source": "https://ecourts.gov.in/ecourts2.0/images/highcourt.png",
-      "retrieved": "2026-10-11",
-      "sha256": "d683978a9325894b9f1aac391c92479e7cd732985c3c7fa109cd05ed35d65100"
+      "file": "ecourts.png",
+      "source": "https://ecourts.gov.in/ecourts2.0/images/ecourts1-logo.png",
+      "retrieved": "2026-10-12",
+      "sha256": "4be0deeb5a19b9f773d6024efd00292b8614284076d3c2a1e9317d9c7e89ddd3"
+    },
+    {
+      "file": "india-code.png",
+      "source": "https://ecourts.gov.in/ecourts2.0/images/Indiacode.png",
+      "retrieved": "2026-10-12",
+      "sha256": "7e02a25633bf5751b163f355b3542717f43ec3c509c040f3f8955027dbe95072"
+    },
+    {
+      "file": "bse.png",
+      "source": "https://www.bseindia.com/assets/includenew/images/bselogo.png",
+      "retrieved": "2026-10-12",
+      "sha256": "4a5c86619f54fb294e238f8fe1209ae3425f786f5c18c58f5a02454dc7b05f1f"
     }
   ]
 }

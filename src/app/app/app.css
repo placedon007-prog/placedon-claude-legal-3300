@@ -567,7 +567,7 @@
 
 /* Official provider artwork retains its own colours and proportions. */
 .source-identity-brand { border: 0; background: transparent; border-radius: 0; }
-.source-provider-logo { width: 36px; height: 36px; object-fit: contain; }
+.source-provider-logo { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
 .source-picker-row[data-selected="true"] .source-identity-brand { transform: none; }
 .source-vault-browse { display: flex; align-items: center; gap: 10px; width: calc(100% - 16px); margin: 4px 8px 0; min-height: 44px; padding: 8px 12px; border-radius: 6px; font-size: var(--text-ui); text-align: left; }
 .source-vault-browse > span:last-child { margin-left: auto; color: var(--c-fg-3); font-size: var(--text-caption); }

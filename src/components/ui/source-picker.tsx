@@ -9,13 +9,19 @@ import { statusLine } from "@/lib/sources";
 
 const INDIA_SOURCE_IDS = new Set(["held", "aws_sc_judgments", "aws_hc_judgments", "sebi", "bse", "data_gov_in", "egazette", "indiankanoon", "nse", "rbi"]);
 const SOURCE_MARKS: Record<string, string> = {
-  held: "ACT", aws_sc_judgments: "SC", aws_hc_judgments: "HC", sebi: "SEBI",
   bse: "BSE", data_gov_in: "DATA", egazette: "GZ", indiankanoon: "IK", nse: "NSE", rbi: "RBI",
 };
+const SOURCE_LOGOS: Record<string, { name: string; width: number; height: number }> = {
+  held: { name: "india-code.png", width: 72, height: 26 },
+  aws_hc_judgments: { name: "ecourts.png", width: 36, height: 36 },
+  aws_sc_judgments: { name: "supreme-court.png", width: 36, height: 36 },
+  sebi: { name: "sebi.png", width: 48, height: 24 },
+  bse: { name: "bse.png", width: 48, height: 30 },
+};
 const SOURCE_COPY: Record<string, { label: string; note: string }> = {
-  held: { label: "Companies Act 2013", note: "Held corpus · exact passages" },
-  aws_hc_judgments: { label: "High Court judgments", note: "eCourts collection · AWS / Dattam Labs" },
-  aws_sc_judgments: { label: "Supreme Court judgments", note: "AWS Open Data · Dattam Labs" },
+  held: { label: "Companies Act 2013", note: "India Code · held corpus · exact passages" },
+  aws_hc_judgments: { label: "High Court judgments", note: "eCourts collection · Dattam Labs / AWS" },
+  aws_sc_judgments: { label: "Supreme Court judgments", note: "eCourts collection · Dattam Labs / AWS" },
   sebi: { label: "SEBI", note: "Securities and Exchange Board of India" },
   vault: { label: "Wall System", note: "Your stored documents · supporting material" },
 };
@@ -33,18 +39,17 @@ function IndiaFlag({ decorative = false }: { decorative?: boolean }) {
 
 function SourceMark({ body }: { body: SourceBody }) {
   if (body.id === "vault") return <span className="source-identity source-identity-file"><FolderOpen className="size-5" aria-hidden /></span>;
-  if (body.id === "held") return <span className="source-identity" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" className="source-identity-art"><path d="M8 3.5h12l4 4V28H8zM20 3.5V8h4M11.5 12h9M11.5 16h9M11.5 20h5" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round" strokeLinecap="round"/><text x="16" y="26" textAnchor="middle" fontSize="5" fontWeight="700" fill="currentColor">2013</text></svg></span>;
-  const logo = ({ aws_hc_judgments: "high-courts.png", aws_sc_judgments: "supreme-court.png", sebi: "sebi.png" } as Record<string, string>)[body.id];
-  if (logo) return <SourceLogo name={logo} />;
+  const logo = SOURCE_LOGOS[body.id];
+  if (logo) return <SourceLogo {...logo} />;
   const letters = SOURCE_MARKS[body.id];
   if (letters) return <span className="source-identity" aria-hidden="true">{letters}</span>;
   return <span className="source-identity source-identity-file"><Library className="size-5" aria-hidden /></span>;
 }
 
-function SourceLogo({ name }: { name: string }) {
+function SourceLogo({ name, width, height }: { name: string; width: number; height: number }) {
   const [failed, setFailed] = React.useState(false);
-  return <span className="source-identity source-identity-brand" aria-hidden="true">
-    {failed ? <Library className="size-5" /> : <Image src={`/source-logos/${name}`} alt="" width={36} height={36} unoptimized
+  return <span className="source-identity source-identity-brand" style={{ width: Math.max(36, width), height: 40 }} aria-hidden="true">
+    {failed ? <Library className="size-5" /> : <Image src={`/source-logos/${name}`} alt="" width={width} height={height} unoptimized
       className="source-provider-logo" onError={() => setFailed(true)} />}
   </span>;
 }

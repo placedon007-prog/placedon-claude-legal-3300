@@ -34,9 +34,19 @@ try {
  check(await files.evaluate(el => el === document.activeElement), 'closing Vault restores focus to Files');
  await page.getByRole('button', {name: /sources — choose what is searched/}).click();
  check(await page.getByRole('switch', {name: /Wall System/}).getAttribute('aria-checked') === 'true', 'adding stored files selects the Vault source');
- await page.waitForFunction(() => [...document.querySelectorAll('.source-provider-logo')].length === 3 && [...document.querySelectorAll('.source-provider-logo')].every(el => el.complete && el.naturalWidth > 0));
- check(await page.locator('.source-provider-logo').evaluateAll(els => els.length === 3 && els.every(el => el.complete && el.naturalWidth > 0 && new URL(el.src).origin === location.origin)), 'all three official provider assets load locally');
+ await page.waitForFunction(() => [...document.querySelectorAll('.source-picker-group .source-provider-logo')].length === 4 && [...document.querySelectorAll('.source-picker-group .source-provider-logo')].every(el => el.complete && el.naturalWidth > 0));
+ check(await page.locator('.source-picker-group .source-provider-logo').evaluateAll(els => {
+  const names = els.map(el => new URL(el.src).pathname.split('/').pop()).sort();
+  return JSON.stringify(names) === JSON.stringify(['ecourts.png', 'india-code.png', 'sebi.png', 'supreme-court.png']) && els.every(el => el.complete && el.naturalWidth > 0 && new URL(el.src).origin === location.origin);
+ }), 'court, statute and regulator marks load locally with the expected source identities');
  await page.screenshot({ path: `${out}/official-sources-desktop.png` });
+ await page.locator('.source-picker-unavailable > summary').click();
+ const bseLogo = page.locator('.source-picker-unavailable img.source-provider-logo[src$="/source-logos/bse.png"]');
+ await bseLogo.waitFor();
+ await bseLogo.scrollIntoViewIfNeeded();
+ await page.waitForFunction(() => { const el = document.querySelector('.source-picker-unavailable img.source-provider-logo[src$="/source-logos/bse.png"]'); return el?.complete && el.naturalWidth > 0; });
+ check(await bseLogo.isVisible() && await bseLogo.evaluate(el => el.complete && el.naturalWidth > 0), 'the BSE mark stays with its unavailable source row');
+ await page.screenshot({ path: `${out}/bse-source-unavailable.png` });
  await page.getByRole('button', {name:/Choose stored files/}).click();
  await ready.waitFor(); check(await ready.getAttribute('aria-checked') === 'true', 'Sources opens the same selection without duplicates');
  await page.keyboard.press('Escape');
