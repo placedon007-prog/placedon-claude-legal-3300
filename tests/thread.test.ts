@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseAnswer } from "../src/lib/gateway/types";
-import { groupSources, statusLabel } from "../src/lib/thread";
+import { conversationSendSchema, isRefusal, parseAnswer } from "../src/lib/gateway/types";
+import { groupSources, searchedSummary, statusLabel } from "../src/lib/thread";
+import SEND_HELD_SEBI from "../src/lib/gateway/fixtures/conversation-sources.json" with { type: "json" };
+import SEND_VAULT from "../src/lib/gateway/fixtures/conversation-sources-vault.json" with { type: "json" };
 
 const PROSE = `1. Not more than fifteen months shall elapse between the date of one annual general meeting of a company and that of the next.
    — Companies Act 2013, s.96 [226:348]
@@ -174,4 +176,36 @@ test("hard wraps join; a new sub-section, proviso or footnote keeps its line", (
     "within which any annual general meeting shall be held:\nProvided that the Registrar may extend.\n(2) Every meeting shall be called.\n1[Inserted]",
   );
   assert.equal(joinWrappedLines(held).replace(/\s+/g, ""), held.replace(/\s+/g, ""), "no word changes");
+});
+
+/* ── the per-source report rides a real conversation.send, and renders Searched/Not searched ──
+ *
+ * Fixtures are RECORDED from the live in-memory gateway (backend main, 2026-10-12), never
+ * composed: conversation-sources.json picked held + SEBI; -vault.json picked the vault alone.
+ * The schema parse guards against the live shape drifting out from under the renderer. */
+
+function reportOf(fixture: unknown) {
+  const parsed = conversationSendSchema.parse(fixture);
+  assert.ok(!isRefusal(parsed), "a recorded answer is not a refusal");
+  assert.ok(parsed.sources, "conversation.send carries the per-source report");
+  return parsed.sources!;
+}
+
+test("the live held+SEBI report splits into Searched (held, hits) and Not searched (SEBI)", () => {
+  const report = reportOf(SEND_HELD_SEBI);
+  const { searched, notSearched } = searchedSummary(report);
+  assert.deepEqual(searched.map((l) => l.id), ["held"]);
+  assert.match(searched[0].text, /Companies Act 2013 \(held corpus\) — 3 passages/);
+  assert.deepEqual(notSearched.map((l) => l.id), ["sebi"]);
+  // a NOT_SEARCHED row keeps its named reason, never a bare id
+  assert.ok(notSearched[0].text.length > "sebi".length, "the not-searched reason is shown");
+});
+
+test("SEARCHED_EMPTY is grouped with Searched, never with Not searched", () => {
+  // The vault ran a search and matched nothing. That is NOT the same as a source that was
+  // never consulted, and reading it as such would turn silence into a finding.
+  const { searched, notSearched } = searchedSummary(reportOf(SEND_VAULT));
+  assert.deepEqual(searched.map((l) => l.id), ["vault"]);
+  assert.match(searched[0].text, /nothing matched/);
+  assert.equal(notSearched.length, 0);
 });

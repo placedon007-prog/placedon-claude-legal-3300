@@ -1,0 +1,89 @@
+{
+    "conversation_id": "fe1f3469-0beb-49a0-8250-8d20777de361",
+    "message_id": "ce9e8d2b-c7aa-4490-9c5a-df85e3079d16",
+    "classification": {
+        "task": "RESEARCH_QUESTION",
+        "alternatives": [
+            "EVENT_ASSESS",
+            "LAW_CHANGES"
+        ],
+        "reason": "it is shaped as a question about the law, and nothing is attached to review",
+        "decided_by": "rules",
+        "rule": "question_shape"
+    },
+    "run_id": "1cbece9c-1341-497c-8ecd-59867266766c",
+    "envelope": {
+        "schema": "answer_envelope.v1",
+        "status": "ANSWERED",
+        "task": "RESEARCH_QUESTION",
+        "as_of": "2026-10-12",
+        "text_blocks": [
+            {
+                "text": "1. The quorum for a meeting of the Board of Directors of a company shall be one-third of its total strength or two directors, whichever is higher.\n   \u2014 Companies Act 2013, s.174 [4:146]\n2. The quorum for a meeting of the Board shall be one-third of the total strength of directors, subject to a minimum of three.\n   \u2014 Companies Act 2013, s.378V [716:839]",
+                "citation_ids": [
+                    "c1",
+                    "c2"
+                ]
+            }
+        ],
+        "bodies": [
+            {
+                "body_id": "CA2013",
+                "name": "Companies Act, 2013",
+                "status": "ANSWERED",
+                "note": "held and read as at the date shown"
+            }
+        ],
+        "citations": [
+            {
+                "id": "c1",
+                "instrument": "Companies Act 2013",
+                "provision": "s.174",
+                "source": "corpus/companies_act/49100.json",
+                "fetched_at": "2026-08-18T22:17:45+00:00",
+                "sha256": "fdde6dba4e574f22d25da4f57fabfbb984289b22eef5429152fc56fd33b1fbd7",
+                "quote": "The quorum for a meeting of the Board of Directors of a\ncompany hall be one-third of its total strength or two directors, whichever is higher,"
+            },
+            {
+                "id": "c2",
+                "instrument": "Companies Act 2013",
+                "provision": "s.378V",
+                "source": "corpus/companies_act/52445.json",
+                "fetched_at": "2026-08-18T22:20:21+00:00",
+                "sha256": "2b8a88ef8c01561683f4a104ec1cdcbb7447a00a07b4d38068ee911617892f21",
+                "quote": "The quorum for a meeting of the Board shall be one-third of the total strength of directors, subject\nto a minimum of three."
+            }
+        ],
+        "files": [],
+        "run_id": "1cbece9c-1341-497c-8ecd-59867266766c",
+        "trace_url": "/v2/runs/1cbece9c-1341-497c-8ecd-59867266766c/trace"
+    },
+    "sources": {
+        "picked": [
+            "held",
+            "sebi"
+        ],
+        "searched": [
+            "held"
+        ],
+        "report": [
+            {
+                "id": "held",
+                "tier": "HELD",
+                "status": "available",
+                "outcome": "SEARCHED_HITS",
+                "hits": 3,
+                "reason": ""
+            },
+            {
+                "id": "sebi",
+                "tier": "PUBLIC",
+                "status": "available",
+                "outcome": "NOT_SEARCHED",
+                "hits": 0,
+                "reason": "available, but ask searches the held corpus and your vault; use sources.search for this source"
+            }
+        ],
+        "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+    }
+}

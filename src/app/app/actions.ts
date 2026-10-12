@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse, SourceCard } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, SourceCard, SourcesReport } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { endSession, passcodeAccepted, startSession } from "@/lib/auth/session";
 import { rememberRun } from "@/lib/auth/recent-runs";
@@ -28,7 +28,11 @@ import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 export type TurnState =
   /** The gateway answered with an envelope (any status, including ABSTAINED). */
   | { readonly phase: "answered"; readonly conversationId: string; readonly envelope: Envelope;
-      readonly draftId: string | null }
+      readonly draftId: string | null;
+      /** Which picked sources were searched / searched-empty / not searched. Null when the
+       *  gateway did not return a report (e.g. a reopened thread — conversation.get does not
+       *  carry it per message). */
+      readonly sources: SourcesReport | null }
   /** The work went on the queue: the reply has not arrived, which is not an empty answer. */
   | { readonly phase: "queued"; readonly conversationId: string; readonly runId: string | null;
       readonly note: string }
@@ -93,6 +97,7 @@ export async function sendAction(input: {
     conversationId: data.conversation_id,
     envelope: data.envelope,
     draftId: data.draft_id ?? null,
+    sources: data.sources ?? null,
   };
 }
 
