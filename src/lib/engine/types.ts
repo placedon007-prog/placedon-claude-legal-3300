@@ -57,6 +57,7 @@ export const GATEWAY_ROUTES = {
   tableExport: "/v2/review-table/export",
   tableCancel: "/v2/review-table/cancel",
   draftCreate: "/v2/draft/create",
+  draftList: "/v2/draft/list",
   draftRevise: "/v2/draft/revise",
   draftVersions: "/v2/draft/versions",
   draftDiff: "/v2/draft/diff",

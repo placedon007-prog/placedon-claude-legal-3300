@@ -78,6 +78,7 @@
 
 .console a:focus-visible, .console button:focus-visible, .console [tabindex]:focus-visible,
 .console input:focus-visible, .console textarea:focus-visible, .console select:focus-visible,
+.console summary:focus-visible,
 [data-slot]:focus-visible, [data-slot] :focus-visible {
   outline: 2px solid var(--c-fg);
   outline-offset: 2px;
@@ -445,6 +446,25 @@
 .watch-cancel button:disabled { opacity: 0.5; cursor: progress; }
 
 /* ── Wall System, tables, drafts, calendar ───────────────────────────────────── */
+.drafts-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.drafts-heading h2 { margin-bottom: 0.25rem; }
+.drafts-new-link { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.drafts-empty { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--c-line); border-radius: 10px; }
+.drafts-empty h3 { margin: 0 0 0.4rem; font-size: var(--text-title); }
+.drafts-list { list-style: none; margin: 1rem 0; padding: 0; border-top: 1px solid var(--c-line); }
+.drafts-list li { border-bottom: 1px solid var(--c-line); }
+.drafts-list a { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; min-height: 76px; padding: 0.9rem 0.5rem; color: inherit; text-decoration: none; }
+.drafts-list a:hover { background: var(--c-wash); }
+.drafts-list a:focus-visible, .drafts-pagination a:focus-visible, .drafts-new-link:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }
+.drafts-row-main, .drafts-row-state { display: grid; gap: 0.25rem; }
+.drafts-row-state { text-align: right; }
+.draft-state-label { font-size: var(--text-ui); }
+.drafts-pagination { display: flex; justify-content: flex-end; margin: 1rem 0; }
+.drafts-pagination a { min-height: 44px; display: inline-flex; align-items: center; padding: 0.4rem 0.75rem; }
+.draft-details { margin-top: 1.25rem; border-top: 1px solid var(--c-line); }
+.draft-details > summary { min-height: 44px; padding: 0.75rem 0; cursor: pointer; font-size: var(--text-ui); font-weight: 600; }
+.draft-details[open] > section { margin-top: 1.15rem; }
+.draft-details > section h3 { margin-top: 0.8rem; }
 .transport-failure, .verb-refusal { margin-top: 1rem; padding: 0.9rem 1rem; }
 .transport-failure h3, .verb-refusal h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
 .conflict table { margin: 0.5rem 0; }
@@ -535,6 +555,9 @@
 .vault-table button, .grid-table button, .inline-form button { min-height: 44px; }
 
 @media (max-width: 480px) {
+  .drafts-heading, .drafts-list a { align-items: flex-start; }
+  .drafts-list a { flex-direction: column; gap: 0.35rem; }
+  .drafts-row-state { text-align: left; }
   .cell { min-width: 9rem; }
   .inline-form input { min-width: 0; flex-basis: 100%; }
 }

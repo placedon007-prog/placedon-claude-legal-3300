@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isConflict, isRefusal } from "@/lib/gateway/types";
@@ -8,6 +9,7 @@ import type {
   DraftConflict,
   DraftDiff,
   DraftExport,
+  DraftList,
   DraftStatus,
   DraftVersions,
 } from "@/lib/gateway/types";
@@ -41,21 +43,30 @@ export type ExportState =
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
+export async function readDraftList(input: { cursor?: string; limit?: number } = {}): Promise<
+  { ok: true; data: DraftList } | { ok: false; error: EngineError }
+> {
+  const gateway = await getGateway();
+  const result = await gateway.draftList(input);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
 const titleSchema = z.string().trim().min(3, "A draft needs a title.").max(200);
+const draftBodySchema = z.string().max(100_000, "Draft text must be 100000 characters or fewer.");
 
 /** Creates, then navigates to the draft. The id is the gateway's, never invented here. */
 export async function draftCreateAction(
   _prev: DraftState,
   formData: FormData,
 ): Promise<DraftState> {
-  const parsed = titleSchema.safeParse(formData.get("title"));
-  if (!parsed.success) {
-    return { phase: "invalid", message: parsed.error.issues[0].message };
-  }
+  const parsedTitle = titleSchema.safeParse(formData.get("title"));
+  const parsedBody = draftBodySchema.safeParse(String(formData.get("body") ?? ""));
+  if (!parsedTitle.success) return { phase: "invalid", message: parsedTitle.error.issues[0].message };
+  if (!parsedBody.success) return { phase: "invalid", message: parsedBody.error.issues[0].message };
   const gateway = await getGateway();
   const result = await gateway.draftCreate({
-    title: parsed.data,
-    body: String(formData.get("body") ?? ""),
+    title: parsedTitle.data,
+    body: parsedBody.data,
   });
   if (!result.ok) return { phase: "failed", error: result.error };
   redirect(`/app/drafts/${encodeURIComponent(result.data.draft_id)}`);
@@ -75,8 +86,7 @@ const reviseSchema = z.object({
   // loses the race instead of overwriting it. Never defaulted to "the latest": that is the
   // lost update this field exists to prevent.
   baseVersion: z.coerce.number().int().positive(),
-  body: z.string(),
-  approvedBy: z.string().trim().max(120).optional(),
+  body: draftBodySchema,
 });
 
 export async function draftReviseAction(
@@ -87,7 +97,6 @@ export async function draftReviseAction(
     draftId: formData.get("draft_id"),
     baseVersion: formData.get("base_version"),
     body: String(formData.get("body") ?? ""),
-    approvedBy: String(formData.get("approved_by") ?? "").trim() || undefined,
   });
   if (!parsed.success) {
     return {
@@ -105,6 +114,7 @@ export async function draftReviseAction(
   if (isRefusal(result.data)) {
     return { phase: "refused", code: result.data.code, detail: result.data.detail };
   }
+  revalidatePath(`/app/drafts/${encodeURIComponent(parsed.data.draftId)}`);
   return { phase: "saved", data: result.data };
 }
 

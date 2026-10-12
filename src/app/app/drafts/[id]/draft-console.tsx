@@ -121,19 +121,16 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
 
   return (
     <>
-      <p className="meta">
-        {draft.versions.length} version(s) · reading version {latest.version}
-        {latest.ready ? "" : " · not approvable"}
-      </p>
+      <p className="meta">Version {latest.version} · {latest.ready ? "Ready for lawyer review · not approved" : "Review required"}</p>
 
       {!latest.ready && latest.blocking.length > 0 && (
         <div role="status" className="blocking-note">
           <p>
-            Approval is blocked by: {latest.blocking.join(", ")}.
+            Review items: {latest.blocking.join(", ")}.
           </p>
           <p className="meta">
-            A slot written by a model blocks approval until a person accepts it. Accepting is
-            a save with your name on it — there is no button that clears this without one.
+            Text written by a model remains marked as a suggestion until a lawyer reviews it.
+            This prototype cannot verify a person&rsquo;s identity or record formal sign-off.
           </p>
         </div>
       )}
@@ -147,16 +144,7 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
           <input type="hidden" name="base_version" value={currentVersion} />
 
           <label htmlFor="body">Text</label>
-          <textarea id="body" name="body" rows={8} defaultValue={latest.body} />
-
-          <label htmlFor="approved_by">Approve as (optional)</label>
-          <input id="approved_by" name="approved_by" type="text"
-                 placeholder="your name, to accept the suggestions and approve"
-                 aria-describedby="approve-help" />
-          <p className="meta" id="approve-help">
-            Leaving this blank saves a new version without approving it. Filling it accepts
-            the model&rsquo;s slots and records who accepted them.
-          </p>
+          <textarea id="body" name="body" rows={12} defaultValue={latest.body} />
 
           <button type="submit" disabled={saving} className="primary">
             {saving ? "Saving…" : `Save as version ${currentVersion + 1}`}
@@ -217,30 +205,29 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
         )}
       </section>
 
-      <section aria-label="Provenance">
-        <h3>Where version {latest.version} came from</h3>
-        <Slots version={latest} />
-      </section>
+      <details className="draft-details">
+        <summary>Review details · provenance, versions, compare and export</summary>
+        <section aria-label="Provenance">
+          <h3>Where version {latest.version} came from</h3>
+          <Slots version={latest} />
+        </section>
 
-      <section aria-label="Versions">
-        <h3>Versions</h3>
-        <ol className="version-list">
-          {draft.versions.map((v) => (
-            <li key={v.version}>
-              <p>
-                Version {v.version}
-                {v.approved ? ` — approved by ${v.approved_by}` : " — not approved"}
-              </p>
-              <p className="meta">{v.created_at}</p>
-              {v.blocking.length > 0 && (
-                <p className="meta">blocked by {v.blocking.join(", ")}</p>
-              )}
-            </li>
-          ))}
-        </ol>
-      </section>
+        <section aria-label="Versions">
+          <h3>Version history</h3>
+          <ol className="version-list">
+            {draft.versions.map((v) => (
+              <li key={v.version}>
+                <p>Version {v.version}{v.approved
+                  ? ` — recorded name supplied earlier: ${v.approved_by ?? "unknown"} · identity not verified`
+                  : " — not approved"}</p>
+                <p className="meta">{v.created_at}</p>
+                {v.blocking.length > 0 && <p className="meta">Review items: {v.blocking.join(", ")}</p>}
+              </li>
+            ))}
+          </ol>
+        </section>
 
-      <section aria-label="Compare">
+        <section aria-label="Compare">
         <h3>Compare two versions</h3>
         <form action={diffAction} className="inline-form">
           <input type="hidden" name="draft_id" value={draft.draft_id} />
@@ -274,9 +261,9 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
             {diff.data.note && <p className="meta">{diff.data.note}</p>}
           </div>
         )}
-      </section>
+        </section>
 
-      <section aria-label="Export">
+        <section aria-label="Export">
         <h3>Export</h3>
         <form action={exportAction} className="inline-form">
           <input type="hidden" name="draft_id" value={draft.draft_id} />
@@ -298,7 +285,8 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
             <p className="meta">{exported.data.note}</p>
           </div>
         )}
-      </section>
+        </section>
+      </details>
 
       <p className="meta hosting-note">
         playbook_status DRAFT — the templates behind this draft are not lawyer approved.

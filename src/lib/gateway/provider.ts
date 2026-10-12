@@ -8,6 +8,7 @@ import type {
   DocumentResponse,
   DraftDiff,
   DraftExport,
+  DraftList,
   DraftRevise,
   DraftStatus,
   DraftVersions,
@@ -150,6 +151,7 @@ export interface GatewayProvider {
     body?: string;
     kind?: string;
   }): Promise<EngineResult<DraftStatus>>;
+  draftList(input?: { cursor?: string; limit?: number }): Promise<EngineResult<DraftList>>;
   /**
    * Save a NEW version; never edits one. `baseVersion` is REQUIRED by the backend -- it is
    * the version this revision was based on, and if it is not the latest the save is refused
@@ -160,7 +162,6 @@ export interface GatewayProvider {
     baseVersion: number;
     title?: string;
     body?: string;
-    approvedBy?: string;
   }): Promise<EngineResult<DraftRevise>>;
   draftVersions(input: { draftId: string }): Promise<EngineResult<DraftVersions>>;
   draftDiff(input: {

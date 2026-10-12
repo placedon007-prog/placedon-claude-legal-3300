@@ -53,3 +53,24 @@ test("a fully consumed response clears its deadline", async (t) => {
     assert.equal(signal?.aborted, false);
   } finally { globalThis.fetch = original; }
 });
+
+test("draft inbox uses the generated tenant-scoped route and requests metadata only", async () => {
+  const original = globalThis.fetch;
+  let calledUrl = "";
+  let calledBody = "";
+  globalThis.fetch = async (url, init) => {
+    calledUrl = String(url);
+    calledBody = String(init?.body ?? "");
+    return new Response(JSON.stringify({
+      drafts: [], next_cursor: null, scope: "tenant", note: "metadata only",
+    }));
+  };
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key")
+      .draftList({ cursor: "opaque-cursor", limit: 12 });
+    assert.ok(result.ok);
+    assert.equal(calledUrl, "http://localhost:8021/v2/draft/list");
+    assert.deepEqual(JSON.parse(calledBody), { cursor: "opaque-cursor", limit: "12" });
+    assert.ok(result.data.drafts.length === 0);
+  } finally { globalThis.fetch = original; }
+});

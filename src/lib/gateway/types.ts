@@ -609,6 +609,25 @@ export const draftStatusSchema = z.object({
 });
 export type DraftStatus = z.infer<typeof draftStatusSchema>;
 
+export const draftSummarySchema = z.object({
+  draft_id: z.string(),
+  title: z.string(),
+  kind: z.string(),
+  updated_at: z.string(),
+  version: z.number().int().positive(),
+  blocking_count: z.number().int().nonnegative(),
+  approved: z.boolean(),
+});
+export type DraftSummary = z.infer<typeof draftSummarySchema>;
+
+export const draftListSchema = z.object({
+  drafts: z.array(draftSummarySchema),
+  next_cursor: z.string().nullable(),
+  scope: z.literal("tenant"),
+  note: z.string(),
+});
+export type DraftList = z.infer<typeof draftListSchema>;
+
 /**
  * A1's optimistic lock, as it arrives: HTTP **200** with `status: "REFUSED"`, carrying BOTH
  * versions. It is a product state, not a transport failure, and the screen shows both
