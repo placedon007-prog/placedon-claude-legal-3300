@@ -16,10 +16,12 @@ try {
   await page.goto(`${origin}/app`);
   await page.getByRole("combobox", { name: "Your question" }).waitFor();
   await page.getByText("Demo · recorded examples", { exact: false }).waitFor();
+  check(await page.getByText("Unfiled workspace", { exact: true }).count() === 1, "new conversation does not imply a private personal workspace");
   const input = page.getByRole("combobox", { name: "Your question" });
   check(await input.getAttribute("maxlength") === "8000", "prompt supports 8000 characters");
   await page.screenshot({ path: `${artifacts}/conversation-welcome-desktop.png`, fullPage: true });
   await page.getByRole("button", { name: "2 sources — choose what is searched" }).click();
+  check(await page.getByText(/Unsent choices are remembered in this browser/, { exact: false }).count() === 1, "source picker explains local persistence for unsent choices");
   const law = page.getByRole("switch", { name: /Companies Act.*held corpus/ });
   const documents = page.getByRole("switch", { name: /Your documents.*vault/ });
   await law.click();

@@ -37,10 +37,11 @@ async function lookupDocuments(query: string): Promise<DocumentLookup> {
 }
 
 export function AskWorkspace({ initialConversationId, initialTurns, initialMatterId = null,
-  title = "New conversation", demo = false, initialHistory = null, loadProblem, composer: initialContext,
+  title = "New conversation", demo = false, sharedPasscode = false, initialHistory = null, loadProblem, composer: initialContext,
 }: {
   initialHistory?: MatterHistory | null;
   demo?: boolean;
+  sharedPasscode?: boolean;
   initialConversationId: string | null;
   initialTurns: readonly Turn[];
   initialMatterId?: string | null;
@@ -182,7 +183,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex min-h-18 flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 md:px-8">
         <div className="min-w-0 basis-full min-[480px]:flex-1 min-[480px]:basis-auto">
-          <p className="flex items-center gap-1.5 whitespace-nowrap text-caption text-fg-3"><Briefcase className="size-3.5" aria-hidden />{activeMatter?.name ?? (matterId ? "Filed matter" : "Personal workspace")}{conversationId ? <span>· Saved</span> : null}</p>
+          <p className="flex items-center gap-1.5 whitespace-nowrap text-caption text-fg-3"><Briefcase className="size-3.5" aria-hidden />{activeMatter?.name ?? (matterId ? "Filed matter" : "Unfiled workspace")}{conversationId ? <span>· Saved</span> : null}</p>
           <h1 className="mt-0.5 truncate text-body font-medium text-fg">{empty ? "New conversation" : title === "New conversation" ? turns[0]?.question : title}</h1>
         </div>
         <MatterHistoryMenu key={matterId ?? "unfiled"} matterId={matterId} initialHistory={initialHistory} />
@@ -190,6 +191,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         {!empty ? <a href="/app" className="flex min-h-11 items-center gap-2 rounded-chip border border-line-control px-3 text-ui text-fg"><Plus className="size-4" aria-hidden /><span>New</span></a> : null}
       </header>
       {demo ? <p role="note" className="border-b border-line bg-wash px-5 py-2 text-caption text-fg-2 md:px-8">Demo · recorded examples in a synthetic workspace. No live legal research or client data.</p> : null}
+      {sharedPasscode ? <p role="note" className="border-b border-line bg-wash px-5 py-2 text-caption text-fg-2 md:px-8">Shared passcode · this session does not identify individual lawyers or enforce matter membership. Do not upload client-confidential files.</p> : null}
       {empty ? <div className="flex flex-1 flex-col items-center justify-center gap-7 px-4 pt-12 pb-[12vh]">
         {loadProblem ? <p role="status" className="max-w-[560px] rounded-card border border-line-2 bg-wash px-4 py-3 text-body text-fg-2">{loadProblem}</p> : null}
         <Welcome />
