@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ChevronDown, FileText, FolderOpen, Library, X } from "lucide-react";
+import { ChevronDown, FileText, FolderOpen, Library, LoaderCircle, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { statusLine } from "@/lib/sources";
@@ -57,18 +57,22 @@ function SourceLogo({ name, width, height }: { name: string; width: number; heig
   </span>;
 }
 
-export function SourcesChip({ bodies, integrations, failed, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
+export function SourcesChip({ bodies, integrations, failed, refreshing = false, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
   bodies: readonly SourceBody[];
   integrations: readonly SourceIntegration[];
   failed: boolean;
+  refreshing?: boolean;
   chosen: readonly string[];
   onToggle: (id: string) => void;
   onRetry?: () => void;
   onBrowseFiles?: () => void;
   fileCount?: number;
-  triggerRef?: React.Ref<HTMLButtonElement>;
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }) {
   const browsing = React.useRef(false);
+  const focusTriggerAfterRetry = React.useRef(false);
+  const retryButtonRef = React.useRef<HTMLButtonElement>(null);
+  const wasRefreshing = React.useRef(false);
   const [open, setOpen] = React.useState(false);
   const [motion, setMotion] = React.useState<"pointer" | "keyboard">("keyboard");
   const titleId = React.useId();
@@ -82,9 +86,33 @@ export function SourcesChip({ bodies, integrations, failed, chosen, onToggle, on
   const indiaSelected = chosen.some((id) => INDIA_SOURCE_IDS.has(id));
   const inputEvents = { onPointerDownCapture: () => setMotion("pointer"), onKeyDownCapture: () => setMotion("keyboard") };
 
-  if (failed) return <span role="status" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-fg px-3 text-ui text-fg">
-    <Library className="size-4" aria-hidden /> Sources did not load
-    {onRetry ? <button type="button" onClick={onRetry} className="min-h-11 rounded-chip px-2 underline underline-offset-2">Retry sources</button> : null}
+  React.useEffect(() => {
+    if (refreshing) {
+      wasRefreshing.current = true;
+      return;
+    }
+    if (!wasRefreshing.current) return;
+    wasRefreshing.current = false;
+    if (!focusTriggerAfterRetry.current) return;
+    focusTriggerAfterRetry.current = false;
+    // A retry may take long enough for the user to move on. Restore focus only when
+    // disabling/removing the retry control left focus on the document itself.
+    const active = document.activeElement;
+    const focusWasLost = active === document.body || active === document.documentElement;
+    if (!focusWasLost) return;
+    if (failed) retryButtonRef.current?.focus();
+    else triggerRef?.current?.focus();
+  }, [failed, refreshing, triggerRef]);
+
+  if (failed) return <span role="status" aria-live="polite" aria-busy={refreshing} className="inline-flex min-h-11 flex-wrap items-center gap-1.5 rounded-full border border-dashed border-fg px-3 text-ui text-fg">
+    {refreshing ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Library className="size-4" aria-hidden />}
+    {refreshing ? "Checking source availability…" : "Sources could not be loaded."}
+    {onRetry ? <button ref={retryButtonRef} type="button" disabled={refreshing} onClick={(event) => {
+      focusTriggerAfterRetry.current = document.activeElement === event.currentTarget;
+      void onRetry();
+    }} className="min-h-11 rounded-chip px-2 underline underline-offset-2 disabled:cursor-wait disabled:opacity-60">
+      {refreshing ? "Checking…" : "Retry sources"}
+    </button> : null}
   </span>;
 
   const renderRow = (body: SourceBody) => <SourceRow key={body.id} body={body} selected={chosen.includes(body.id)} last={n === 1 && chosen.includes(body.id)} constraintId={constraintId} onToggle={() => onToggle(body.id)} />;

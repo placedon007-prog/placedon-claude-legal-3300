@@ -547,13 +547,26 @@ export type ComposerContext = {
 /** What the composer needs before the first keystroke. Read on the server, never the client. */
 export async function loadComposerContext(): Promise<ComposerContext> {
   if (!(await hasSession())) return { sources: { phase: "failed", kind: "session" }, matters: [] };
-  const gateway = await getGateway();
-  const [sources, matters] = await Promise.all([gateway.sourcesList(), gateway.mattersList()]);
+  let gateway: Awaited<ReturnType<typeof getGateway>>;
+  try {
+    gateway = await getGateway();
+  } catch {
+    return { sources: { phase: "failed", kind: "transport_error" }, matters: [] };
+  }
+  // These reads are independent: an optional matter-list failure must not turn a healthy
+  // source catalogue into a failed composer context, and one rejected read must not hide
+  // the other result.
+  const [sourceResult, matterResult] = await Promise.allSettled([
+    gateway.sourcesList(),
+    gateway.mattersList(),
+  ]);
+  const sources = sourceResult.status === "fulfilled" ? sourceResult.value : null;
+  const matters = matterResult.status === "fulfilled" ? matterResult.value : null;
   return {
-    sources: sources.ok
+    sources: sources?.ok
       ? { phase: "loaded", bodies: sources.data.bodies, integrations: sources.data.integrations }
-      : { phase: "failed", kind: sources.error.kind },
+      : { phase: "failed", kind: sources && !sources.ok ? sources.error.kind : "transport_error" },
     // A matters failure only hides the optional matter chip; it never blocks asking.
-    matters: matters.ok ? matters.data.matters.map(({ matter_id, name }) => ({ matter_id, name })) : [],
+    matters: matters?.ok ? matters.data.matters.map(({ matter_id, name }) => ({ matter_id, name })) : [],
   };
 }

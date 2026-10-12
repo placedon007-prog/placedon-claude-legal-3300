@@ -56,6 +56,8 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const [tool, setTool] = React.useState<ComposerTool>("research");
   const [matterId, setMatterId] = React.useState(initialMatterId);
   const [sending, setSending] = React.useState(false);
+  const [refreshingSources, setRefreshingSources] = React.useState(false);
+  const sourceRefreshInFlight = React.useRef(false);
   const requestInFlight = React.useRef(false);
   const lifetime = React.useRef(0);
   React.useEffect(() => {
@@ -169,12 +171,30 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     return { ok: false, message: result.phase === "invalid" ? result.message : result.phase === "refused" ? result.detail : "Upload interrupted. Remove the file and try again." };
   }
 
+  async function retrySources() {
+    // A busy source service should not receive a burst of duplicate catalogue reads from
+    // repeated clicks. Keep the draft and current source choice in place while retrying.
+    if (sourceRefreshInFlight.current) return;
+    const generation = lifetime.current;
+    sourceRefreshInFlight.current = true;
+    setRefreshingSources(true);
+    try {
+      const refreshed = await loadComposerContext();
+      if (lifetime.current === generation) setContext(refreshed);
+    } catch {
+      // Keep the explicit failed state. The user can retry again without losing the draft.
+    } finally {
+      sourceRefreshInFlight.current = false;
+      if (lifetime.current === generation) setRefreshingSources(false);
+    }
+  }
+
   const empty = turns.length === 0;
   const input = <PromptBox onSubmit={(text, selectedTool, ids) => { void send(text, selectedTool, ids); }}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
-    tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded" }}
-    onRetrySources={() => { loadComposerContext().then(setContext).catch(() => { /* Existing visible failure remains; the draft stays in memory. */ }); }}
+    tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded", refreshing: refreshingSources }}
+    onRetrySources={retrySources}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
     matters={context.matters} matterId={matterId} onMatter={setMatterId} matterLocked={Boolean(conversationId) || pending || Boolean(uncertain)}
     findDocuments={lookupDocuments} className="w-full" />;

@@ -48,7 +48,7 @@ export interface PromptBoxProps {
   tool: ComposerTool;
   onToolChange: (tool: ComposerTool) => void;
   /** sources.list bodies; `failed` when they did not arrive (the default is then used). */
-  sources: { bodies: readonly SourceBody[]; integrations: readonly SourceIntegration[]; failed: boolean };
+  sources: { bodies: readonly SourceBody[]; integrations: readonly SourceIntegration[]; failed: boolean; refreshing?: boolean };
   chosen: readonly string[];
   onToggleSource: (id: string) => void;
   onRetrySources?: () => void;
@@ -381,7 +381,7 @@ export function PromptBox(props: PromptBoxProps) {
             <Link href="/app/vault"><FolderOpen className="size-4" aria-hidden />Open Wall System</Link>
           </PopoverContent>
         </Popover>
-        <SourcesChip bodies={sources.bodies} integrations={sources.integrations} failed={sources.failed} chosen={chosen} onToggle={onToggleSource} onRetry={onRetrySources}
+        <SourcesChip bodies={sources.bodies} integrations={sources.integrations} failed={sources.failed} refreshing={sources.refreshing} chosen={chosen} onToggle={onToggleSource} onRetry={onRetrySources}
           triggerRef={sourcesButtonRef} onBrowseFiles={() => openVault("sources")} fileCount={docs.length + files.length} />
         <VaultPicker open={vaultOpen} onOpenChange={setVaultOpen} matterId={matterId}
           matterName={matters.find((m) => m.matter_id === matterId)?.name} selected={docs} capacity={Math.max(0, 20 - files.length)}
