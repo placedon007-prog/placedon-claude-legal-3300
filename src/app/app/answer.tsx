@@ -16,8 +16,8 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, linkCitations, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { parseAnswer, type Envelope, type SourcesReport } from "@/lib/gateway/types";
+import { envelopeKind, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { cn } from "@/lib/utils";
 import type { TurnState } from "./actions";
 
@@ -97,7 +97,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          onOpenSource={onOpenSource} onDraft={onDraft} />
+          sources={s.sources} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
     </section>
   );
@@ -107,12 +107,14 @@ function Answered({
   envelope,
   conversationId,
   draftId,
+  sources,
   onOpenSource,
   onDraft,
 }: {
   envelope: Envelope;
   conversationId: string;
   draftId: string | null;
+  sources: SourcesReport | null;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
 }) {
@@ -203,9 +205,42 @@ function Answered({
         </Link>
       ) : null}
 
+      {sources && sources.report.length > 0 ? <Searched report={sources} /> : null}
+
       <ResultLine envelope={envelope} />
       <Actions envelope={envelope} onDraft={onDraft} />
     </article>
+  );
+}
+
+/**
+ * What the question was actually searched against — a sibling of the answer, not part of it.
+ * "Searched" and "Not searched" are told apart in words (`searchedSummary`): a search that ran
+ * and found nothing is not the same as a source that was never consulted, and the console must
+ * not read the first as the second. Colour carries nothing here, as everywhere on this screen.
+ */
+function Searched({ report }: { report: SourcesReport }) {
+  const { searched, notSearched } = searchedSummary(report);
+  return (
+    <section aria-label="Sources searched" className="flex flex-col gap-1 border-t border-line pt-3 text-ui">
+      <h3 className="font-medium text-fg">Sources searched</h3>
+      {searched.length > 0 ? (
+        <p className="text-fg-2">
+          <span className="font-medium text-fg">Searched:</span>{" "}
+          {searched.map((l, i) => (
+            <React.Fragment key={l.id}>{i > 0 ? "; " : ""}{l.text}</React.Fragment>
+          ))}
+        </p>
+      ) : null}
+      {notSearched.length > 0 ? (
+        <p className="text-fg-2">
+          <span className="font-medium text-fg">Not searched:</span>{" "}
+          {notSearched.map((l, i) => (
+            <React.Fragment key={l.id}>{i > 0 ? "; " : ""}{l.text}</React.Fragment>
+          ))}
+        </p>
+      ) : null}
+    </section>
   );
 }
 

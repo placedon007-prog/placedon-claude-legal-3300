@@ -6,7 +6,7 @@
  * parsed from the served prose, so the same provision cited by two sentences shows as one
  * numbered source instead of two.
  */
-import type { CitedSentence, EnvelopeCitation, EnvelopeStatus } from "./gateway/types";
+import type { CitedSentence, EnvelopeCitation, EnvelopeStatus, SourcesReport } from "./gateway/types";
 
 export interface ThreadSource {
   /** 1-based number shown on the citation chip and in the source list. */
@@ -271,4 +271,41 @@ export function segmentSection(
  */
 export function joinWrappedLines(text: string): string {
   return text.replace(/[ \t]*\n(?!\s*(?:\(|\d|\[|Provided|Explanation|Illustration))[ \t]*/g, " ");
+}
+
+/** A friendly name for the two built-in sources; any other id shows itself. */
+const SOURCE_LABEL: Record<string, string> = {
+  held: "Companies Act 2013 (held corpus)",
+  vault: "Your documents (vault)",
+};
+
+export interface SearchedLine {
+  readonly id: string;
+  readonly text: string;
+}
+export interface SearchedSummary {
+  readonly searched: readonly SearchedLine[];
+  readonly notSearched: readonly SearchedLine[];
+}
+
+/**
+ * The per-source report, partitioned for display under an answer. SEARCHED_EMPTY (a search
+ * ran, nothing matched) is grouped with Searched, NOT with Not searched: a source that was
+ * consulted and found nothing is not the same as one that was never consulted, and the words
+ * have to keep them apart — collapsing them would read silence as a finding.
+ */
+export function searchedSummary(report: SourcesReport): SearchedSummary {
+  const label = (id: string) => SOURCE_LABEL[id] ?? id;
+  const searched: SearchedLine[] = [];
+  const notSearched: SearchedLine[] = [];
+  for (const r of report.report) {
+    if (r.outcome === "NOT_SEARCHED") {
+      notSearched.push({ id: r.id, text: r.reason ? `${label(r.id)} — ${r.reason}` : label(r.id) });
+    } else {
+      const detail =
+        r.outcome === "SEARCHED_HITS" ? `${r.hits} passage${r.hits === 1 ? "" : "s"}` : "nothing matched";
+      searched.push({ id: r.id, text: `${label(r.id)} — ${detail}` });
+    }
+  }
+  return { searched, notSearched };
 }

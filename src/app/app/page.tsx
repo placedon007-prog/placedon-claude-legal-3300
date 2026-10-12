@@ -20,7 +20,7 @@ function toTurns(conversationId: string, messages: readonly ConversationMessage[
       state: !reply
         ? { phase: "queued", conversationId, runId: null, note: "" }
         : reply.envelope
-          ? { phase: "answered", conversationId, envelope: reply.envelope, draftId: null }
+          ? { phase: "answered", conversationId, envelope: reply.envelope, draftId: null, sources: null }
           : { phase: "queued", conversationId, runId: reply.run_id ?? null, note: "" },
     });
   });
