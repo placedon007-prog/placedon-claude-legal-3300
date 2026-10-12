@@ -26,6 +26,7 @@ import type {
   DocumentResponse,
   DraftDiff,
   DraftExport,
+  DraftList,
   DraftRevise,
   DraftStatus,
   DraftVersion,
@@ -1282,12 +1283,20 @@ export class MockGateway implements GatewayProvider {
     return engineOk(this.statusOf(id, list));
   }
 
+  async draftList(): Promise<EngineResult<DraftList>> {
+    return engineOk({
+      drafts: [],
+      next_cursor: null,
+      scope: "tenant",
+      note: "Demo mode does not retain drafts between requests.",
+    });
+  }
+
   async draftRevise(input: {
     draftId: string;
     baseVersion: number;
     title?: string;
     body?: string;
-    approvedBy?: string;
   }): Promise<EngineResult<DraftRevise>> {
     const list = this.drafts.get(input.draftId) ?? this.seedDraft(input.draftId, "Draft");
     const latest = list[list.length - 1];
@@ -1307,27 +1316,19 @@ export class MockGateway implements GatewayProvider {
         latest_version: latest.version,
       });
     }
-    const accepted = Boolean(input.approvedBy);
     const next: DraftVersion = {
       ...latest,
       version: latest.version + 1,
       title: input.title ?? latest.title,
       body: input.body ?? latest.body,
       created_at: "2026-10-04T10:00:00+00:00",
-      // Approving accepts the model's slot, which is what clears the block. A revise that
-      // does not approve leaves it blocking, because nobody has read it.
-      slots: accepted
-        ? latest.slots.map((sl) =>
-            sl.origin === "MODEL_SUGGESTION"
-              ? { ...sl, origin: "SUPPLIED", note: "accepted by a reviewer" }
-              : sl,
-          )
-        : latest.slots,
-      ready: accepted,
-      approved: accepted,
-      approved_by: input.approvedBy ?? null,
-      approved_at: accepted ? "2026-10-04T10:00:00+00:00" : null,
-      blocking: accepted ? [] : latest.blocking,
+      // Revisions cannot mark themselves approved. Unresolved provenance remains blocking.
+      slots: latest.slots,
+      ready: latest.blocking.length === 0,
+      approved: false,
+      approved_by: null,
+      approved_at: null,
+      blocking: latest.blocking,
     };
     list.push(next);
     return engineOk(this.statusOf(input.draftId, list));

@@ -8,6 +8,7 @@ import {
   calendarSchema,
   draftDiffSchema,
   draftExportSchema,
+  draftListSchema,
   draftReviseSchema,
   draftStatusSchema,
   draftVersionsSchema,
@@ -51,6 +52,7 @@ import {
   type Calendar,
   type DraftDiff,
   type DraftExport,
+  type DraftList,
   type DraftRevise,
   type DraftStatus,
   type DraftVersions,
@@ -498,12 +500,22 @@ export class HttpGateway implements GatewayProvider {
       });
   }
 
+  draftList(input: { cursor?: string; limit?: number } = {}): Promise<EngineResult<DraftList>> {
+    return this.call(GATEWAY_ROUTES.draftList, GATEWAY_ROUTES.draftList,
+      draftListSchema, {
+        method: "POST",
+        body: {
+          ...(input.cursor ? { cursor: input.cursor } : {}),
+          ...(input.limit !== undefined ? { limit: String(input.limit) } : {}),
+        },
+      });
+  }
+
   draftRevise(input: {
     draftId: string;
     baseVersion: number;
     title?: string;
     body?: string;
-    approvedBy?: string;
   }): Promise<EngineResult<DraftRevise>> {
     return this.call(GATEWAY_ROUTES.draftRevise, GATEWAY_ROUTES.draftRevise,
       draftReviseSchema, {
@@ -515,7 +527,6 @@ export class HttpGateway implements GatewayProvider {
           base_version: String(input.baseVersion),
           ...(input.title !== undefined ? { title: input.title } : {}),
           ...(input.body !== undefined ? { body: input.body } : {}),
-          ...(input.approvedBy ? { approved_by: input.approvedBy } : {}),
         },
       });
   }

@@ -10,13 +10,14 @@ export function NewDraft() {
   return (
     <>
       <form action={action}>
-        <label htmlFor="title">Title</label>
-        <input id="title" name="title" type="text" defaultValue="Board resolution" />
-        <label htmlFor="body">Opening text</label>
-        <textarea id="body" name="body" rows={5}
-                  defaultValue="The Board resolved as follows." />
+        <label htmlFor="title">Draft title</label>
+        <input id="title" name="title" type="text" required minLength={3} maxLength={200}
+               placeholder="For example, board resolution" />
+        <label htmlFor="body">Starting text <span className="meta">(optional)</span></label>
+        <textarea id="body" name="body" rows={6} maxLength={100_000}
+                  placeholder="Paste or write the text you want to work on." />
         <button type="submit" disabled={pending} className="primary">
-          {pending ? "Creating…" : "Create at version 1"}
+          {pending ? "Creating…" : "Create draft"}
         </button>
       </form>
       {state.phase === "invalid" && (
