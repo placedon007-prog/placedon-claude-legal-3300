@@ -17,7 +17,7 @@ import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { cn } from "@/lib/utils";
 import { executionCostLabel, modelCalls } from "@/lib/conversation";
 import { loadExecutionDetails, type ExecutionDetails, type TurnState } from "./actions";
@@ -116,7 +116,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -294,6 +294,7 @@ function Answered({
   envelope,
   conversationId,
   draftId,
+  code,
   sources,
   artifacts,
   onRetry,
@@ -304,6 +305,7 @@ function Answered({
   envelope: Envelope;
   conversationId: string;
   draftId: string | null;
+  code?: string | null;
   sources?: SourceReport;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
@@ -318,8 +320,14 @@ function Answered({
   const open = (g: CitationGroup, id: string | null) => onOpenSource(g, id, conversationId);
   // An abstention that still carries CITED text: that text is set aside under its own label.
   // Uncited text (e.g. "See the findings.") stays in the main flow, as served.
+  // NOTHING_TRACED: provisions were retrieved but no sentence traced to them. Show them as an
+  // openable "provisions found" list with the explanation in the main flow — NOT under
+  // "Passages served with this abstention", which is for an abstention that served real traced
+  // passages. The model shortfall is not a served passage.
+  const nothingTraced = isNothingTraced(kind, code);
   const setAside =
-    kind === "refused" && (parsed.sentences.length > 0 || (first?.citation_ids.length ?? 0) > 0);
+    kind === "refused" && !nothingTraced
+    && (parsed.sentences.length > 0 || (first?.citation_ids.length ?? 0) > 0);
   const servedProse = parsed.sentences.length > 0 ? (
         <p className="max-w-[68ch] text-read text-fg">
           {parsed.sentences.map((s, i) => {
@@ -378,7 +386,7 @@ function Answered({
       ))}
       {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
 
-      {groups.length > 0 && !setAside ? <Sources groups={groups} onOpen={(g) => open(g, null)} /> : null}
+      {groups.length > 0 && !setAside ? <Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /> : null}
 
       {envelope.bodies.length > 0 && kind !== "answered" ? <Bodies envelope={envelope} /> : null}
 
@@ -444,10 +452,10 @@ function Searched({ report }: { report: SourceReport }) {
   );
 }
 
-function Sources({ groups, onOpen }: { groups: readonly CitationGroup[]; onOpen: (g: CitationGroup) => void }) {
+function Sources({ groups, title, onOpen }: { groups: readonly CitationGroup[]; title?: string; onOpen: (g: CitationGroup) => void }) {
   return (
-    <section aria-label="Sources">
-      <h3 className="mb-1 text-ui font-medium text-fg">Sources</h3>
+    <section aria-label={title ?? "Sources"}>
+      <h3 className="mb-1 text-ui font-medium text-fg">{title ?? "Sources"}</h3>
       <ol className="divide-y divide-line border-y border-line">
         {groups.map((g) => (
           <li key={g.n}>

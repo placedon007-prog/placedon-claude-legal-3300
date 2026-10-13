@@ -97,6 +97,16 @@ export function envelopeKind(status: EnvelopeStatus): StatusKind {
   }
 }
 
+/**
+ * NOTHING_TRACED: the model answered but no sentence byte-traced to a provision. The
+ * retrieved provisions are still shown — as an openable "provisions found" list, their
+ * verbatim text via `citation.get` — but never as served passages, because a model
+ * shortfall is not a served passage. Every other refusal keeps its own register.
+ */
+export function isNothingTraced(kind: StatusKind, code: string | null | undefined): boolean {
+  return kind === "refused" && code === "NOTHING_TRACED";
+}
+
 /* ── citations from answer_envelope.v1 ──────────────────────────────────── */
 
 export interface CitationGroup {

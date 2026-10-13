@@ -32,6 +32,10 @@ export type TurnState =
       readonly draftId: string | null;
       readonly sources?: SourceReport;
       readonly artifacts?: readonly ConversationArtifact[];
+      /** The refusal/failure code the gateway returned beside the envelope (NO_MODEL,
+       *  NOTHING_TRACED, NO_EVIDENCE…), so the screen can tell a model shortfall from an
+       *  abstention. Null when none. */
+      readonly code: string | null;
       /** Where the model that wrote it ran, from the run's own trace; null if not stated. */
       readonly region: string | null }
   /** The work went on the queue: the reply has not arrived, which is not an empty answer. */
@@ -116,6 +120,7 @@ export async function sendAction(input: {
     conversationId: data.conversation_id,
     envelope: data.envelope,
     draftId: data.draft_id ?? null,
+    code: data.code ?? null,
     region: null,
     sources: data.metadata?.sources ?? data.sources,
     artifacts: data.metadata?.artifacts ?? [
