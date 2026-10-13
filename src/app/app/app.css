@@ -595,6 +595,12 @@
 .source-vault-browse { display: flex; align-items: center; gap: 10px; width: calc(100% - 16px); margin: 4px 8px 0; min-height: 44px; padding: 8px 12px; border-radius: 6px; font-size: var(--text-ui); text-align: left; }
 .source-vault-browse > span:last-child { margin-left: auto; color: var(--c-fg-3); font-size: var(--text-caption); }
 .source-vault-browse:hover { background: var(--c-wash-2); }
+.source-integration-note { display: flex; align-items: center; gap: 10px; margin: 6px 8px 2px; padding: 10px 12px; border: 1px solid var(--c-line); border-radius: 6px; color: var(--c-fg-2); }
+.source-integration-brand { flex: none; color: var(--c-fg); font-size: 13px; font-weight: 650; letter-spacing: -.04em; }
+.source-integration-note > span:nth-child(2) { min-width: 0; flex: 1; }
+.source-integration-note strong { display: block; font-size: var(--text-ui); font-weight: 550; }
+.source-integration-note small { display: block; margin-top: 2px; color: var(--c-fg-3); font-size: var(--text-caption); line-height: 1.4; }
+.source-integration-state { flex: none; color: var(--c-fg-3); font-size: var(--text-caption); }
 .composer-files-menu[data-slot="popover-content"] { padding: 6px; width: min(296px, calc(100vw - 24px)); gap: 2px; background: var(--c-ground); color: var(--c-fg); }
 .composer-files-menu > button, .composer-files-menu > a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 12px; border-radius: 6px; text-align: left; font-size: var(--text-body); }
 .composer-files-menu > button:hover, .composer-files-menu > a:hover { background: var(--c-wash-2); }

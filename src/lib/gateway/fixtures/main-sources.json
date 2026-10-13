@@ -1,5 +1,5 @@
 {
-  "recorded_from": "backend main source_picker.listing, 2026-10-10",
+  "recorded_from": "backend codex/lexis-imanage-foundation source picker and integration status, 2026-10-13",
   "picker": [
     {
       "id": "held",
@@ -17,6 +17,15 @@
       "status": "available",
       "reason": "the tenant's own uploaded documents, searched as support, never VERIFIED",
       "switchable": true,
+      "terms": {}
+    },
+    {
+      "id": "lexisnexis_india",
+      "label": "LexisNexis India",
+      "tier": "LICENSED",
+      "status": "NOT_ACQUIRED",
+      "reason": "Not connected: Placedon needs a confirmed India-content API agreement, permitted AI use, citation display and retention terms before searching",
+      "switchable": false,
       "terms": {}
     },
     {
@@ -180,6 +189,16 @@
           "CACHING": "OPEN"
         }
       }
+    }
+  ],
+  "integrations": [
+    {
+      "id": "imanage",
+      "label": "iManage",
+      "kind": "document_management",
+      "status": "NOT_CONFIGURED",
+      "message": "A firm administrator must register and authorize Placedon in iManage. No files have been imported.",
+      "can_connect": false
     }
   ]
 }
