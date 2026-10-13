@@ -3,7 +3,7 @@ import test from "node:test";
 import { HttpGateway } from "../src/lib/gateway/http";
 import { conversationGetOkSchema, conversationSendOkSchema, sourcesListSchema, vaultUploadSchema, vaultDocumentSchema } from "../src/lib/gateway/types";
 import { chosenOrDefault, defaultSourceIds, toggleSource } from "../src/lib/sources";
-import { conversationTurns, conversationPollDelay } from "../src/lib/conversation";
+import { conversationTurns, conversationPollDelay, executionCostLabel, modelCalls } from "../src/lib/conversation";
 import PICKER from "../src/lib/gateway/fixtures/main-sources.json" with { type: "json" };
 import RECORDED from "../src/lib/gateway/fixtures/conversation.json" with { type: "json" };
 
@@ -56,6 +56,22 @@ test("an accepted reservation with no run yet remains queued and can reconcile b
   assert.equal(turn.key, metadata.request_id);
   assert.equal(conversationPollDelay(0), 1500);
   assert.equal(conversationPollDelay(20), 30000);
+});
+
+test("run provenance lists only recorded model calls and never treats an unknown price as free", () => {
+  const steps = [
+    { capability: "intake", status: "ANSWERED", model: null, provider: null, region: null, cost_inr: null, cost_note: "No model call." },
+    { capability: "research", status: "ANSWERED", model: "azure/llama-3-3-70b", provider: "azure", region: "UAE North", cost_inr: null, cost_note: "Provider usage was not priced." },
+    { capability: "research.retry", status: "FAILED", model: "azure/gpt-5-mini", provider: "azure", region: "UAE North", cost_inr: null, cost_note: "The provider did not report usage." },
+  ] as const;
+  const calls = modelCalls(steps);
+  assert.equal(calls.length, 2, "failed attempts remain visible in the trace");
+  assert.equal(calls[0].provider, "azure");
+  assert.equal(calls[0].region, "UAE North");
+  assert.equal(calls[1].status, "FAILED", "the UI can label an unsuccessful attempt truthfully");
+  assert.equal(executionCostLabel(null, "Provider usage was not priced."), "Not priced — Provider usage was not priced.");
+  assert.equal(executionCostLabel(0, null), "₹0.00", "a recorded zero remains distinct from null/unknown");
+  assert.equal(executionCostLabel(0.001, null), "< ₹0.01", "positive sub-paise amounts never round down to free");
 });
 
 test("send serializes stable request ID, all selected documents, matter and 8000-character text", async () => {
