@@ -13,6 +13,7 @@ Nothing here reads or writes a secret anywhere else.
 import io
 import os
 import pathlib
+import secrets
 import sys
 
 WEB = pathlib.Path(__file__).resolve().parent.parent
@@ -74,10 +75,16 @@ keys = KeyStore()
 raw, principal = keys.mint(tenant_id=TENANT, actor=ACTOR, label="local-console",
                            role="lawyer")
 
-# Written, not printed. The three lines are replaced rather than appended, so running this
+# The /app console sign-in gate needs a passcode (src/lib/auth/session.py: APP_PASSCODE).
+# Generate one so the gate works out of the box, independent of APP_SESSION_SECRET (which
+# signs the cookie — session.ts refuses to run if the two are equal). Written to .env.local
+# like the key, NEVER printed: read it back with `grep APP_PASSCODE .env.local` to sign in.
+passcode = secrets.token_urlsafe(12)
+
+# Written, not printed. The four lines are replaced rather than appended, so running this
 # twice does not leave a stale key above a live one.
 env_path = WEB / ".env.local"
-managed = ("GATEWAY_URL=", "PLACEDON_GATEWAY_KEY=", "APP_SESSION_SECRET=")
+managed = ("GATEWAY_URL=", "PLACEDON_GATEWAY_KEY=", "APP_SESSION_SECRET=", "APP_PASSCODE=")
 existing = io.open(env_path, encoding="utf-8").read() if env_path.exists() else ""
 kept = "\n".join(l for l in existing.splitlines() if not l.startswith(managed))
 io.open(env_path, "w", encoding="utf-8").write(
@@ -85,8 +92,11 @@ io.open(env_path, "w", encoding="utf-8").write(
     + f"GATEWAY_URL=http://127.0.0.1:{PORT}\n"
     + f"PLACEDON_GATEWAY_KEY={raw}\n"
     + "APP_SESSION_SECRET=local-only-session-secret-not-for-deployment\n"
+    + f"APP_PASSCODE={passcode}\n"
 )
 print(f"Key minted (id {principal.key_id}) and written to .env.local. Its value is not printed.", flush=True)
+print("Sign-in passcode written to .env.local (APP_PASSCODE), not printed. "
+      "`grep APP_PASSCODE .env.local` to read it.", flush=True)
 print(f"Gateway starting on http://127.0.0.1:{PORT} — leave this window open.", flush=True)
 
 import uvicorn  # noqa: E402
