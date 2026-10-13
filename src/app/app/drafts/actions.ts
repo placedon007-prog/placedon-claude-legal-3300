@@ -14,6 +14,7 @@ import type {
   DraftVersions,
 } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
+import { requireSession } from "@/lib/auth/session";
 
 /**
  * A draft's five verbs.
@@ -46,6 +47,7 @@ export type ExportState =
 export async function readDraftList(input: { cursor?: string; limit?: number } = {}): Promise<
   { ok: true; data: DraftList } | { ok: false; error: EngineError }
 > {
+  await requireSession();
   const gateway = await getGateway();
   const result = await gateway.draftList(input);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
@@ -59,6 +61,7 @@ export async function draftCreateAction(
   _prev: DraftState,
   formData: FormData,
 ): Promise<DraftState> {
+  await requireSession();
   const parsedTitle = titleSchema.safeParse(formData.get("title"));
   const parsedBody = draftBodySchema.safeParse(String(formData.get("body") ?? ""));
   if (!parsedTitle.success) return { phase: "invalid", message: parsedTitle.error.issues[0].message };
@@ -75,6 +78,7 @@ export async function draftCreateAction(
 export async function readVersions(
   draftId: string,
 ): Promise<{ ok: true; data: DraftVersions } | { ok: false; error: EngineError }> {
+  await requireSession();
   const gateway = await getGateway();
   const result = await gateway.draftVersions({ draftId });
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
@@ -93,6 +97,7 @@ export async function draftReviseAction(
   _prev: DraftState,
   formData: FormData,
 ): Promise<DraftState> {
+  await requireSession();
   const parsed = reviseSchema.safeParse({
     draftId: formData.get("draft_id"),
     baseVersion: formData.get("base_version"),
@@ -122,6 +127,7 @@ export async function draftDiffAction(
   _prev: DiffState,
   formData: FormData,
 ): Promise<DiffState> {
+  await requireSession();
   const draftId = String(formData.get("draft_id") ?? "").trim();
   if (!draftId) return { phase: "invalid", message: "A draft id is required." };
   const from = Number(formData.get("from_version"));
@@ -139,6 +145,7 @@ export async function draftExportAction(
   _prev: ExportState,
   formData: FormData,
 ): Promise<ExportState> {
+  await requireSession();
   const draftId = String(formData.get("draft_id") ?? "").trim();
   if (!draftId) return { phase: "invalid", message: "A draft id is required." };
   const version = Number(formData.get("version"));
