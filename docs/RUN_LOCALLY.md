@@ -2,7 +2,8 @@
 
 This gets `/app` — Ask, Contracts, Runs — working on your laptop against the real backend,
 the real database and the real model. It is not a deployment and must not be treated as
-one: the console has no passcode unless you set one, and the model is in UAE North, so
+one: sign-in uses a single passcode that `local-gateway.py` generates into `.env.local` (not a
+real login — no users or roles), and the model is in UAE North, so
 **only test documents go through it.**
 
 Written for someone who does not write software. Every command is one line. Type it, press
@@ -90,12 +91,14 @@ It prints two lines and then appears to hang. That is correct — it is serving:
 
 ```
 Key minted (id …) and written to .env.local. Its value is not printed.
+Sign-in passcode written to .env.local (APP_PASSCODE), not printed. `grep APP_PASSCODE .env.local` to read it.
 Gateway starting on http://127.0.0.1:8000 — leave this window open.
 ```
 
-The script creates an API key and writes it straight into `.env.local`, which is where the
-website reads it from. **The key is never printed and never typed**, because anything you
-type into a terminal is saved in your shell history.
+The script creates an API key and a sign-in passcode and writes them straight into
+`.env.local`, which is where the website reads them from. **Neither is printed or typed**,
+because anything you type into a terminal is saved in your shell history. To sign in later,
+read the passcode back with `grep APP_PASSCODE .env.local`.
 
 To check it is alive, in any other window:
 
@@ -113,7 +116,9 @@ the gateway — go back to Postgres.app.
 cd ~/PlacedOn/placedon-claude-legal-3300 && npm run dev
 ```
 
-Wait for `Ready in …`. Then open <http://127.0.0.1:3300/app> in a browser.
+Wait for `Ready in …`. Then open <http://127.0.0.1:3300/app> in a browser. It sends you to
+`/login` the first time — sign in with the passcode `local-gateway.py` wrote; read it with
+`grep APP_PASSCODE .env.local` (Window 2's folder).
 
 If you would rather run it the way it runs in production — slower to start, faster to use:
 
@@ -144,8 +149,10 @@ stranger does not go through this.
 
 ### What you will see, and why it is not a fault
 
-- **`ACCESS · No passcode is configured`** — the console is open to anyone who can reach it.
-  Fine on a laptop. Set `APP_PASSCODE` in `.env.local` before it goes anywhere else.
+- **The `/login` passcode.** `local-gateway.py` generates one into `.env.local` so the gate
+  works out of the box; sign in with `grep APP_PASSCODE .env.local`. If you ever see
+  **`ACCESS · No passcode is configured`**, you started the website without that `.env.local`
+  (e.g. a stale one) — re-run `local-gateway.py`, which rewrites it.
 - **`degraded route`** next to the model — there is no Anthropic credit, so Azure Llama
   served the call instead. Expected, per PLAN_22 §3.
 - **`UNPRICED`** in a cost column — that step called no model, so there is nothing to price.
@@ -184,4 +191,5 @@ database.
   document is a fixture.
 - **The playbook is `DRAFT`.** No lawyer has approved those rules. A finding is a potential
   issue against a commercial standard, never a statement that a clause is valid or void.
-- **No passcode means no access control.** Do not put this on a network.
+- **The generated passcode is local-only** (in `.env.local`) and is not a real login — one
+  shared secret, no users or roles. Do not put this on a network.
