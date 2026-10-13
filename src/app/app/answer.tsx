@@ -19,7 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { cn } from "@/lib/utils";
-import type { TurnState } from "./actions";
+import { executionCostLabel, modelCalls } from "@/lib/conversation";
+import { loadExecutionDetails, type ExecutionDetails, type TurnState } from "./actions";
 
 export interface Turn {
   readonly key: string;
@@ -124,6 +125,8 @@ export function TurnView({
 
 /** A compact, inspectable trace of the stages represented by this turn's actual records. */
 function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void }) {
+  const [execution, setExecution] = React.useState<ExecutionDetails | { readonly phase: "idle" | "loading" }>({ phase: "idle" });
+  const executionRequest = React.useRef(false);
   const state = turn.state;
   const envelope = state?.phase === "answered" ? state.envelope : null;
   const report = state?.phase === "answered" ? state.sources : undefined;
@@ -134,6 +137,20 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
   const hasScope = Boolean(report || turn.request);
   const files = envelope?.files ?? [];
   const fileCount = turn.request?.fileIds.length ?? files.length;
+  const runId = envelope?.run_id ?? null;
+
+  async function revealExecutionDetails() {
+    if (!runId || executionRequest.current || execution.phase === "loaded") return;
+    executionRequest.current = true;
+    setExecution({ phase: "loading" });
+    try {
+      setExecution(await loadExecutionDetails(runId));
+    } catch {
+      setExecution({ phase: "unavailable", message: "Processing details could not be loaded. The answer above is unchanged." });
+    } finally {
+      executionRequest.current = false;
+    }
+  }
 
   const questionStatus = state === null ? "Sending" : state.phase === "invalid" ? "Not sent" : "Recorded";
   const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
@@ -224,9 +241,38 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
         <TraceStage number="4" title="Evidence" status={evidenceStatus} detail={evidenceDetail} />
         <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for the gateway response."} />
       </ol>
+      <section aria-labelledby={`processing-${turn.key}`} className="border-t border-line px-3 py-3">
+        <h3 id={`processing-${turn.key}`} className="text-ui font-medium text-fg">Model and processing</h3>
+        {runId ? (
+          <>
+            {execution.phase === "idle" ? <button type="button" onClick={() => { void revealExecutionDetails(); }} className="mt-1 min-h-11 rounded-chip px-2 text-ui text-fg-2 underline underline-offset-4 hover:bg-wash-2">Show recorded details</button> : null}
+            {execution.phase === "loading" ? <p role="status" className="mt-1 text-ui text-fg-3">Loading the run record…</p> : null}
+            {execution.phase === "unavailable" ? <div className="mt-1 flex flex-wrap items-center gap-x-3"><p role="status" className="text-ui text-fg-2">{execution.message}</p><button type="button" onClick={() => { void revealExecutionDetails(); }} className="min-h-11 rounded-chip px-2 text-ui text-fg-2 underline underline-offset-4 hover:bg-wash-2">Try again</button></div> : null}
+            {execution.phase === "loaded" ? <ExecutionTrace details={execution} /> : null}
+          </>
+        ) : <p className="mt-1 text-ui text-fg-2">No run trace is linked to this answer.</p>}
+      </section>
       <p className="border-t border-line px-3 py-2 text-caption text-fg-3">This trace shows recorded workflow data. It does not prove that every searched source was used or that an answer is legally correct.</p>
     </details>
   );
+}
+
+function ExecutionTrace({ details }: { details: Extract<ExecutionDetails, { phase: "loaded" }> }) {
+  const calls = modelCalls(details.steps);
+  if (calls.length === 0) {
+    return <p className="mt-1 text-ui text-fg-2">No model call was recorded for this run.</p>;
+  }
+  return <ul className="mt-2 grid gap-2 sm:grid-cols-2" aria-label="Recorded model calls">
+    {calls.map((step, index) => <li key={`${step.capability}-${index}`} className="min-w-0 rounded-card border border-line bg-ground px-3 py-2 text-ui">
+      <p className="font-medium text-fg">{step.capability}</p>
+      <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-fg-2">
+        <dt>Step status</dt><dd className="break-words">{step.status}</dd>
+        <dt>Provider</dt><dd className="break-words">{step.provider ?? "Not recorded"}</dd>
+        <dt>Model</dt><dd className="break-words">{step.model ?? "Not recorded"}</dd>
+        <dt>Processing region</dt><dd className="break-words">{step.region ?? "Not recorded"}</dd>
+        <dt>Cost</dt><dd className="break-words">{executionCostLabel(step.cost_inr, step.cost_note)}</dd>
+      </dl>
+    </li>)}</ul>;
 }
 
 function TraceStage({ number, title, status, detail }: { number: string; title: string; status: string; detail: React.ReactNode }) {
@@ -450,8 +496,10 @@ function Bodies({ envelope }: { envelope: Envelope }) {
 function ResultLine({ envelope }: { envelope: Envelope }) {
   return (
     <p className="text-caption text-fg-3">
-      {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span> · Playbook DRAFT — not
-      approved by a lawyer · Model region not shown in this response · Test documents only · Not legal advice
+      {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span>
+      {envelope.task === "REVIEW_CONTRACT" ? <> · Playbook DRAFT — not approved by a lawyer</> : null}
+      {envelope.run_id ? <> · Recorded model and region details are in the answer trace</> : null}
+      · Not legal advice
     </p>
   );
 }

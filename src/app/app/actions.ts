@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
-import { isRefusal, type SourceBody, type SourceReport, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse } from "@/lib/gateway/types";
+import { isRefusal, type SourceBody, type SourceReport, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
@@ -170,6 +170,30 @@ export async function loadThread(conversationId: string): Promise<ThreadLoad> {
   if (!result.ok) return { phase: "failed", error: result.error };
   if (isRefusal(result.data)) return { phase: "refused", code: result.data.code, detail: result.data.detail };
   return { phase: "loaded", title: result.data.conversation.title, matterId: result.data.conversation.matter_id ?? null, messages: result.data.messages };
+}
+
+export type ExecutionDetails =
+  | { readonly phase: "loaded"; readonly steps: readonly Pick<RunStep, "capability" | "status" | "model" | "provider" | "region" | "cost_inr" | "cost_note">[] }
+  | { readonly phase: "unavailable"; readonly message: string };
+
+/** Read only the run fields shown in the conversation's on-demand provenance panel. */
+export async function loadExecutionDetails(runId: string): Promise<ExecutionDetails> {
+  if (!(await hasSession())) {
+    return { phase: "unavailable", message: "Sign in to view processing details." };
+  }
+  const id = idSchema.safeParse(runId);
+  if (!id.success) return { phase: "unavailable", message: "Processing details are not available for this turn." };
+
+  const result = await (await getGateway()).trace(id.data);
+  if (!result.ok) {
+    return { phase: "unavailable", message: "Processing details could not be loaded. The answer above is unchanged." };
+  }
+  return {
+    phase: "loaded",
+    steps: result.data.steps.map(({ capability, status, model, provider, region, cost_inr, cost_note }) => ({
+      capability, status, model, provider, region, cost_inr, cost_note,
+    })),
+  };
 }
 
 export type MatterHistory =
