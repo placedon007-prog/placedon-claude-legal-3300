@@ -555,6 +555,37 @@ export async function loginAction(
   redirect("/app");
 }
 
+export type AccountLoginState = {
+  readonly error: string | null;
+  /** Set when the form was understood but this workspace cannot check it yet. */
+  readonly notice: string | null;
+};
+
+/**
+ * Email + password. The backend has the account table and scrypt hashing, but no
+ * `auth.login` verb yet, so there is nothing that can check a password. This action says
+ * so instead of starting a session: a sign-in that accepted any password would be worse
+ * than none. Malformed input is still rejected first, so the form behaves as it will.
+ */
+export async function accountLoginAction(
+  _prev: AccountLoginState,
+  formData: FormData,
+): Promise<AccountLoginState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Enter the email address your workspace invited.", notice: null };
+  }
+  if (password.length === 0 || password.length > 4096) {
+    return { error: "Enter your password.", notice: null };
+  }
+  return {
+    error: null,
+    notice:
+      "Personal accounts are not switched on for this workspace yet. Sign in with the workspace passcode below.",
+  };
+}
+
 export async function logoutAction(): Promise<void> {
   await endSession();
   redirect("/login");
