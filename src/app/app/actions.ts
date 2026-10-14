@@ -8,10 +8,12 @@ import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/next-path";
 import { loginGateway } from "@/lib/gateway/provider";
 import { accountLoginOutcome } from "@/lib/auth/account-login";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
+import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
 
 
 /**
@@ -47,6 +49,10 @@ export type TurnState =
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   /** The answer never arrived. Never rendered as a refusal. */
   | { readonly phase: "failed"; readonly error: EngineError }
+  /** The session had ended before the request could be sent. Not an answer and not a refusal:
+   *  it is an auth state the client recovers from by routing to sign-in and restoring the
+   *  draft afterwards, never by printing "sign in" into the thread as if it were the reply. */
+  | { readonly phase: "signed_out" }
   | { readonly phase: "invalid"; readonly message: string };
 
 const questionSchema = z
@@ -70,7 +76,7 @@ export async function sendAction(input: {
   sources?: readonly string[];
   matterId?: string | null;
 }): Promise<TurnState> {
-  if (!(await hasSession())) return { phase: "invalid", message: "Your session has ended. Sign in to continue." };
+  if (!(await hasSession())) return { phase: "signed_out" };
   const request = z.string().regex(/^[A-Za-z0-9_-]{8,128}$/).safeParse(input.requestId);
   if (!request.success) return { phase: "invalid", message: "This request could not be identified. Reload and try again." };
   const files = z.array(idSchema).max(20).safeParse(input.fileIds ? [...input.fileIds] : []);
@@ -151,6 +157,36 @@ export async function findDocumentsAction(query: string): Promise<DocumentsState
     .filter((h) => (seen.has(h.document_id) ? false : (seen.add(h.document_id), true)))
     .map((h) => ({ id: h.document_id, name: h.name ?? h.document_id.slice(0, 12) }));
   return { phase: "found", hits, note: data.scope_note || data.note };
+}
+
+export type CaseLawSearchState =
+  /** The gateway answered. `found` always, even with zero judgments — an empty list is a
+   *  result, not a failure, and the model says so via `hits.length`. */
+  | { readonly phase: "found"; readonly model: CaseLawRenderModel }
+  /** The answer never arrived. Never rendered as "no case found" — that is a different claim. */
+  | { readonly phase: "failed"; readonly error: EngineError }
+  | { readonly phase: "invalid"; readonly message: string };
+
+const caseLawQuerySchema = z
+  .string()
+  .trim()
+  .min(2, "Enter a party or case name.")
+  .max(200, "Case-law search is capped at 200 characters.");
+
+/**
+ * Case-law discovery: `sources.search`, by party or case name, never by legal topic. The
+ * reply is a `judgments` list — tier LICENSED, supporting authority, never a verified
+ * statutory answer — mapped by the pure `toCaseLawRenderModel` so the UI has nothing to
+ * decide on its own. A transport failure returns `failed`, never an abstention: discovery
+ * has no abstain state to begin with, and a failure here must not borrow one.
+ */
+export async function searchCaseLawAction(query: string): Promise<CaseLawSearchState> {
+  if (!(await hasSession())) return { phase: "invalid", message: "Your session has ended. Sign in to continue." };
+  const parsed = caseLawQuerySchema.safeParse(query);
+  if (!parsed.success) return { phase: "invalid", message: parsed.error.issues[0].message };
+  const result = await (await getGateway()).sourcesSearch({ query: parsed.data });
+  if (!result.ok) return { phase: "failed", error: result.error };
+  return { phase: "found", model: toCaseLawRenderModel(result.data) };
 }
 
 export async function documentReadinessAction(documentId: string): Promise<{ state: string; note: string }> {
@@ -549,6 +585,9 @@ export async function loginAction(
   formData: FormData,
 ): Promise<LoginState> {
   const submitted = String(formData.get("passcode") ?? "");
+  // Where to land after sign-in. `safeNextPath` refuses anything outside the console, so a
+  // crafted `next` cannot turn the login form into an open redirect.
+  const next = safeNextPath(formData.get("next")?.toString());
   const authentication = await authenticatePasscode(submitted);
   if (!authentication.accepted) {
     if (authentication.retryAfterSeconds) return {
@@ -559,7 +598,7 @@ export async function loginAction(
     return { error: "That passcode was not accepted." };
   }
   await startSession();
-  redirect("/app");
+  redirect(next);
 }
 
 export type AccountLoginState = {
@@ -586,6 +625,9 @@ export async function accountLoginAction(
 ): Promise<AccountLoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Where to land after sign-in. `safeNextPath` refuses anything outside the console, so a
+  // crafted `next` cannot turn accounts-mode sign-in into an open redirect either.
+  const next = safeNextPath(formData.get("next")?.toString());
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: "Enter the email address your workspace invited.", notice: null };
   }
@@ -606,7 +648,7 @@ export async function accountLoginAction(
     return { error: outcome.message, notice: null };
   }
   await startAccountSession(outcome.token, outcome.expiresAt);
-  redirect("/app");
+  redirect(next);
 }
 
 export async function logoutAction(): Promise<void> {

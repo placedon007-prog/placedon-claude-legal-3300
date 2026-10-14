@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { hasSession } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/next-path";
 import { authMode, sessionConfigurationIssue } from "@/lib/auth/config";
 import { PlacedonMark } from "@/components/brand/placedon-mark";
 import { AccountForm } from "./account-form";
@@ -19,8 +20,11 @@ const PROOFS = [
   { key: "Trace", text: "Every run is recorded step by step, and can be opened later." },
 ] as const;
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
   if (await hasSession()) redirect("/app");
+  const { next } = await searchParams;
+  // Where sign-in returns to. Validated here so the form only ever carries a safe path.
+  const nextPath = safeNextPath(typeof next === "string" ? next : undefined);
   const configurationIssue = sessionConfigurationIssue();
   const mode = authMode();
 
@@ -70,15 +74,15 @@ export default async function LoginPage() {
             </p>
           ) : mode === "accounts" ? (
             <>
-              <AccountForm />
+              <AccountForm next={nextPath} />
               <details className="auth-alt">
                 <summary>Use the workspace passcode</summary>
-                <LoginForm compact />
+                <LoginForm compact next={nextPath} />
               </details>
             </>
           ) : (
             <>
-              <LoginForm />
+              <LoginForm next={nextPath} />
               <p className="auth-note">
                 <span className="auth-note-key">Prototype</span>
                 One shared passcode per workspace, and a session that lasts a working day.

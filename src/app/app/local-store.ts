@@ -179,3 +179,42 @@ export function rememberThreadSources(thread: string, ids: readonly string[]): v
   }
   write(SOURCES_KEY, JSON.stringify({ ...map, [thread]: [...ids] }));
 }
+
+/* ── the composer draft held across a sign-in round-trip ──────────────────── */
+
+/**
+ * When a send is refused because the session ended, the question the user typed must not be
+ * lost while they re-authenticate. It is parked in sessionStorage (this tab only, cleared
+ * when the tab closes) keyed by the path we return to, and restored once — so re-auth lands
+ * back on the same thread with the draft intact, and a stale draft never leaks to a
+ * different thread or another tab.
+ */
+const RESUME_KEY = "placedon.console.resume.v1";
+
+export function stashResume(path: string, text: string): void {
+  try {
+    window.sessionStorage.setItem(RESUME_KEY, JSON.stringify({ path, text }));
+  } catch {
+    // Storage refused: recovery still routes to sign-in, only the draft is not kept.
+  }
+}
+
+/** Read and remove the parked draft, but only when it belongs to the path we are on now. */
+export function takeResume(path: string): string | null {
+  let raw: string | null = null;
+  try {
+    raw = window.sessionStorage.getItem(RESUME_KEY);
+    if (raw !== null) window.sessionStorage.removeItem(RESUME_KEY);
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const { path: from, text } = parsed as Record<string, unknown>;
+    return from === path && typeof text === "string" && text ? text : null;
+  } catch {
+    return null;
+  }
+}

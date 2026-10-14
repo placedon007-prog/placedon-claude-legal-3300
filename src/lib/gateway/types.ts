@@ -1025,6 +1025,53 @@ export const searchedSchema = z.object({
 });
 export type Searched = z.infer<typeof searchedSchema>;
 
+/* ── sources.search (backend branch `claude/general-research`) ───────────── */
+
+/**
+ * One case-law DISCOVERY candidate, found by party or case name — never by legal topic.
+ * Tier is always LICENSED: this is supporting authority a lawyer may want to read, NEVER a
+ * verified statutory answer and never an obligation. A judgment carries no quote here — the
+ * verbatim passage is read only when the judgment is opened — so this schema has no `quote`
+ * field to be tempted into filling in.
+ */
+export const judgmentSchema = z.object({
+  source_id: z.enum(["aws_sc_judgments", "aws_hc_judgments"]),
+  title: z.string().min(1),
+  parties: z.array(z.string()),
+  year: z.number().int(),
+  date: z.string().min(1),
+  court: z.string().min(1),
+  s3_key: z.string().min(1),
+  tier: z.literal("LICENSED"),
+});
+export type Judgment = z.infer<typeof judgmentSchema>;
+
+/**
+ * A body of law that `sources.search` did not search, and why. Distinct from a judgment
+ * found with zero hits: this body was never queried at all.
+ */
+export const sourcesSearchNotSearchedSchema = z.object({
+  source_id: z.string().min(1),
+  detail: z.string(),
+});
+
+/**
+ * `sources.search` — the general evidence search, extended with case-law discovery.
+ * `results` is the pre-existing evidence shape this verb already served before judgments
+ * were added; its fields are not pinned by this contract (the task names it only as
+ * `[...Evidence...]`), so it is read as opaque records rather than guessed at — a shape this
+ * repo cannot verify must not be rendered as though it were.
+ */
+export const sourcesSearchSchema = z.object({
+  query: z.string(),
+  results: z.array(z.record(z.string(), z.unknown())),
+  verified_count: z.number().int().nonnegative(),
+  judgments: z.array(judgmentSchema),
+  not_searched: z.array(sourcesSearchNotSearchedSchema),
+  note: z.string(),
+});
+export type SourcesSearch = z.infer<typeof sourcesSearchSchema>;
+
 /** `matters.list`: this firm's matters. A thread may be filed to one (`matter_id`). */
 export const mattersListSchema = z.object({
   matters: z.array(
