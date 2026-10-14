@@ -5,30 +5,32 @@ import { loginAction, type LoginState } from "../app/actions";
 
 const initial: LoginState = { error: null };
 
-export function LoginForm() {
+/** The workspace passcode: the prototype gate, and the fallback once accounts exist. */
+export function LoginForm({ compact = false }: { compact?: boolean }) {
   const [state, action, pending] = useActionState(loginAction, initial);
+  const errorId = compact ? "passcode-alt-error" : "passcode-error";
   return (
-    <form action={action} style={{ maxWidth: "22rem" }}>
-      <label htmlFor="passcode">Passcode</label>
-      <input
-        id="passcode"
-        name="passcode"
-        type="password"
-        autoComplete="current-password"
-        required
-        aria-describedby={state.error ? "passcode-error" : undefined}
-        aria-invalid={state.error ? true : undefined}
-      />
-      <div className="row">
-        <button type="submit" disabled={pending}>
-          {pending ? "Checking…" : "Sign in"}
-        </button>
+    <form action={action} className="auth-form" noValidate>
+      <div className="auth-field">
+        <label htmlFor={compact ? "passcode-alt" : "passcode"}>Workspace passcode</label>
+        <input
+          id={compact ? "passcode-alt" : "passcode"}
+          name="passcode"
+          type="password"
+          autoComplete="current-password"
+          required
+          aria-describedby={state.error ? errorId : undefined}
+          aria-invalid={state.error ? true : undefined}
+        />
       </div>
       {state.error ? (
-        <p className="field-error" id="passcode-error" role="alert">
+        <p className="auth-error" id={errorId} role="alert">
           {state.error}
         </p>
       ) : null}
+      <button type="submit" className="auth-submit" disabled={pending}>
+        {pending ? "Checking…" : "Sign in"}
+      </button>
     </form>
   );
 }

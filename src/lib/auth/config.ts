@@ -3,6 +3,16 @@ export function demoModeEnabled(env: Readonly<Record<string, string | undefined>
   return env.PLACEDON_DEMO_MODE === "true";
 }
 
+/**
+ * How people sign in. `passcode` is the prototype gate that works today. `accounts` shows
+ * email + password, which signs nobody in until the backend serves `auth.login`: until
+ * then it says so, and never accepts a credential it cannot check.
+ */
+export type AuthMode = "passcode" | "accounts";
+export function authMode(env: Readonly<Record<string, string | undefined>> = process.env): AuthMode {
+  return env.APP_AUTH_MODE === "accounts" ? "accounts" : "passcode";
+}
+
 export function sessionConfigurationIssue(env: Readonly<Record<string, string | undefined>> = process.env): string | null {
   if (demoModeEnabled(env)) {
     if (env.GATEWAY_URL?.trim() || env.PLACEDON_GATEWAY_KEY?.trim()) {
