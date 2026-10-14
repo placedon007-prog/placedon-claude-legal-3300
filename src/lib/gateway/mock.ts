@@ -11,12 +11,14 @@ import {
   mattersListSchema,
   runTraceSchema,
   sourcesListSchema,
+  sourcesSearchSchema,
 } from "./types";
 import type {
   CitationGet,
   ConversationGet,
   MattersList,
   SourcesList,
+  SourcesSearch,
   ConversationMessage,
   ConversationSend,
   AskResponse,
@@ -239,6 +241,41 @@ const RECORDED_TRACE = runTraceSchema.parse(SOURCES.trace_default.body);
 const RECORDED_RUN_IDS = new Set(Object.values(BY_SOURCES).map((r) => r.run_id ?? ""));
 const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
 
+/**
+ * `sources.search` is unimplemented on the backend as of this writing (it ships on branch
+ * `claude/general-research`), so there is no live reply to record. This fixture is composed
+ * to the contract instead — a real ROC/Supreme Court matter (NCLAT's TCS v. Cyrus Investments
+ * dispute, decided 2021-03-26), not an invented case name, so the demo never puts a
+ * fabricated judgment on screen. Every search returns it: discovery is by party/case name,
+ * and the demo has exactly one recorded party to find.
+ */
+const SOURCES_SEARCH_FIXTURE = sourcesSearchSchema.parse({
+  query: "",
+  results: [],
+  verified_count: 0,
+  judgments: [
+    {
+      source_id: "aws_sc_judgments",
+      title: "Tata Consultancy Services Limited v. Cyrus Investments Pvt. Ltd. & Ors.",
+      parties: ["Tata Consultancy Services Limited", "Cyrus Investments Pvt. Ltd."],
+      year: 2021,
+      date: "2021-03-26",
+      court: "Supreme Court of India",
+      s3_key: "aws_sc_judgments/2021/tata-consultancy-services-v-cyrus-investments.pdf",
+      tier: "LICENSED",
+    },
+  ],
+  not_searched: [
+    {
+      source_id: "aws_hc_judgments",
+      detail: "High Court judgments were not searched in this demo.",
+    },
+  ],
+  note:
+    "Case-law discovery is by party or case name, not legal topic. A judgment carries no " +
+    "quote until it is opened — this is a candidate list, not a verified statutory answer.",
+});
+
 export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
@@ -348,6 +385,10 @@ export class MockGateway implements GatewayProvider {
 
   async sourcesList(): Promise<EngineResult<SourcesList>> {
     return engineOk(SOURCES_LIST);
+  }
+
+  async sourcesSearch(input: { query: string }): Promise<EngineResult<SourcesSearch>> {
+    return engineOk({ ...SOURCES_SEARCH_FIXTURE, query: input.query });
   }
 
   async mattersList(): Promise<EngineResult<MattersList>> {

@@ -25,8 +25,10 @@ import {
   documentCheckSchema,
   conversationSendSchema,
   sourcesListSchema,
+  sourcesSearchSchema,
   mattersListSchema,
   type SourcesList,
+  type SourcesSearch,
   type MattersList,
   conversationGetSchema,
   conversationListSchema,
@@ -393,6 +395,11 @@ export class HttpGateway implements GatewayProvider {
   sourcesList(): Promise<EngineResult<SourcesList>> {
     return this.call(GATEWAY_ROUTES.sourcesList, GATEWAY_ROUTES.sourcesList, sourcesListSchema,
       { method: "POST", body: {} });
+  }
+
+  sourcesSearch(input: { query: string }): Promise<EngineResult<SourcesSearch>> {
+    return this.call(GATEWAY_ROUTES.sourcesSearch, GATEWAY_ROUTES.sourcesSearch,
+      sourcesSearchSchema, { method: "POST", body: { query: input.query } });
   }
 
   mattersList(): Promise<EngineResult<MattersList>> {
