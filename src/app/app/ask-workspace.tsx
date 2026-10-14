@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, Briefcase, FileText, Plus } from "lucide-react";
-import { PromptBox, type AttachOutcome, type ComposerTool, type DocumentLookup } from "@/components/ui/prompt-box";
+import { PromptBox, type AttachOutcome, type ComposerHandle, type ComposerTool, type DocumentLookup } from "@/components/ui/prompt-box";
 import type { CitationGroup } from "@/lib/thread";
 import { chosenOrDefault, toggleSource } from "@/lib/sources";
 import { conversationPollDelay, conversationTurns } from "@/lib/conversation";
@@ -11,11 +12,16 @@ import { documentReadinessAction, findDocumentsAction, loadComposerContext, load
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
-import { NEW_THREAD, recordActivity, rememberThread, rememberThreadSources, useThreadSources } from "./local-store";
+import { NEW_THREAD, recordActivity, rememberThread, rememberThreadSources, stashResume, takeResume, useThreadSources } from "./local-store";
 import { MatterHistoryMenu } from "./matter-history";
 import { Welcome } from "./welcome";
 
 const INTERRUPTED: TurnState = { phase: "failed", error: { kind: "transport_error", route: "/v2/conversation/send", message: "The connection was interrupted." } };
+
+/** The console URL for a thread — the path a sign-in detour returns to. */
+function consolePath(conversationId: string | null): string {
+  return conversationId ? `/app?c=${encodeURIComponent(conversationId)}` : "/app";
+}
 
 /** Dock only when the actual space left by the navigation can hold both reading columns. */
 function useDocked(ref: React.RefObject<HTMLDivElement | null>): boolean {
@@ -57,12 +63,20 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const [matterId, setMatterId] = React.useState(initialMatterId);
   const [sending, setSending] = React.useState(false);
   const [refreshingSources, setRefreshingSources] = React.useState(false);
+  const router = useRouter();
+  const composerApi = React.useRef<ComposerHandle>(null);
   const sourceRefreshInFlight = React.useRef(false);
   const requestInFlight = React.useRef(false);
   const lifetime = React.useRef(0);
   React.useEffect(() => {
     lifetime.current += 1;
     return () => { lifetime.current += 1; };
+  }, []);
+  // Returning from a sign-in detour: put the parked question back in the composer, on the
+  // thread it was typed on. Imperative + client-only, so it never fights SSR hydration.
+  React.useEffect(() => {
+    const draft = takeResume(window.location.pathname + window.location.search);
+    if (draft) composerApi.current?.setText(draft);
   }, []);
   const workspaceRef = React.useRef<HTMLDivElement>(null);
   const composerRef = React.useRef<HTMLDivElement>(null);
@@ -145,6 +159,15 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         text: request.text, fileIds: request.fileIds, sources: request.sources.length ? request.sources : undefined,
         matterId: request.matterId, taskOverride: request.tool === "draft" ? "DRAFT" : undefined });
       if (lifetime.current !== generation) return;
+      if (state.phase === "signed_out") {
+        // The session ended. Do NOT print "sign in" into the thread as if it were the answer:
+        // park the draft, drop the empty turn, and route to sign-in, returning here after.
+        const path = consolePath(request.conversationId);
+        stashResume(path, request.text);
+        setTurns((all) => all.filter((turn) => turn.key !== key));
+        router.push(`/login?next=${encodeURIComponent(path)}`);
+        return;
+      }
       setTurns((all) => all.map((turn) => turn.key === key ? { ...turn, state } : turn));
       if (state.phase === "answered" || state.phase === "queued") {
         setConversationId(state.conversationId);
@@ -191,6 +214,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
 
   const empty = turns.length === 0;
   const input = <PromptBox onSubmit={(text, selectedTool, ids) => { void send(text, selectedTool, ids); }}
+    composerRef={composerApi}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
     tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded", refreshing: refreshingSources }}

@@ -8,6 +8,7 @@ import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { authenticatePasscode, endSession, hasSession, startSession } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/next-path";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
@@ -46,6 +47,10 @@ export type TurnState =
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   /** The answer never arrived. Never rendered as a refusal. */
   | { readonly phase: "failed"; readonly error: EngineError }
+  /** The session had ended before the request could be sent. Not an answer and not a refusal:
+   *  it is an auth state the client recovers from by routing to sign-in and restoring the
+   *  draft afterwards, never by printing "sign in" into the thread as if it were the reply. */
+  | { readonly phase: "signed_out" }
   | { readonly phase: "invalid"; readonly message: string };
 
 const questionSchema = z
@@ -69,7 +74,7 @@ export async function sendAction(input: {
   sources?: readonly string[];
   matterId?: string | null;
 }): Promise<TurnState> {
-  if (!(await hasSession())) return { phase: "invalid", message: "Your session has ended. Sign in to continue." };
+  if (!(await hasSession())) return { phase: "signed_out" };
   const request = z.string().regex(/^[A-Za-z0-9_-]{8,128}$/).safeParse(input.requestId);
   if (!request.success) return { phase: "invalid", message: "This request could not be identified. Reload and try again." };
   const files = z.array(idSchema).max(20).safeParse(input.fileIds ? [...input.fileIds] : []);
@@ -578,6 +583,9 @@ export async function loginAction(
   formData: FormData,
 ): Promise<LoginState> {
   const submitted = String(formData.get("passcode") ?? "");
+  // Where to land after sign-in. `safeNextPath` refuses anything outside the console, so a
+  // crafted `next` cannot turn the login form into an open redirect.
+  const next = safeNextPath(formData.get("next")?.toString());
   const authentication = await authenticatePasscode(submitted);
   if (!authentication.accepted) {
     if (authentication.retryAfterSeconds) return {
@@ -588,7 +596,7 @@ export async function loginAction(
     return { error: "That passcode was not accepted." };
   }
   await startSession();
-  redirect("/app");
+  redirect(next);
 }
 
 export type AccountLoginState = {
