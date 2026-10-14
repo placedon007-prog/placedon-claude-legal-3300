@@ -20,6 +20,15 @@ export function sessionConfigurationIssue(env: Readonly<Record<string, string | 
     }
     return null;
   }
+  if (authMode(env) === "accounts") {
+    // Accounts mode signs people in through the gateway's `auth.login`, so what it needs is
+    // a configured gateway — not a shared passcode or a cookie-signing secret (the backend
+    // session token is opaque and backend-validated, not signed here).
+    const origin = env.GATEWAY_URL?.trim();
+    const key = env.PLACEDON_GATEWAY_KEY?.trim();
+    if (!origin || !key) return "Accounts sign-in is not configured. Configure GATEWAY_URL and PLACEDON_GATEWAY_KEY.";
+    return null;
+  }
   if (!env.APP_PASSCODE?.trim()) return "Console access is not configured. Ask the operator to configure sign-in.";
   if ((env.APP_SESSION_SECRET?.trim().length ?? 0) < 16) return "Console sessions are not configured. Ask the operator to configure sign-in.";
   if (env.APP_SESSION_SECRET?.trim() === env.APP_PASSCODE?.trim()) return "Session signing must use an independent secret. Ask the operator to configure sign-in.";

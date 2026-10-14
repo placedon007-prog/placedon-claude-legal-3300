@@ -74,7 +74,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </p>
           ) : mode === "accounts" ? (
             <>
-              <AccountForm />
+              <AccountForm next={nextPath} />
               <details className="auth-alt">
                 <summary>Use the workspace passcode</summary>
                 <LoginForm compact next={nextPath} />

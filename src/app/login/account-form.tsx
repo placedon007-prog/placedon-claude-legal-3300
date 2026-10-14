@@ -6,11 +6,12 @@ import { accountLoginAction, type AccountLoginState } from "../app/actions";
 const initial: AccountLoginState = { error: null, notice: null };
 
 /** Email + password. One error text for every credential failure: no account enumeration. */
-export function AccountForm() {
+export function AccountForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(accountLoginAction, initial);
   const [shown, setShown] = useState(false);
   return (
     <form action={action} className="auth-form" noValidate>
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="auth-field">
         <label htmlFor="email">Work email</label>
         <input

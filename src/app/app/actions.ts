@@ -7,8 +7,10 @@ import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, 
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
-import { authenticatePasscode, endSession, hasSession, startSession } from "@/lib/auth/session";
+import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
 import { safeNextPath } from "@/lib/auth/next-path";
+import { loginGateway } from "@/lib/gateway/provider";
+import { accountLoginOutcome } from "@/lib/auth/account-login";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
@@ -606,10 +608,16 @@ export type AccountLoginState = {
 };
 
 /**
- * Email + password. The backend has the account table and scrypt hashing, but no
- * `auth.login` verb yet, so there is nothing that can check a password. This action says
- * so instead of starting a session: a sign-in that accepted any password would be worse
- * than none. Malformed input is still rejected first, so the form behaves as it will.
+ * Email + password → the backend `auth.login` verb, SERVER-SIDE ONLY.
+ *
+ * Malformed input is rejected before any network call. On success the backend's session
+ * token goes straight into an httpOnly cookie (never the client bundle, never a log) with
+ * the backend's own expiry, and the person lands on `/app`. Every credential failure — wrong
+ * password, unknown email, disabled account, un-accepted invite — returns ONE message so
+ * sign-in cannot enumerate accounts; a lockout and a transport failure are distinct states.
+ *
+ * `loginGateway()` (not `getGateway()`) is used on purpose: `auth.login` is the pre-session
+ * verb, so it must not require a session to run.
  */
 export async function accountLoginAction(
   _prev: AccountLoginState,
@@ -617,17 +625,30 @@ export async function accountLoginAction(
 ): Promise<AccountLoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Where to land after sign-in. `safeNextPath` refuses anything outside the console, so a
+  // crafted `next` cannot turn accounts-mode sign-in into an open redirect either.
+  const next = safeNextPath(formData.get("next")?.toString());
   if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: "Enter the email address your workspace invited.", notice: null };
   }
   if (password.length === 0 || password.length > 4096) {
     return { error: "Enter your password.", notice: null };
   }
-  return {
-    error: null,
-    notice:
-      "Personal accounts are not switched on for this workspace yet. Sign in with the workspace passcode below.",
-  };
+
+  let gateway: Awaited<ReturnType<typeof loginGateway>>;
+  try {
+    gateway = await loginGateway();
+  } catch {
+    // The gateway is not configured — a deployment fault, not a credential one.
+    return { error: "Sign-in is not available right now. Try again shortly.", notice: null };
+  }
+
+  const outcome = accountLoginOutcome(await gateway.authLogin({ email, password }));
+  if (outcome.kind === "error") {
+    return { error: outcome.message, notice: null };
+  }
+  await startAccountSession(outcome.token, outcome.expiresAt);
+  redirect(next);
 }
 
 export async function logoutAction(): Promise<void> {

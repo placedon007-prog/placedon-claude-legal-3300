@@ -22,6 +22,7 @@ import type {
   ConversationMessage,
   ConversationSend,
   AskResponse,
+  AuthLoginOk,
   Calendar,
   CancelAck,
   Decision,
@@ -280,6 +281,17 @@ export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
   private readonly decided = new Set<string>();
+
+  async authLogin(): Promise<EngineResult<AuthLoginOk>> {
+    // Fail closed, never a silent success: the fixture demo has no account table and must
+    // not mint a session for an unchecked password. Accounts sign-in requires a live
+    // gateway, so this returns a transport-class failure rather than ever logging anyone in.
+    return engineFail({
+      kind: "transport_error",
+      route: GATEWAY_ROUTES.authLogin,
+      message: "Personal sign-in is not available in demo mode; it requires a live gateway.",
+    });
+  }
 
   async ask(question: string): Promise<EngineResult<AskResponse>> {
     const q = question.toLowerCase();
