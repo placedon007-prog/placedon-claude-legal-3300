@@ -10,6 +10,7 @@ import type { EngineError } from "@/lib/engine/errors";
 import { authenticatePasscode, endSession, hasSession, startSession } from "@/lib/auth/session";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
+import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
 
 
 /**
@@ -149,6 +150,36 @@ export async function findDocumentsAction(query: string): Promise<DocumentsState
     .filter((h) => (seen.has(h.document_id) ? false : (seen.add(h.document_id), true)))
     .map((h) => ({ id: h.document_id, name: h.name ?? h.document_id.slice(0, 12) }));
   return { phase: "found", hits, note: data.scope_note || data.note };
+}
+
+export type CaseLawSearchState =
+  /** The gateway answered. `found` always, even with zero judgments — an empty list is a
+   *  result, not a failure, and the model says so via `hits.length`. */
+  | { readonly phase: "found"; readonly model: CaseLawRenderModel }
+  /** The answer never arrived. Never rendered as "no case found" — that is a different claim. */
+  | { readonly phase: "failed"; readonly error: EngineError }
+  | { readonly phase: "invalid"; readonly message: string };
+
+const caseLawQuerySchema = z
+  .string()
+  .trim()
+  .min(2, "Enter a party or case name.")
+  .max(200, "Case-law search is capped at 200 characters.");
+
+/**
+ * Case-law discovery: `sources.search`, by party or case name, never by legal topic. The
+ * reply is a `judgments` list — tier LICENSED, supporting authority, never a verified
+ * statutory answer — mapped by the pure `toCaseLawRenderModel` so the UI has nothing to
+ * decide on its own. A transport failure returns `failed`, never an abstention: discovery
+ * has no abstain state to begin with, and a failure here must not borrow one.
+ */
+export async function searchCaseLawAction(query: string): Promise<CaseLawSearchState> {
+  if (!(await hasSession())) return { phase: "invalid", message: "Your session has ended. Sign in to continue." };
+  const parsed = caseLawQuerySchema.safeParse(query);
+  if (!parsed.success) return { phase: "invalid", message: parsed.error.issues[0].message };
+  const result = await (await getGateway()).sourcesSearch({ query: parsed.data });
+  if (!result.ok) return { phase: "failed", error: result.error };
+  return { phase: "found", model: toCaseLawRenderModel(result.data) };
 }
 
 export async function documentReadinessAction(documentId: string): Promise<{ state: string; note: string }> {
