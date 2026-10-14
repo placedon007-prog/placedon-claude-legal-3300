@@ -37,6 +37,28 @@ export const askResponseSchema = z.object({
 });
 export type AskResponse = z.infer<typeof askResponseSchema>;
 
+/* ── auth.login (personal accounts) ──────────────────────────────────────────── */
+
+/** The three ordered roles; gateway/roles.py in the backend is the authority. */
+export const accountRoleSchema = z.enum(["viewer", "lawyer", "admin"]);
+export type AccountRole = z.infer<typeof accountRoleSchema>;
+
+/**
+ * The one-time result of `auth.login`. The token is returned once, goes straight into an
+ * httpOnly cookie, and is never rendered or logged. Failures do NOT arrive here: a
+ * credential failure is HTTP 401 and a lockout HTTP 429, both surfaced as `EngineError`
+ * by `http.ts`, so this schema describes success only.
+ */
+export const authLoginOkSchema = z.object({
+  token: z.string().min(1),
+  /** ISO-8601, the backend's session expiry. Drives the cookie's lifetime verbatim. */
+  expires_at: z.string().min(1),
+  actor: z.string().min(1),
+  role: accountRoleSchema,
+  email: z.string().optional(),
+});
+export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+
 /* ── review_contract ──────────────────────────────────────────────────────── */
 
 export const findingStatusSchema = z.enum([

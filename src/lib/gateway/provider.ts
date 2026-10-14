@@ -30,6 +30,7 @@ import type {
   CitationGet,
   MattersList,
   SourcesList,
+  AuthLoginOk,
 } from "./types";
 
 /**
@@ -44,6 +45,12 @@ import type {
  */
 export interface GatewayProvider {
   readonly name: "mock" | "http";
+  /**
+   * Personal sign-in. No API key or session is needed — this is the pre-session verb — so
+   * it is reached through `loginGateway()`, never `getGateway()`. The token in the success
+   * result is a credential: it goes straight into an httpOnly cookie and is never logged.
+   */
+  authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>>;
   ask(question: string): Promise<EngineResult<AskResponse>>;
   reviewContract(input: {
     text: string;
@@ -223,6 +230,29 @@ export interface GatewayProvider {
 export async function getGateway(): Promise<GatewayProvider> {
   const { requireSession } = await import("../auth/session");
   await requireSession();
+  const { gatewayConfiguration } = await import("../auth/config");
+  const config = gatewayConfiguration();
+  if (config.mode === "demo") {
+    const { MockGateway } = await import("./mock");
+    return new MockGateway();
+  }
+  const { HttpGateway } = await import("./http");
+  return new HttpGateway(config.origin, config.key);
+}
+
+/** Only `auth.login` — the verb reached before a session exists. */
+export type LoginGateway = Pick<GatewayProvider, "authLogin">;
+
+/**
+ * A gateway for the pre-session sign-in verb ONLY.
+ *
+ * Unlike `getGateway()` this does NOT call `requireSession()` — a person signing in has no
+ * session yet, so requiring one would make sign-in impossible. It is still server-only
+ * (this module imports the server guard) and still fails closed when the gateway is not
+ * configured. The returned type exposes `authLogin` and nothing else, so it cannot become
+ * a back door to the authenticated verbs.
+ */
+export async function loginGateway(): Promise<LoginGateway> {
   const { gatewayConfiguration } = await import("../auth/config");
   const config = gatewayConfiguration();
   if (config.mode === "demo") {

@@ -1,7 +1,7 @@
 import "../engine/server-guard";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { demoModeEnabled, sessionConfigurationIssue } from "./config";
+import { authMode, demoModeEnabled, sessionConfigurationIssue } from "./config";
 import { consumeLoginAttempt, trustedLoginClientKey } from "./login-limiter";
 import { MAX_AGE_SECONDS, mintToken, sameSecret, tokenIsValid } from "./token";
 
@@ -19,6 +19,14 @@ import { MAX_AGE_SECONDS, mintToken, sameSecret, tokenIsValid } from "./token";
  */
 
 export const SESSION_COOKIE = "placedon_app_session";
+
+/**
+ * Accounts mode stores the BACKEND's session token here — opaque to this app and validated
+ * by the gateway via `auth_resolve_session`. Unlike the passcode cookie it is not signed
+ * here (the backend is the authority on whether it is live) and it carries the backend's
+ * own expiry.
+ */
+export const ACCOUNT_SESSION_COOKIE = "placedon_account_session";
 
 function secret(): string {
   const s = process.env.APP_SESSION_SECRET?.trim();
@@ -75,9 +83,29 @@ export async function startSession(): Promise<void> {
   });
 }
 
+/**
+ * Store a backend session token from `auth.login`: httpOnly, Secure in production,
+ * SameSite=Lax, with the backend's expiry verbatim. The token is a credential — never
+ * logged, never sent to the client bundle (this is server-only).
+ */
+export async function startAccountSession(token: string, expiresAt: string): Promise<void> {
+  const jar = await cookies();
+  const expires = new Date(expiresAt);
+  jar.set(ACCOUNT_SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    // The backend owns the lifetime; fall back to a bounded Max-Age only if it sent an
+    // unparseable date, so a bad timestamp can never mint a non-expiring cookie.
+    ...(Number.isFinite(expires.getTime()) ? { expires } : { maxAge: MAX_AGE_SECONDS }),
+  });
+}
+
 export async function endSession(): Promise<void> {
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
+  jar.delete(ACCOUNT_SESSION_COOKIE);
 }
 
 /** True when this request may see `/app`. */
@@ -85,6 +113,12 @@ export async function hasSession(): Promise<boolean> {
   if (sessionConfigurationIssue()) return false;
   if (demoModeEnabled()) return true;
   const jar = await cookies();
+  if (authMode() === "accounts") {
+    // The cookie carries the backend's expiry, so its presence means "not yet expired".
+    // Server-side REVOCATION is caught when the token is used against the gateway (401),
+    // not here — this gate only decides whether /app may render.
+    return Boolean(jar.get(ACCOUNT_SESSION_COOKIE)?.value);
+  }
   return tokenIsValid(jar.get(SESSION_COOKIE)?.value, secret());
 }
 

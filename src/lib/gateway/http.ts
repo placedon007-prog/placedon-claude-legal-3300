@@ -5,6 +5,7 @@ import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
+  authLoginOkSchema,
   calendarSchema,
   draftDiffSchema,
   draftExportSchema,
@@ -43,6 +44,7 @@ import {
   runTraceSchema,
   uploadResponseSchema,
   type AskResponse,
+  type AuthLoginOk,
   type CancelAck,
   type Decision,
   type DocumentResponse,
@@ -201,6 +203,17 @@ export class HttpGateway implements GatewayProvider {
     return this.call(GATEWAY_ROUTES.ask, GATEWAY_ROUTES.ask, askResponseSchema, {
       method: "POST",
       body: { question },
+    });
+  }
+
+  authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>> {
+    // Public, pre-session verb. The deployment-key header `call` adds is ignored by the
+    // backend for this verb; the credential is the email+password in the POST body, sent
+    // over the same https/loopback-enforced origin as every other call. The password is
+    // never placed in the URL, and the returned token is never logged by this module.
+    return this.call(GATEWAY_ROUTES.authLogin, GATEWAY_ROUTES.authLogin, authLoginOkSchema, {
+      method: "POST",
+      body: { email: input.email, password: input.password },
     });
   }
 
