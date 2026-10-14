@@ -862,6 +862,12 @@ export const conversationSendOkSchema = z.object({
   sources: sourceReportSchema.optional(),
   metadata: turnMetadataSchema.optional(),
   note: z.string().optional(),
+  /**
+   * The refusal code, as a sibling of the envelope — NOT inside it (answer_envelope.v1 is
+   * immutable). `NO_MODEL`, `NOTHING_TRACED`, `NO_EVIDENCE`, `NO_BUDGET`. It tells the UI
+   * which abstention register to show; the legal content stays in the versioned envelope.
+   */
+  code: z.string().nullable().optional(),
 });
 export const conversationSendSchema = z.union([conversationSendOkSchema, verbRefusalSchema]);
 export type ConversationSend = z.infer<typeof conversationSendSchema>;

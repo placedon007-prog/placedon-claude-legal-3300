@@ -1,0 +1,97 @@
+{
+  "_recorded": "2026-10-13 against the real gateway (backend PR #94, claude/abstain-states) on placedon_app_local. Not composed. A case-study question; held statute corpus found nothing on point.",
+  "conversation_id": "57a0fdac-2684-47a6-a2cd-a1c183d38f5a",
+  "message_id": "3b507ab8-a4bf-41bb-9900-c407edeee3ce",
+  "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+      "EVENT_ASSESS",
+      "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+  },
+  "run_id": "4ef60435-78f9-4911-be19-7a56a1733167",
+  "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "ABSTAINED",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-13",
+    "text_blocks": [
+      {
+        "text": "See the findings.",
+        "citation_ids": []
+      }
+    ],
+    "bodies": [
+      {
+        "body_id": "CA2013",
+        "name": "Companies Act, 2013",
+        "status": "NEED_FACT",
+        "note": "held, and nothing on point was found for this question"
+      }
+    ],
+    "citations": [],
+    "files": [],
+    "run_id": "4ef60435-78f9-4911-be19-7a56a1733167",
+    "trace_url": "/v2/runs/4ef60435-78f9-4911-be19-7a56a1733167/trace"
+  },
+  "metadata": {
+    "schema": "conversation_turn.v1",
+    "request_id": "83ddea5e-9e34-4687-83d9-8e90ab2a6d44",
+    "classification": {
+      "task": "RESEARCH_QUESTION",
+      "alternatives": [
+        "EVENT_ASSESS",
+        "LAW_CHANGES"
+      ],
+      "reason": "it is shaped as a question about the law, and nothing is attached to review",
+      "decided_by": "rules",
+      "rule": "question_shape"
+    },
+    "artifacts": [],
+    "files": [],
+    "as_of": "2026-10-13",
+    "accepted_at": "2026-10-13T15:28:45Z",
+    "sources": {
+      "picked": [
+        "held"
+      ],
+      "searched": [
+        "held"
+      ],
+      "report": [
+        {
+          "id": "held",
+          "tier": "HELD",
+          "status": "available",
+          "outcome": "SEARCHED_EMPTY",
+          "hits": 0,
+          "reason": ""
+        }
+      ],
+      "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+    }
+  },
+  "sources": {
+    "picked": [
+      "held"
+    ],
+    "searched": [
+      "held"
+    ],
+    "report": [
+      {
+        "id": "held",
+        "tier": "HELD",
+        "status": "available",
+        "outcome": "SEARCHED_EMPTY",
+        "hits": 0,
+        "reason": ""
+      }
+    ],
+    "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+  },
+  "code": "NO_EVIDENCE"
+}
