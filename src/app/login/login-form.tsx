@@ -6,11 +6,12 @@ import { loginAction, type LoginState } from "../app/actions";
 const initial: LoginState = { error: null };
 
 /** The workspace passcode: the prototype gate, and the fallback once accounts exist. */
-export function LoginForm({ compact = false }: { compact?: boolean }) {
+export function LoginForm({ compact = false, next }: { compact?: boolean; next?: string }) {
   const [state, action, pending] = useActionState(loginAction, initial);
   const errorId = compact ? "passcode-alt-error" : "passcode-error";
   return (
     <form action={action} className="auth-form" noValidate>
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="auth-field">
         <label htmlFor={compact ? "passcode-alt" : "passcode"}>Workspace passcode</label>
         <input

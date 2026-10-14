@@ -82,6 +82,12 @@ export function TurnView({
         </div>
       ) : s.phase === "invalid" ? (
         <p className="text-body text-fg-2">{s.message}</p>
+      ) : s.phase === "signed_out" ? (
+        <div role="status" className="flex flex-col items-start gap-3 rounded-card border border-line-2 bg-wash p-4">
+          <StatusLine kind="refused" extra="SESSION ENDED" />
+          <p className="text-read text-fg">Your session has ended, so this question was not sent. Sign in to continue — your draft is kept and this conversation reopens afterwards.</p>
+          <Link href={`/login?next=${encodeURIComponent(turn.request?.conversationId ? `/app?c=${turn.request.conversationId}` : "/app")}`} className="min-h-11 rounded-lg border border-fg px-4 py-2 text-body font-medium text-fg transition-colors duration-150 hover:bg-wash-2">Sign in to continue</Link>
+        </div>
       ) : s.phase === "failed" ? (
         <div role="alert" className="flex flex-col items-start gap-3 rounded-card border border-dashed border-fg p-4">
           <StatusLine kind="failed" />
@@ -152,7 +158,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
     }
   }
 
-  const questionStatus = state === null ? "Sending" : state.phase === "invalid" ? "Not sent" : "Recorded";
+  const questionStatus = state === null ? "Sending" : state.phase === "invalid" || state.phase === "signed_out" ? "Not sent" : "Recorded";
   const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
   const searchStatus = report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
   const evidenceStatus = envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
@@ -166,7 +172,9 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
           ? statusLabel("failed")
           : state.phase === "refused"
             ? `Declined · ${state.code}`
-            : state.message;
+            : state.phase === "signed_out"
+              ? "Not sent · session ended"
+              : state.message;
 
   const searchDetails = report
     ? report.report.map((item) => {
@@ -239,7 +247,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
         <TraceStage number="2" title="Scope" status={scopeStatus} detail={scopeDetails} />
         <TraceStage number="3" title="Search" status={searchStatus} detail={searchDetails} />
         <TraceStage number="4" title="Evidence" status={evidenceStatus} detail={evidenceDetail} />
-        <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for the gateway response."} />
+        <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "signed_out" ? "Not sent — the session ended before this question reached the gateway." : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for the gateway response."} />
       </ol>
       <section aria-labelledby={`processing-${turn.key}`} className="border-t border-line px-3 py-3">
         <h3 id={`processing-${turn.key}`} className="text-ui font-medium text-fg">Model and processing</h3>

@@ -56,7 +56,14 @@ export interface PromptBoxProps {
   matterId: string | null;
   onMatter: (id: string | null) => void;
   findDocuments?: (query: string) => Promise<DocumentLookup>;
+  /** Imperative access to the composer — used to restore a draft after a sign-in detour. */
+  composerRef?: React.Ref<ComposerHandle>;
   className?: string;
+}
+
+/** The minimal imperative surface a parent needs: put text back into the composer. */
+export interface ComposerHandle {
+  setText: (text: string) => void;
 }
 
 const MAX_ROWS_PX = 200;
@@ -94,7 +101,7 @@ function mentionAt(text: string, caret: number): { query: string; start: number 
 export function PromptBox(props: PromptBoxProps) {
   const {
     onSubmit, onAttach, pending = false, canDraft = false, tool, onToolChange: setTool,
-    sources, chosen, onToggleSource, onRetrySources, matters, matterId, onMatter, findDocuments, checkDocument, matterLocked, className,
+    sources, chosen, onToggleSource, onRetrySources, matters, matterId, onMatter, findDocuments, checkDocument, matterLocked, composerRef, className,
   } = props;
   const hydrated = React.useSyncExternalStore(subscribeReady, readyInBrowser, readyOnServer);
   const ref = React.useRef<HTMLTextAreaElement>(null);
@@ -120,6 +127,10 @@ export function PromptBox(props: PromptBoxProps) {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, MAX_ROWS_PX)}px`;
   }, [value]);
+
+  // Restore a parked draft on demand (after a sign-in detour). Imperative, so the parent can
+  // refill the composer once without a controlled-value effect fighting what the user types.
+  React.useImperativeHandle(composerRef, () => ({ setText: (text: string) => setValue(text) }), []);
 
   // Documents for "@", looked up by what was typed (3+ characters), a moment after typing stops.
   const query = mention?.query ?? "";
