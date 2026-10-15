@@ -57,10 +57,11 @@ function SourceLogo({ name, width, height }: { name: string; width: number; heig
   </span>;
 }
 
-export function SourcesChip({ bodies, integrations, failed, refreshing = false, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
+export function SourcesChip({ bodies, integrations, failed, failureMessage, refreshing = false, chosen, onToggle, onRetry, onBrowseFiles, fileCount = 0, triggerRef }: {
   bodies: readonly SourceBody[];
   integrations: readonly SourceIntegration[];
   failed: boolean;
+  failureMessage?: string;
   refreshing?: boolean;
   chosen: readonly string[];
   onToggle: (id: string) => void;
@@ -104,9 +105,9 @@ export function SourcesChip({ bodies, integrations, failed, refreshing = false, 
     else triggerRef?.current?.focus();
   }, [failed, refreshing, triggerRef]);
 
-  if (failed) return <span role="status" aria-live="polite" aria-busy={refreshing} className="inline-flex min-h-11 flex-wrap items-center gap-1.5 rounded-full border border-dashed border-fg px-3 text-ui text-fg">
+  if (failed) return <span role={refreshing ? "status" : "alert"} aria-live={refreshing ? "polite" : "assertive"} aria-busy={refreshing} className="inline-flex min-h-11 flex-wrap items-center gap-1.5 rounded-full border border-dashed border-fg px-3 text-ui text-fg">
     {refreshing ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Library className="size-4" aria-hidden />}
-    {refreshing ? "Checking source availability…" : "Sources could not be loaded."}
+    <span className="max-w-[min(30rem,70vw)]">{refreshing ? "Checking source availability…" : failureMessage ?? "Sources could not be loaded. The question is saved locally; retry to check source access."}</span>
     {onRetry ? <button ref={retryButtonRef} type="button" disabled={refreshing} onClick={(event) => {
       focusTriggerAfterRetry.current = document.activeElement === event.currentTarget;
       void onRetry();
