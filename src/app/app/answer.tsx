@@ -18,6 +18,8 @@ import { CalendarPlus, Check, Copy, GitBranch, History, PenLine } from "lucide-r
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { toCaseAnswerRenderModel } from "@/lib/case-answer";
+import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
 import { executionCostLabel, modelCalls } from "@/lib/conversation";
 import { loadExecutionDetails, type ExecutionDetails, type TurnState } from "./actions";
@@ -321,6 +323,11 @@ function Answered({
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
 }) {
+  // A case-routed turn is never a statute answer and never an abstention: it gets its own
+  // render path so the two registers can never bleed into each other on screen.
+  if (envelope.resource === "case") {
+    return <CaseAnswered envelope={envelope} sources={sources} onDraft={onDraft} />;
+  }
   const kind = envelopeKind(envelope.status);
   const [first, ...rest] = envelope.text_blocks;
   const parsed = parseAnswer(first?.text ?? "");
@@ -420,6 +427,70 @@ function Answered({
           <span><span className="font-medium">{artifact.type === "draft" ? "Draft document" : "Review table"}</span><span className="ml-2 text-caption text-fg-3">{artifact.type === "draft" && "version" in artifact && artifact.version ? `Version ${artifact.version} · ` : ""}Requires review</span></span><span>Open →</span>
         </Link>
       ))}
+
+      <ResultLine envelope={envelope} />
+      <Actions envelope={envelope} onDraft={onDraft} />
+    </article>
+  );
+}
+
+/**
+ * A case-routed turn: judgment discovery ran instead of (or alongside) the statute. This is
+ * supporting authority a lawyer may want to read — never a verified statutory answer, and
+ * never shown in the abstention register even when `status` is ABSTAINED. The honest-empty
+ * case (no judgment matched) still shows the backend's own explanation of what was searched,
+ * in this same register — not the dashed "did not arrive" box and not a dead end.
+ */
+function CaseAnswered({
+  envelope,
+  sources,
+  onDraft,
+}: {
+  envelope: Envelope;
+  sources?: SourceReport;
+  onDraft: () => void;
+}) {
+  const abstained = envelope.status === "ABSTAINED";
+  const { hits } = toCaseAnswerRenderModel(envelope, sources);
+  const [first, ...rest] = envelope.text_blocks;
+  return (
+    <article className="flex flex-col gap-4">
+      <p className="text-ui font-medium text-fg">
+        {abstained ? "Case law search — no supporting authority found" : "Supporting authority — not a verified statutory answer"}
+      </p>
+
+      {first ? <p className="max-w-[68ch] whitespace-pre-wrap text-read text-fg">{first.text}</p> : null}
+      {rest.map((b, i) => (
+        <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
+      ))}
+
+      {hits.length > 0 ? (
+        <ol aria-label="Supporting authority" className="divide-y divide-line border-y border-line">
+          {hits.map((hit) => (
+            <li key={hit.id} className="flex min-h-11 items-start gap-3 px-1 py-2.5">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-body font-semibold text-fg">{hit.title}</span>
+                <span className="text-caption text-fg-2">{hit.parties.join(" v. ")} · {hit.year} · {hit.court}</span>
+              </span>
+              <TierBadge tier={hit.tier} />
+              {/* aria-disabled keeps it focusable so the label can say why it does nothing —
+                  same pattern as the case-law console's own "Open" affordance. */}
+              <button
+                type="button"
+                aria-disabled="true"
+                aria-label={`Open ${hit.title} — not wired in this console yet`}
+                onClick={(e) => e.preventDefault()}
+                className="min-h-11 shrink-0 cursor-not-allowed self-center rounded-chip px-2 text-caption text-fg-3"
+              >
+                Open
+              </button>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {envelope.bodies.length > 0 ? <Bodies envelope={envelope} /> : null}
+      {sources ? <Searched report={sources} /> : null}
 
       <ResultLine envelope={envelope} />
       <Actions envelope={envelope} onDraft={onDraft} />

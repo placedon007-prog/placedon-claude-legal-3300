@@ -39,7 +39,10 @@ export interface CaseLawRenderModel {
   readonly supportingOnly: true;
 }
 
-function toHit(judgment: Judgment): CaseLawHit {
+/** Shared with the conversation answer's case-routed render model (`case-answer.ts`), so a
+ *  judgment maps to the same shape wherever it is discovered: standalone search or a
+ *  case-routed answer. */
+export function toCaseLawHit(judgment: Judgment): CaseLawHit {
   return {
     id: `${judgment.source_id}:${judgment.s3_key}`,
     title: judgment.title,
@@ -60,7 +63,7 @@ function toHit(judgment: Judgment): CaseLawHit {
 export function toCaseLawRenderModel(search: SourcesSearch): CaseLawRenderModel {
   return {
     query: search.query,
-    hits: search.judgments.map(toHit),
+    hits: search.judgments.map(toCaseLawHit),
     notSearched: search.not_searched.map((n) => ({ sourceId: n.source_id, detail: n.detail })),
     note: search.note,
     supportingOnly: true,

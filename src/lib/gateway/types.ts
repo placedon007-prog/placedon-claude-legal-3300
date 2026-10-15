@@ -841,6 +841,22 @@ export const envelopeSchema = z.object({
   trace_url: z.string().nullable().optional(),
   // Declared lazily: `searchedSchema` is defined further down this file.
   searched: z.lazy(() => searchedSchema).optional(),
+  /**
+   * "case" when this turn routed to judgment discovery instead of the statute; absent (or
+   * "statute") on every other answer. This is the switch the conversation answer component
+   * reads to pick a completely separate render path — never the statute prose, never the
+   * abstention register — so a case answer and a statute abstention can never be confused
+   * on screen.
+   */
+  resource: z.enum(["case", "statute"]).optional(),
+  /**
+   * Present only when `resource === "case"`: LICENSED supporting authority (same contract
+   * as `sources.search`'s `judgments`), never a verified passage — a judgment carries no
+   * quote here, same reasoning as `Judgment` in the sources.search section below. Forward
+   * referenced via `z.lazy` because `judgmentSchema` is declared further down this file,
+   * the same pattern `searched` above already uses.
+   */
+  judgments: z.array(z.lazy(() => judgmentSchema)).optional(),
 });
 export type Envelope = z.infer<typeof envelopeSchema>;
 
@@ -857,6 +873,12 @@ export const sourceReportSchema = z.object({
     hits: z.number().int().nonnegative().optional(), reason: z.string().optional(),
   })),
   note: z.string().optional(),
+  /**
+   * The same case-law judgments `Envelope.judgments` carries, for a backend that rides them
+   * on this sibling instead. `toCaseAnswerRenderModel` (src/lib/case-answer.ts) reads the
+   * envelope first and this second, so either placement is read.
+   */
+  judgments: z.array(z.lazy(() => judgmentSchema)).optional(),
 });
 export type SourceReport = z.infer<typeof sourceReportSchema>;
 export const artifactSchema = z.discriminatedUnion("type", [
@@ -975,6 +997,7 @@ export type SourceBody = z.infer<typeof sourceBodySchema>;
 
 /** The source-list card used by the source-picker control. */
 export const sourceTierSchema = z.enum(["HELD", "LICENSED", "PUBLIC"]);
+export type SourceTier = z.infer<typeof sourceTierSchema>;
 export const sourceStatusSchema = z.enum(["available", "KEY_MISSING", "NOT_ACQUIRED", "BLOCKED"]);
 export const sourceCardSchema = z.object({
   id: z.string(),

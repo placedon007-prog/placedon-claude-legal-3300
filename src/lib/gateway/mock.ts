@@ -277,6 +277,92 @@ const SOURCES_SEARCH_FIXTURE = sourcesSearchSchema.parse({
     "quote until it is opened — this is a candidate list, not a verified statutory answer.",
 });
 
+/**
+ * `conversation.send`, case-routed (PLAN_12, tier-labelled answers) — composed to the
+ * contract, same discipline as `SOURCES_SEARCH_FIXTURE`: this path does not exist on any
+ * gateway this repo has run against, so there is no live reply to record. The judgment is
+ * the same real TCS v. Cyrus Investments matter `SOURCES_SEARCH_FIXTURE` uses, never an
+ * invented case, and `citations` stays empty — a case-routed turn verifies nothing itself;
+ * the verbatim read happens only when a judgment is opened.
+ */
+const CASE_FOUND = conversationSendOkSchema.parse({
+  conversation_id: "mock-case-found",
+  message_id: "mock-case-found-msg",
+  run_id: "mock-case-found-run",
+  envelope: {
+    schema: "answer_envelope.v1",
+    status: "PARTIAL",
+    task: "RESEARCH_QUESTION",
+    as_of: "2026-10-15",
+    resource: "case",
+    text_blocks: [
+      {
+        text:
+          "Found 1 judgment that may bear on this question. It is supporting authority, " +
+          "not a verified statutory answer — open it to read the text.",
+        citation_ids: [],
+      },
+    ],
+    bodies: [
+      {
+        body_id: "CA2013",
+        name: "Companies Act, 2013",
+        status: "NOT_ENGAGED",
+        note: "this question asks about decided cases, not the statute, so the Companies Act was not engaged",
+      },
+    ],
+    citations: [],
+    judgments: [SOURCES_SEARCH_FIXTURE.judgments[0]],
+    files: [],
+    run_id: "mock-case-found-run",
+    trace_url: null,
+  },
+});
+
+/** The honest-empty case: judgment discovery ran and found nothing. Still ABSTAINED answers
+ *  with text naming what was searched — never a dead end. */
+const CASE_EMPTY = conversationSendOkSchema.parse({
+  conversation_id: "mock-case-empty",
+  message_id: "mock-case-empty-msg",
+  run_id: "mock-case-empty-run",
+  envelope: {
+    schema: "answer_envelope.v1",
+    status: "ABSTAINED",
+    task: "RESEARCH_QUESTION",
+    as_of: "2026-10-15",
+    resource: "case",
+    text_blocks: [
+      {
+        text:
+          "Searched the Supreme Court and High Court judgment collections for this question. " +
+          "No judgment matched. The Companies Act 2013 was not searched for this question — " +
+          "it does not hold decided cases.",
+        citation_ids: [],
+      },
+    ],
+    bodies: [
+      {
+        body_id: "CA2013",
+        name: "Companies Act, 2013",
+        status: "NOT_ENGAGED",
+        note: "this question asks about decided cases, not the statute, so the Companies Act was not engaged",
+      },
+    ],
+    citations: [],
+    judgments: [],
+    files: [],
+    run_id: "mock-case-empty-run",
+    trace_url: null,
+  },
+});
+
+/** A case-shaped question: named parties ("X v. Y") or an explicit mention of judgments,
+ *  precedent or case law — discovery runs on this shape, never on a legal topic. */
+const CASE_QUESTION = /\bjudg(e|ment)s?\b|\bprecedents?\b|\bcase ?law\b|\bv\.?\s+[A-Z]/i;
+/** The demo's trigger for the honest-empty case: a question naming a party this fixture set
+ *  has no recorded judgment for. */
+const CASE_EMPTY_TRIGGER = /no (matching )?(judgment|precedent|case)|unmatched (party|case)/i;
+
 export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
@@ -360,10 +446,16 @@ export class MockGateway implements GatewayProvider {
         detail: `The demo gateway has no recorded ${input.taskOverride} reply. Run against the real gateway (docs/RUN_LOCALLY.md) to use this.`,
       });
     }
-    // Same rule as ask(): law this corpus does not hold abstains, by name.
-    const recorded = /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
-      ? ABSTAINED
-      : ANSWERED;
+    // Same rule as ask(): law this corpus does not hold abstains, by name. A case-shaped
+    // question routes to judgment discovery instead, before that statute rule ever runs —
+    // the two paths never compete for the same question.
+    const recorded = CASE_EMPTY_TRIGGER.test(input.text)
+      ? CASE_EMPTY
+      : CASE_QUESTION.test(input.text)
+        ? CASE_FOUND
+        : /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
+          ? ABSTAINED
+          : ANSWERED;
     const payload = JSON.stringify(input);
     const previous = input.requestId ? REQUESTS.get(input.requestId) : undefined;
     if (previous && previous.payload !== payload) return engineOk({ status: "REFUSED", code: "REQUEST_ID_CONFLICT", detail: "This request ID belongs to a different request." });
