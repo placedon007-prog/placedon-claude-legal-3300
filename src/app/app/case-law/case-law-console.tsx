@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import type { EngineError } from "@/lib/engine/errors";
-import type { CaseLawRenderModel } from "@/lib/case-law";
+import { judgmentPdfUrl, type CaseLawRenderModel } from "@/lib/case-law";
 import { searchCaseLawAction, type CaseLawSearchState } from "../actions";
 
 function Failure({ error }: { error: EngineError }) {
@@ -30,13 +30,14 @@ function Results({ model }: { model: CaseLawRenderModel }) {
       {model.note && <p className="meta">{model.note}</p>}
       {model.hits.length === 0 ? (
         <p className="cal-empty">
-          No case matched &ldquo;{model.query}&rdquo;. Discovery finds a case by party or
-          case name, not legal topic — try the parties or the exact case title.
+          No judgment matched &ldquo;{model.query}&rdquo;. Try the case title, a party, or a
+          short legal topic. A missing result does not mean no case exists.
         </p>
       ) : (
         <ul className="vault-hits">
-          {model.hits.map((hit) => (
-            <li key={hit.id}>
+          {model.hits.map((hit) => {
+            const pdfUrl = judgmentPdfUrl(hit);
+            return <li key={hit.id}>
               <p>
                 <strong>{hit.title}</strong>
               </p>
@@ -44,20 +45,11 @@ function Results({ model }: { model: CaseLawRenderModel }) {
                 {hit.parties.join(" v. ")} · {hit.year} · {hit.court}
               </p>
               <p className="meta mono">
-                {hit.date} · {hit.tier} · {hit.openTarget}
+                {hit.date} · {hit.tier} · public-data copy; verify against the court record
               </p>
-              {/* aria-disabled keeps it focusable so the label can say why it does nothing. */}
-              <button
-                type="button"
-                aria-disabled="true"
-                aria-label={`Open ${hit.title} — not wired in this console yet`}
-                onClick={(event) => event.preventDefault()}
-                className="cursor-not-allowed"
-              >
-                Open — coming soon
-              </button>
+              {pdfUrl ? <a className="mt-2 inline-flex min-h-11 items-center rounded px-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2" href={pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open public-data PDF for ${hit.title} in a new tab`}>Open judgment PDF<span className="sr-only"> (opens in a new tab)</span></a> : <span className="meta">PDF link unavailable for this record.</span>}
             </li>
-          ))}
+          })}
         </ul>
       )}
       {model.notSearched.length > 0 && (
@@ -84,19 +76,20 @@ export function CaseLawConsole() {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="case-law-query">Party or case name</label>
+        <label htmlFor="case-law-query">Case name, party, or legal topic</label>
         <input
           id="case-law-query"
           name="query"
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Tata Consultancy Services v. Cyrus Investments"
+          placeholder="e.g. Tata v Cyrus, or oppression and mismanagement"
           aria-describedby="case-law-help"
         />
         <p className="meta" id="case-law-help">
-          Search is by party or case name, not legal topic. It does not search the statute —
-          use Ask for that.
+          Searches the available Supreme Court and High Court judgment collections. Topic
+          discovery depends on the collection’s search index; results are supporting authority,
+          not live case status or a verified statutory answer. Use Ask to search held statutes.
         </p>
         <button type="submit" disabled={pending}>
           {pending ? "Searching…" : "Search"}

@@ -14,6 +14,7 @@ import { accountLoginOutcome } from "@/lib/auth/account-login";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
+import { sourceCatalogFailureMessage } from "@/lib/sources";
 
 
 /**
@@ -660,18 +661,18 @@ export type ComposerContext = {
   /** sources.list `bodies`, or why they did not load. A failure is not a refusal. */
   readonly sources:
     | { readonly phase: "loaded"; readonly bodies: readonly SourceBody[]; readonly integrations: readonly SourceIntegration[] }
-    | { readonly phase: "failed"; readonly kind: string };
+    | { readonly phase: "failed"; readonly kind: string; readonly status?: number; readonly message: string };
   readonly matters: readonly { matter_id: string; name: string }[];
 };
 
 /** What the composer needs before the first keystroke. Read on the server, never the client. */
 export async function loadComposerContext(): Promise<ComposerContext> {
-  if (!(await hasSession())) return { sources: { phase: "failed", kind: "session" }, matters: [] };
+  if (!(await hasSession())) return { sources: { phase: "failed", kind: "session", message: sourceCatalogFailureMessage("session") }, matters: [] };
   let gateway: Awaited<ReturnType<typeof getGateway>>;
   try {
     gateway = await getGateway();
   } catch {
-    return { sources: { phase: "failed", kind: "transport_error" }, matters: [] };
+    return { sources: { phase: "failed", kind: "transport_error", message: sourceCatalogFailureMessage("transport_error") }, matters: [] };
   }
   // These reads are independent: an optional matter-list failure must not turn a healthy
   // source catalogue into a failed composer context, and one rejected read must not hide
@@ -685,7 +686,15 @@ export async function loadComposerContext(): Promise<ComposerContext> {
   return {
     sources: sources?.ok
       ? { phase: "loaded", bodies: sources.data.bodies, integrations: sources.data.integrations }
-      : { phase: "failed", kind: sources && !sources.ok ? sources.error.kind : "transport_error" },
+      : {
+          phase: "failed",
+          kind: sources && !sources.ok ? sources.error.kind : "transport_error",
+          status: sources && !sources.ok ? sources.error.status : undefined,
+          message: sourceCatalogFailureMessage(
+            sources && !sources.ok ? sources.error.kind : "transport_error",
+            sources && !sources.ok ? sources.error.status : undefined,
+          ),
+        },
     // A matters failure only hides the optional matter chip; it never blocks asking.
     matters: matters?.ok ? matters.data.matters.map(({ matter_id, name }) => ({ matter_id, name })) : [],
   };

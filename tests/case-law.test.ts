@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { sourcesSearchSchema } from "../src/lib/gateway/types";
-import { toCaseLawRenderModel } from "../src/lib/case-law";
+import { judgmentPdfUrl, toCaseLawRenderModel } from "../src/lib/case-law";
+import { sourceCatalogFailureMessage } from "../src/lib/sources";
 import { HttpGateway } from "../src/lib/gateway/http";
 
 const VALID = {
@@ -17,7 +18,7 @@ const VALID = {
       year: 2021,
       date: "2021-03-26",
       court: "Supreme Court of India",
-      s3_key: "aws_sc_judgments/2021/tata-consultancy-services-v-cyrus-investments.pdf",
+      s3_key: "data/pdf/year=2021/english/2021_1_243_286_EN.pdf",
       tier: "LICENSED",
     },
   ],
@@ -59,6 +60,21 @@ test("the render model surfaces the Tata/Cyrus judgment as LICENSED supporting a
   assert.equal(hit.openTarget, VALID.judgments[0].s3_key, "the open target is the judgment's stored key");
   assert.ok(hit.id.includes("aws_sc_judgments"), "the hit id carries its source");
   assert.equal(model.notSearched[0].sourceId, "aws_hc_judgments");
+});
+
+test("judgment PDF links only target the allowlisted bucket and validated dataset key", () => {
+  const hit = toCaseLawRenderModel(sourcesSearchSchema.parse(VALID)).hits[0];
+  assert.equal(judgmentPdfUrl(hit), "https://indian-supreme-court-judgments.s3.ap-south-1.amazonaws.com/data/pdf/year=2021/english/2021_1_243_286_EN.pdf");
+  assert.equal(judgmentPdfUrl({ ...hit, openTarget: "https://attacker.invalid/file.pdf" }), null);
+  assert.equal(judgmentPdfUrl({ ...hit, openTarget: "data/pdf/year=2020/english/2021_1_243_286_EN.pdf" }), null);
+  assert.equal(judgmentPdfUrl({ ...hit, id: `unknown:${hit.openTarget}` }), null);
+});
+
+test("source catalogue recovery copy distinguishes stale credentials and missing backend routes", () => {
+  assert.match(sourceCatalogFailureMessage("bad_request", 401), /restart the gateway and website together/);
+  assert.match(sourceCatalogFailureMessage("not_found", 404), /Update the backend gateway/);
+  assert.match(sourceCatalogFailureMessage("server_error", 503), /temporary service error/);
+  assert.match(sourceCatalogFailureMessage("transport_error"), /not an empty source list/);
 });
 
 test("an empty judgments list still renders — a found result, not a failure", () => {

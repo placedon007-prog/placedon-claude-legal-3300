@@ -12,6 +12,24 @@ export function defaultSourceIds(bodies: readonly SourceBody[]): string[] {
   return bodies.filter((b) => b.default_on).map((b) => b.id);
 }
 
+/** Plain recovery guidance for source-catalogue failures; never expose gateway internals. */
+export function sourceCatalogFailureMessage(kind: string, status?: number): string {
+  if (status === 401 || status === 403) {
+    return "The gateway rejected this app’s access key. For local development, restart the gateway and website together so they use the same key; for a hosted workspace, ask the administrator to check gateway credentials.";
+  }
+  if (status === 404) return "This gateway does not expose the source catalogue yet. Update the backend gateway, then retry.";
+  if (status === 429) return "The source service is busy. Your question and source choices are unchanged; wait briefly, then retry.";
+  if (status !== undefined && status >= 500) return "The gateway returned a temporary service error. Your question and source choices are unchanged; retry shortly.";
+  if (status === 400) return "The gateway rejected the source-catalogue request. Update the website and gateway together, then retry.";
+  if (kind === "schema_mismatch") return "The gateway returned a source catalogue in an unsupported format. Update the website and gateway together, then retry.";
+  if (kind === "session") return "Your session has ended. Sign in again, then reload the source catalogue.";
+  if (kind === "timeout") return "The gateway took too long to respond. Your question and source choices are unchanged; retry when the service is available.";
+  if (kind === "not_found") return "This gateway does not provide a compatible source catalogue. Update the website and gateway together, then retry.";
+  if (kind === "bad_request") return "The gateway rejected the source-catalogue request. Update the website and gateway together, then retry.";
+  if (kind === "server_error") return "The gateway returned a temporary service error. Your question and source choices are unchanged; retry shortly.";
+  return "The gateway could not be reached. Check that it is running and reachable, then retry. This is a connection problem, not an empty source list.";
+}
+
 /** A stored choice, kept only if every id is a selectable source; otherwise the default. */
 export function chosenOrDefault(bodies: readonly SourceBody[], stored: unknown): string[] {
   const selectable = new Set(bodies.filter((b) => b.selectable).map((b) => b.id));

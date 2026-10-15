@@ -39,6 +39,22 @@ export interface CaseLawRenderModel {
   readonly supportingOnly: true;
 }
 
+const JUDGMENT_BUCKETS = {
+  aws_sc_judgments: "indian-supreme-court-judgments",
+  aws_hc_judgments: "indian-high-court-judgments",
+} as const;
+
+/** Open the public-data PDF using an allowlisted host and a validated dataset object key. */
+export function judgmentPdfUrl(hit: Pick<CaseLawHit, "openTarget" | "id" | "year">): string | null {
+  const sourceId = hit.id.split(":", 1)[0] as keyof typeof JUDGMENT_BUCKETS;
+  const bucket = JUDGMENT_BUCKETS[sourceId];
+  if (!bucket || !Number.isInteger(hit.year) || hit.year < 1801 || hit.year > 2199) return null;
+  const match = /^data\/pdf\/year=(\d{4})\/(english|hindi)\/([A-Za-z0-9._-]+)_(EN|HI)\.pdf$/.exec(hit.openTarget);
+  if (!match || Number(match[1]) !== hit.year) return null;
+  if ((match[2] === "english" && match[4] !== "EN") || (match[2] === "hindi" && match[4] !== "HI")) return null;
+  return `https://${bucket}.s3.ap-south-1.amazonaws.com/${hit.openTarget}`;
+}
+
 /** Shared with the conversation answer's case-routed render model (`case-answer.ts`), so a
  *  judgment maps to the same shape wherever it is discovered: standalone search or a
  *  case-routed answer. */

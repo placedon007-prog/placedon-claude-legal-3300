@@ -217,7 +217,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     composerRef={composerApi}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
-    tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded", refreshing: refreshingSources }}
+    tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded", failureMessage: context.sources.phase === "failed" ? context.sources.message : undefined, refreshing: refreshingSources }}
     onRetrySources={retrySources}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
     matters={context.matters} matterId={matterId} onMatter={setMatterId} matterLocked={Boolean(conversationId) || pending || Boolean(uncertain)}
