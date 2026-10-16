@@ -74,3 +74,31 @@ test("draft inbox uses the generated tenant-scoped route and requests metadata o
     assert.ok(result.data.drafts.length === 0);
   } finally { globalThis.fetch = original; }
 });
+
+test("public web research sends only the explicit query, mode and consent to its gateway route", async () => {
+  const original = globalThis.fetch;
+  let calledUrl = "";
+  let calledBody = "";
+  let calledHeaders: Headers | undefined;
+  globalThis.fetch = async (url, init) => {
+    calledUrl = String(url);
+    calledBody = String(init?.body ?? "");
+    calledHeaders = new Headers(init?.headers);
+    return new Response(JSON.stringify({
+      status: "NOT_CONFIGURED", provider: "exa", queried_at: null,
+      answer: null, citations: [], message: "not configured",
+    }));
+  };
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key").researchWeb({
+      query: "recent criminal judgments", mode: "CASE_DISCOVERY", externalSearchConsent: true,
+    });
+    assert.ok(result.ok);
+    assert.equal(calledUrl, "http://localhost:8021/v2/research/web");
+    assert.deepEqual(JSON.parse(calledBody), {
+      query: "recent criminal judgments", mode: "CASE_DISCOVERY", external_search_consent: true,
+    });
+    assert.ok(!calledBody.includes("fixture-key"));
+    assert.equal(calledHeaders?.get("Authorization"), "Bearer fixture-key");
+  } finally { globalThis.fetch = original; }
+});

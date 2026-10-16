@@ -26,7 +26,7 @@
   --c-fg-2: #404040;
   --c-fg-3: #6b6b6b;
 
-  /* Motion: at most 200ms, and only to show what an action changed. */
+  /* Interaction transitions are at most 200ms. Indeterminate run feedback may loop while work is pending. */
   --c-dur: 160ms;
   --c-dur-panel: 200ms;
   --c-ease: cubic-bezier(0.2, 0, 0, 1);
@@ -428,9 +428,52 @@
 .lede-sm { margin: 0.6rem 0 0; }
 
 /* ── watching a run that is still moving ──────────────────────────────────── */
+.research-activity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 82px;
+  padding: 14px 16px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-wash);
+}
+.research-orbit {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+}
+.research-orbit-track,
+.research-orbit-sweep {
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+}
+.research-orbit-track { border: 1px solid var(--c-line-2); }
+.research-orbit-sweep {
+  border: 2px solid transparent;
+  border-top-color: var(--c-fg);
+  border-right-color: var(--c-fg-3);
+  animation: research-orbit-turn 2.4s linear infinite;
+}
+.research-orbit-mark {
+  width: 22px;
+  height: 22px;
+  color: var(--c-fg);
+  animation: research-orbit-breathe 2.4s ease-in-out infinite;
+}
+@keyframes research-orbit-turn { to { transform: rotate(360deg); } }
+@keyframes research-orbit-breathe { 50% { transform: scale(0.91); opacity: 0.76; } }
+@media (prefers-reduced-motion: reduce) {
+  .research-orbit-sweep,
+  .research-orbit-mark { animation: none; }
+}
 .watch { margin-bottom: 1.5rem; display: grid; gap: 0.5rem; }
 .watch .lede { margin: 0; }
-/* The one moving thing on the page. Reduced motion stops it; the words carry "watching". */
+/* Run feedback also works through its text when reduced motion stops the pulse. */
 .watch-live::before, .pulse-dot {
   content: "";
   display: inline-block;

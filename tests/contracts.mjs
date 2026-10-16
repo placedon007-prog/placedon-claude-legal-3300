@@ -257,7 +257,7 @@ const SCREEN_VERBS = [
   "vaultUpload", "vaultStatus", "vaultFind", "vaultVerify",
   "tableCreate", "tableStatus", "tableExport", "tableCancel",
   "draftCreate", "draftRevise", "draftVersions", "draftDiff", "draftExport",
-  "calendarUpcoming", "sourcesList",
+  "calendarUpcoming", "sourcesList", "researchWeb",
 ];
 const httpProto = HttpGateway.prototype;
 for (const verb of SCREEN_VERBS) {
@@ -285,6 +285,10 @@ check(
 check(
   GATEWAY_ROUTES.sourcesList === "/v2/sources/list",
   "sources.list is POSTed at /v2/sources/list",
+);
+check(
+  GATEWAY_ROUTES.researchWeb === "/v2/research/web",
+  "public web research uses its dedicated gateway route",
 );
 
 // ── the @-sources picker ─────────────────────────────────────────────────────

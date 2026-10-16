@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Briefcase, FileText, Plus } from "lucide-react";
-import { PromptBox, type AttachOutcome, type ComposerHandle, type ComposerTool, type DocumentLookup } from "@/components/ui/prompt-box";
+import { PromptBox, type AttachOutcome, type ComposerHandle, type ComposerTool, type DocumentLookup, type WebMode } from "@/components/ui/prompt-box";
 import type { CitationGroup } from "@/lib/thread";
 import { chosenOrDefault, toggleSource } from "@/lib/sources";
 import { conversationPollDelay, conversationTurns } from "@/lib/conversation";
-import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
+import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
@@ -77,6 +77,17 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   React.useEffect(() => {
     const draft = takeResume(window.location.pathname + window.location.search);
     if (draft) composerApi.current?.setText(draft);
+    try {
+      const oldWebDraft = sessionStorage.getItem("placedon-web-draft");
+      if (oldWebDraft) {
+        const timer = window.setTimeout(() => {
+          setTool("web");
+          composerApi.current?.setText(oldWebDraft.slice(0, 800));
+          sessionStorage.removeItem("placedon-web-draft");
+        }, 0);
+        return () => window.clearTimeout(timer);
+      }
+    } catch { /* An old bookmark still opens the conversation without tab storage. */ }
   }, []);
   const workspaceRef = React.useRef<HTMLDivElement>(null);
   const composerRef = React.useRef<HTMLDivElement>(null);
@@ -140,7 +151,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     setSource({ conversationId: cid, group, activeId });
   }, []);
 
-  async function send(text: string, selectedTool: ComposerTool, fileIds: readonly string[], retry?: Turn, restart = false) {
+  async function send(text: string, selectedTool: Exclude<ComposerTool, "web">, fileIds: readonly string[], retry?: Turn, restart = false) {
     if (requestInFlight.current || queuedSignature) return;
     if (uncertain && (uncertain.key !== retry?.key || restart)) return;
     if (restart && !retry?.request) return;
@@ -184,6 +195,36 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     }
   }
 
+  async function sendWeb(text: string, mode: WebMode, consent: boolean) {
+    if (requestInFlight.current || !consent || text.length > 800) return;
+    requestInFlight.current = true;
+    const generation = lifetime.current;
+    const key = crypto.randomUUID();
+    recordActivity(new Date());
+    setSending(true);
+    setTurns((all) => [...all, { key, question: text, state: null, web: { state: null, mode } }]);
+    requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "end", behavior: "instant" }));
+    try {
+      const result = await webResearchAction({ query: text, mode, externalSearchConsent: consent });
+      if (lifetime.current !== generation) return;
+      if (result.phase === "signed_out") {
+        const path = consolePath(conversationId);
+        stashResume(path, text);
+        setTurns((all) => all.filter((turn) => turn.key !== key));
+        router.push(`/login?next=${encodeURIComponent(path)}`);
+        return;
+      }
+      setTurns((all) => all.map((turn) => turn.key === key && turn.web
+        ? { ...turn, web: { ...turn.web, state: result } } : turn));
+    } catch {
+      if (lifetime.current === generation) setTurns((all) => all.map((turn) => turn.key === key && turn.web
+        ? { ...turn, web: { ...turn.web, state: { phase: "invalid", message: "The web search did not complete. Your question was not answered." } } } : turn));
+    } finally {
+      requestInFlight.current = false;
+      if (lifetime.current === generation) setSending(false);
+    }
+  }
+
   async function attach(file: File): Promise<AttachOutcome> {
     const data = new FormData();
     data.set("file", file);
@@ -213,7 +254,10 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   }
 
   const empty = turns.length === 0;
-  const input = <PromptBox onSubmit={(text, selectedTool, ids) => { void send(text, selectedTool, ids); }}
+  const input = <PromptBox onSubmit={(text, selectedTool, ids, webMode, webConsent) => {
+    if (selectedTool === "web") void sendWeb(text, webMode, webConsent);
+    else void send(text, selectedTool, ids);
+  }}
     composerRef={composerApi}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
@@ -240,17 +284,18 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         {loadProblem ? <p role="status" className="max-w-[560px] rounded-card border border-line-2 bg-wash px-4 py-3 text-body text-fg-2">{loadProblem}</p> : null}
         <Welcome />
         <div className="w-full max-w-[720px]" ref={composerRef}>{input}</div>
-        <p className="max-w-[560px] text-center text-ui text-fg-3">Research with exact passages. See what was searched, what was used, and what remains unanswered.</p>
+        <p className="max-w-[560px] text-center text-ui text-fg-3">{tool === "web" ? "Public reports are research leads. Verify any live court status in official records." : "Research with exact passages. See what was searched, what was used, and what remains unanswered."}</p>
       </div> : <>
         <div className="flex-1 px-4 pt-9 pb-8 md:px-8"><div className="mx-auto flex w-full max-w-[680px] flex-col gap-12">
           {turns.map((turn) => <TurnView key={turn.key} turn={turn}
             retryDisabled={pending || Boolean(uncertain && uncertain.key !== turn.key)}
             onRetry={() => { void send(turn.question, turn.request?.tool ?? "research", turn.request?.fileIds ?? [], turn, turn.state?.phase === "answered" && turn.state.envelope.status === "FAILED"); }}
-            onOpenSource={openSource} onDraft={() => { setTool("draft"); composerRef.current?.querySelector("textarea")?.focus(); }} />)}
+            onOpenSource={openSource} onDraft={() => { setTool("draft"); composerRef.current?.querySelector("textarea")?.focus(); }}
+            onResearchWeb={(question) => { setTool("web"); composerApi.current?.setText(question.slice(0, 800)); composerRef.current?.querySelector("textarea")?.focus(); }} />)}
           <div ref={endRef} />
         </div></div>
         <div className="sticky bottom-0 z-10 border-t border-line bg-ground px-4 pt-4 pb-4 md:px-8"><div className="mx-auto w-full max-w-[680px]" ref={composerRef}>{input}</div>
-          <p role="status" className="mx-auto mt-2 max-w-[680px] text-center text-caption text-fg-3">{sending ? "Sending your request…" : uncertain ? "Recover the interrupted request above before sending another question, or start a new conversation." : queuedSignature ? "Your request is saved while work completes." : "Answers may be incomplete. Review the cited passages before relying on them."}</p>
+          <p role="status" className="mx-auto mt-2 max-w-[680px] text-center text-caption text-fg-3">{sending ? tool === "web" ? "Searching public sources…" : "Sending your request…" : uncertain ? "Recover the interrupted request above before sending another question, or start a new conversation." : queuedSignature ? "Your request is saved while work completes." : tool === "web" ? "Public reports are not verified law or court docket records." : "Answers may be incomplete. Review the cited passages before relying on them."}</p>
         </div>
       </>}
     </div>

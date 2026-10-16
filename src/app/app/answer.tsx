@@ -14,7 +14,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
-import { CalendarPlus, Check, Copy, GitBranch, History, PenLine } from "lucide-react";
+import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
@@ -22,13 +22,17 @@ import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
 import { executionCostLabel, modelCalls } from "@/lib/conversation";
-import { loadExecutionDetails, type ExecutionDetails, type TurnState } from "./actions";
+import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebResearchState } from "./actions";
+import { ResearchState } from "./web-research-result";
+import { ResearchActivity } from "./research-activity";
 
 export interface Turn {
   readonly key: string;
   readonly question: string;
   /** null while the request is in flight. */
   readonly state: TurnState | null;
+  /** Public reporting is intentionally separate from the verified-law envelope. */
+  readonly web?: { readonly state: WebResearchState | null; readonly mode: "GENERAL_WEB" | "CASE_DISCOVERY" };
   readonly request?: { text: string; tool: "research" | "draft"; fileIds: readonly string[]; sources: readonly string[]; matterId: string | null; conversationId: string | null };
 }
 
@@ -65,23 +69,40 @@ export function TurnView({
   retryDisabled = false,
   onOpenSource,
   onDraft,
+  onResearchWeb,
 }: {
   turn: Turn;
   onRetry: () => void;
   retryDisabled?: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
+  onResearchWeb: (question: string) => void;
 }) {
   const s = turn.state;
+  const asksForCurrentCase = /\b(?:case|court|lawsuit|litigation|dispute)\b/i.test(turn.question)
+    && /\b(?:current|latest|recent|today|news|update)\b/i.test(turn.question);
+  if (turn.web) return <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
+    <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">{turn.question}</h2>
+    <p className="text-caption text-fg-3">Public web · {turn.web.mode === "CASE_DISCOVERY" ? "cases and reporting" : "general search"} · This result is not saved to the legal conversation.</p>
+    {turn.web.state ? <ResearchState state={turn.web.state} query={turn.question} />
+      : <ResearchActivity kind="web" />}
+  </section>;
   return (
     <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
       <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">
         {turn.question}
       </h2>
+      {s?.phase === "answered" && (s.envelope.resource === "case" || asksForCurrentCase) ? (
+        <button
+          type="button"
+          onClick={() => onResearchWeb(turn.question)}
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-chip border border-line-control px-3 text-ui font-medium text-fg hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+        >
+          <Globe2 className="size-4" aria-hidden /> Search public reporting for this question
+        </button>
+      ) : null}
       {s === null ? (
-        <div aria-busy="true" aria-live="polite">
-          <StatusLine kind="pending" />
-        </div>
+        <ResearchActivity kind="sending" />
       ) : s.phase === "invalid" ? (
         <p className="text-body text-fg-2">{s.message}</p>
       ) : s.phase === "signed_out" ? (
@@ -115,11 +136,7 @@ export function TurnView({
         </div>
       ) : s.phase === "queued" ? (
         <div className="flex flex-col gap-2">
-          <StatusLine kind="queued" />
-          <p className="text-read text-fg-2">
-            Your request is saved. The answer will appear here when the work finishes.
-            {s.note ? ` ${s.note}` : ""}
-          </p>
+          <ResearchActivity kind="queued" note={s.note} />
           {s.runId ? <RunLink runId={s.runId} /> : null}
         </div>
       ) : (

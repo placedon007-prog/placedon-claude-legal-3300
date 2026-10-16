@@ -27,9 +27,11 @@ import {
   conversationSendSchema,
   sourcesListSchema,
   sourcesSearchSchema,
+  webResearchSchema,
   mattersListSchema,
   type SourcesList,
   type SourcesSearch,
+  type WebResearch,
   type MattersList,
   conversationGetSchema,
   conversationListSchema,
@@ -413,6 +415,19 @@ export class HttpGateway implements GatewayProvider {
   sourcesSearch(input: { query: string }): Promise<EngineResult<SourcesSearch>> {
     return this.call(GATEWAY_ROUTES.sourcesSearch, GATEWAY_ROUTES.sourcesSearch,
       sourcesSearchSchema, { method: "POST", body: { query: input.query } });
+  }
+
+  researchWeb(input: {
+    query: string;
+    mode: "GENERAL_WEB" | "CASE_DISCOVERY";
+    externalSearchConsent: boolean;
+  }): Promise<EngineResult<WebResearch>> {
+    return this.call(GATEWAY_ROUTES.researchWeb, GATEWAY_ROUTES.researchWeb,
+      webResearchSchema, { method: "POST", body: {
+        query: input.query,
+        mode: input.mode,
+        external_search_consent: input.externalSearchConsent,
+      } });
   }
 
   mattersList(): Promise<EngineResult<MattersList>> {

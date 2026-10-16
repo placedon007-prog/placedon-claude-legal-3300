@@ -72,6 +72,8 @@ export const GATEWAY_ROUTES = {
   // `sources.search` -> head `sources/search`. Discovery by party/case name, not legal
   // topic — see `judgmentSchema` in gateway/types.ts for why a judgment is never an answer.
   sourcesSearch: "/v2/sources/search",
+  // Opt-in public web search with a distinct response contract from held law and cases.
+  researchWeb: "/v2/research/web",
   // C2, the conversation layer. `conversation.get` and `citation.get` end in `.get`, so
   // `rest_path()` drops the `/get` head: `/v2/conversation/{id}` and `/v2/citation`.
   // Verified against a live gateway on 2026-10-07.

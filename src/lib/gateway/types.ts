@@ -1096,6 +1096,35 @@ export const sourcesSearchSchema = z.object({
 });
 export type SourcesSearch = z.infer<typeof sourcesSearchSchema>;
 
+/** Public web research is not an answer-envelope legal finding or live docket record. */
+export const webResearchSchema = z.object({
+  status: z.enum([
+    "ANSWERED", "NO_RESULTS", "NEEDS_CASE_DETAILS", "OFFICIAL_STATUS_REQUIRED",
+    "NOT_CONFIGURED", "CONSENT_REQUIRED", "BUSY", "UNAVAILABLE", "BAD_REQUEST",
+  ]),
+  provider: z.string().optional(),
+  query: z.string().optional(),
+  queried_at: z.string().nullable().optional(),
+  answer: z.string().nullable().optional(),
+  citations: z.array(z.object({
+    title: z.string(),
+    url: z.string().url().refine((value) => {
+      try { return new URL(value).protocol === "https:"; } catch { return false; }
+    }, "Citation links must use HTTPS."),
+    domain: z.string(),
+    published_at: z.string().nullable(),
+    author: z.string().nullable(),
+    excerpt: z.string(),
+  })).optional(),
+  note: z.string().optional(),
+  message: z.string().optional(),
+  retryable: z.boolean().optional(),
+  portals: z.array(z.object({ label: z.string(), url: z.string().url().refine((value) => {
+    try { return new URL(value).protocol === "https:"; } catch { return false; }
+  }, "Court portal links must use HTTPS.") })).optional(),
+});
+export type WebResearch = z.infer<typeof webResearchSchema>;
+
 /** `matters.list`: this firm's matters. A thread may be filed to one (`matter_id`). */
 export const mattersListSchema = z.object({
   matters: z.array(

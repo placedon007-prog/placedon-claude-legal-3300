@@ -16,7 +16,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Globe2, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +26,8 @@ import { mentionMatches, type MentionItem } from "@/lib/sources";
 import { cn } from "@/lib/utils";
 import { VaultPicker, type SelectedVaultFile } from "@/components/ui/vault-browser";
 
-export type ComposerTool = "research" | "draft";
+export type ComposerTool = "research" | "draft" | "web";
+export type WebMode = "GENERAL_WEB" | "CASE_DISCOVERY";
 
 /** What happened to an attached file. The words are shown on its chip. */
 export type AttachOutcome =
@@ -39,7 +40,7 @@ export type DocumentLookup =
   | { readonly ok: false; readonly message: string };
 
 export interface PromptBoxProps {
-  onSubmit: (text: string, tool: ComposerTool, fileIds: readonly string[]) => void;
+  onSubmit: (text: string, tool: ComposerTool, fileIds: readonly string[], webMode: WebMode, webConsent: boolean) => void;
   checkDocument?: (id: string) => Promise<{ state: string; note: string }>;
   matterLocked?: boolean;
   onAttach?: (file: File) => Promise<AttachOutcome>;
@@ -114,6 +115,8 @@ export function PromptBox(props: PromptBoxProps) {
   const [filesOpen, setFilesOpen] = React.useState(false);
   const [vaultOpen, setVaultOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
+  const [webMode, setWebMode] = React.useState<WebMode>("GENERAL_WEB");
+  const [webConsent, setWebConsent] = React.useState(false);
   const [toolsOpen, setToolsOpen] = React.useState(false);
   const [files, setFiles] = React.useState<Attached[]>([]);
   const [docs, setDocs] = React.useState<{ id: string; name: string }[]>([]);
@@ -130,7 +133,7 @@ export function PromptBox(props: PromptBoxProps) {
 
   // Restore a parked draft on demand (after a sign-in detour). Imperative, so the parent can
   // refill the composer once without a controlled-value effect fighting what the user types.
-  React.useImperativeHandle(composerRef, () => ({ setText: (text: string) => setValue(text) }), []);
+  React.useImperativeHandle(composerRef, () => ({ setText: (text: string) => { setValue(text); setWebConsent(false); } }), []);
 
   // Documents for "@", looked up by what was typed (3+ characters), a moment after typing stops.
   const query = mention?.query ?? "";
@@ -168,7 +171,10 @@ export function PromptBox(props: PromptBoxProps) {
 
   const waitingForFiles = files.some((f) => f.state !== "stored" || f.readiness !== "INGESTED");
   const overAttachmentLimit = files.length + docs.length > 20;
-  const canSend = hydrated && value.trim().length >= 8 && !pending && !waitingForFiles && !sources.failed && !overAttachmentLimit;
+  const webReady = tool === "web" && value.trim().length >= 3 && value.trim().length <= 800
+    && webConsent && files.length === 0 && docs.length === 0;
+  const canSend = hydrated && !pending && (tool === "web" ? webReady
+    : value.trim().length >= 8 && !waitingForFiles && !sources.failed && !overAttachmentLimit);
   const processingIds = files.filter((f) => f.state === "stored" && ["PENDING", "UNKNOWN"].includes(f.readiness)).map((f) => f.state === "stored" ? f.id : "").join(",");
   React.useEffect(() => {
     if (!processingIds || !checkDocument) return;
@@ -196,11 +202,12 @@ export function PromptBox(props: PromptBoxProps) {
   function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!canSend) return;
-    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && f.readiness === "INGESTED" ? [f.id] : [])])]);
+    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && f.readiness === "INGESTED" ? [f.id] : [])])], webMode, webConsent);
     setDocs([]);
     setFiles([]);
     setValue("");
-    setTool("research");
+    setWebConsent(false);
+    if (tool !== "web") setTool("research");
     setMention(null);
   }
 
@@ -325,7 +332,7 @@ export function PromptBox(props: PromptBoxProps) {
         ref={ref}
         rows={1}
         value={value}
-        maxLength={8000}
+        maxLength={tool === "web" ? 800 : 8000}
         aria-label={tool === "draft" ? "What should the draft say?" : "Your question"}
         role="combobox"
         aria-expanded={menuOpen}
@@ -334,6 +341,7 @@ export function PromptBox(props: PromptBoxProps) {
         aria-activedescendant={menuOpen && items.length ? `${MENU_ID}-${Math.min(active, items.length - 1)}` : undefined}
         onChange={(e) => {
           setValue(e.target.value);
+          if (tool === "web") setWebConsent(false);
           track(e.target.value, e.target.selectionStart ?? e.target.value.length);
         }}
         onClick={(e) => track(e.currentTarget.value, e.currentTarget.selectionStart ?? 0)}
@@ -363,14 +371,27 @@ export function PromptBox(props: PromptBoxProps) {
           }
           if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) submit(e);
         }}
-        placeholder={tool === "draft" ? "Say what to draft from the answers above" : PLACEHOLDER}
+        placeholder={tool === "draft" ? "Say what to draft from the answers above" : tool === "web" ? "Ask about current public reporting…" : PLACEHOLDER}
         className="pb-input min-h-12 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-fg shadow-none placeholder:text-fg-3 focus-visible:ring-0"
       />
 
       {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">A document is not ready to read. Wait for processing, or remove it to send without it.</p> : null}
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
       {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Choose one readable file to ask for a document review. Legal research does not read attachments yet.</p> : null}
+      {tool === "web" ? <div className="space-y-2 px-3 pb-3 text-ui">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Public web research type">
+          <button type="button" aria-pressed={webMode === "GENERAL_WEB"} onClick={() => { setWebMode("GENERAL_WEB"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Web search</button>
+          <button type="button" aria-pressed={webMode === "CASE_DISCOVERY"} onClick={() => { setWebMode("CASE_DISCOVERY"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Cases and reporting</button>
+        </div>
+        <label className="flex cursor-pointer items-start gap-2 rounded-card border border-line p-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-fg">
+          <input type="checkbox" checked={webConsent} onChange={(e) => setWebConsent(e.target.checked)} className="mt-1 size-4 accent-fg" />
+          <span>Send only this question to Exa for public web research. Do not include client-confidential details. Files, matter details, and conversation history are not sent.</span>
+        </label>
+        {files.length || docs.length ? <p role="alert" className="text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}
+        {value.trim().length > 800 ? <p role="alert" className="text-caption text-fg-2">Shorten this question to 800 characters for web research.</p> : null}
+      </div> : null}
       <div className="flex flex-wrap items-center gap-0.5 px-1">
+        {tool !== "web" ? <>
         <input
           ref={fileRef}
           type="file"
@@ -399,17 +420,20 @@ export function PromptBox(props: PromptBoxProps) {
           onAdd={useVaultFiles} returnFocus={() => (vaultOrigin.current === "sources" ? sourcesButtonRef : filesButtonRef).current?.focus()} />
         {!matterLocked && files.length === 0 && docs.length === 0 ? <MatterChip matters={matters} matterId={matterId} onChange={onMatter} /> : null}
         <AsOfChip />
+        </> : null}
         <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
           <PopoverTrigger asChild>
             <button type="button" className={chip}>
               <SlidersHorizontal className="size-4" aria-hidden />
-              {tool === "draft" ? "Draft" : "Research"}
+              {tool === "draft" ? "Draft" : tool === "web" ? "Web research" : "Research"}
             </button>
           </PopoverTrigger>
           <PopoverContent side="top" align="start" sideOffset={8} className="w-72 p-1.5">
             <ul className="flex flex-col">
               <ToolRow icon={Scale} name="Research held law" note={tool === "research" ? "selected" : undefined}
                 onPick={() => { setTool("research"); setToolsOpen(false); }} />
+              <ToolRow icon={Globe2} name="Research the public web" note={tool === "web" ? "selected" : "Only your question is sent"}
+                onPick={() => { setTool("web"); setWebConsent(false); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "ask something first"} disabled={!canDraft}
                 onPick={() => { setTool("draft"); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={FileCheck2} name="Check a document" href="/app/document-check" note="opens its screen" />
@@ -417,6 +441,8 @@ export function PromptBox(props: PromptBoxProps) {
             </ul>
           </PopoverContent>
         </Popover>
+
+        {tool !== "web" ? <button type="button" className={chip} onClick={() => { setTool("web"); setWebConsent(false); ref.current?.focus(); }}><Globe2 className="size-4" aria-hidden />Web search</button> : null}
 
         <div className="ml-auto flex items-center gap-1">
           <Tip label={pending ? "Waiting for the answer" : "Send"}>
@@ -431,7 +457,7 @@ export function PromptBox(props: PromptBoxProps) {
           </Tip>
         </div>
       </div>
-      {value.length > 0 ? <div className="flex justify-between px-3 pt-1 pb-1 text-caption text-fg-3"><span>{value.trim().length < 8 ? "Write at least 8 characters." : "Enter to send · Shift + Enter for a new line"}</span><span>{value.length.toLocaleString()} / 8,000</span></div> : null}
+      {value.length > 0 ? <div className="flex justify-between px-3 pt-1 pb-1 text-caption text-fg-3"><span>{value.trim().length < (tool === "web" ? 3 : 8) ? `Write at least ${tool === "web" ? 3 : 8} characters.` : "Enter to send · Shift + Enter for a new line"}</span><span>{value.length.toLocaleString()} / {tool === "web" ? "800" : "8,000"}</span></div> : null}
     </form>
   );
 }
