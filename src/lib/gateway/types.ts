@@ -1109,7 +1109,7 @@ export const webResearchSchema = z.object({
   citations: z.array(z.object({
     title: z.string(),
     url: z.string().url().refine((value) => {
-      try { return new URL(value).protocol === "https:"; } catch { return false; }
+      try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; }
     }, "Citation links must use HTTPS."),
     domain: z.string(),
     published_at: z.string().nullable(),
@@ -1120,8 +1120,12 @@ export const webResearchSchema = z.object({
   message: z.string().optional(),
   retryable: z.boolean().optional(),
   portals: z.array(z.object({ label: z.string(), url: z.string().url().refine((value) => {
-    try { return new URL(value).protocol === "https:"; } catch { return false; }
+    try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; }
   }, "Court portal links must use HTTPS.") })).optional(),
+}).superRefine((result, context) => {
+  if (result.status === "ANSWERED" && (!result.answer?.trim() || !result.citations?.length)) {
+    context.addIssue({ code: "custom", message: "Answered research requires text and citable sources." });
+  }
 });
 export type WebResearch = z.infer<typeof webResearchSchema>;
 

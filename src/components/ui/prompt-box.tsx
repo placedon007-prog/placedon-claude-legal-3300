@@ -395,19 +395,7 @@ export function PromptBox(props: PromptBoxProps) {
       {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">A document is not ready to read. Wait for processing, or remove it to send without it.</p> : null}
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
       {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Choose one readable file to ask for a document review. Legal research does not read attachments yet.</p> : null}
-      {tool === "web" ? <div className="space-y-2 px-3 pb-3 text-ui">
-        {suggestedWeb ? <p role="status" className="text-fg-2">This sounds like a current case or dispute. Public research is selected here in Ask; confirm the exact question below before it is sent.</p> : null}
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Public web research type">
-          <button type="button" aria-pressed={webMode === "GENERAL_WEB"} onClick={() => { setWebMode("GENERAL_WEB"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Web search</button>
-          <button type="button" aria-pressed={webMode === "CASE_DISCOVERY"} onClick={() => { setWebMode("CASE_DISCOVERY"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Cases and reporting</button>
-        </div>
-        <label className="flex cursor-pointer items-start gap-2 rounded-card border border-line p-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-fg">
-          <input type="checkbox" checked={webConsent} onChange={(e) => setWebConsent(e.target.checked)} className="mt-1 size-4 accent-fg" />
-          <span>Send only this question to Exa for public web research. Do not include client-confidential details. Files, matter details, and conversation history are not sent.</span>
-        </label>
-        {files.length || docs.length ? <p role="alert" className="text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}
-        {value.trim().length > 800 ? <p role="alert" className="text-caption text-fg-2">Shorten this question to 800 characters for web research.</p> : null}
-      </div> : null}
+      {tool === "web" && (files.length > 0 || docs.length > 0) ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}
       <div className="flex flex-wrap items-center gap-0.5 px-1">
         {tool !== "web" ? <>
         <input
@@ -442,11 +430,19 @@ export function PromptBox(props: PromptBoxProps) {
         <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
           <PopoverTrigger asChild>
             <button type="button" className={chip}>
-              <SlidersHorizontal className="size-4" aria-hidden />
+              {tool === "web" ? <Globe2 className="size-4" aria-hidden /> : <SlidersHorizontal className="size-4" aria-hidden />}
               {tool === "draft" ? "Draft" : tool === "web" ? "Web research" : "Research"}
             </button>
           </PopoverTrigger>
           <PopoverContent side="top" align="start" sideOffset={8} className="w-72 p-1.5">
+            {tool === "web" ? <div className="border-b border-line p-2 mb-1">
+              <label htmlFor="web-research-type" className="text-caption text-fg-3">Search focus</label>
+              <select id="web-research-type" value={webMode} onChange={(event) => { setWebMode(event.target.value as WebMode); setWebConsent(false); }}
+                className="mt-1 w-full min-h-11 rounded-chip border border-line-control bg-ground px-2 text-ui">
+                <option value="GENERAL_WEB">General web</option>
+                <option value="CASE_DISCOVERY">Cases and reporting</option>
+              </select>
+            </div> : null}
             <ul className="flex flex-col">
               <ToolRow icon={Scale} name="Research held law" note={tool === "research" ? "selected" : undefined}
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("research"); setToolsOpen(false); }} />
@@ -473,7 +469,18 @@ export function PromptBox(props: PromptBoxProps) {
           </Tip>
         </div>
       </div>
-      {value.length > 0 ? <div className="flex justify-between px-3 pt-1 pb-1 text-caption text-fg-3"><span>{value.trim().length < (tool === "web" ? 3 : 8) ? `Write at least ${tool === "web" ? 3 : 8} characters.` : "Enter to send · Shift + Enter for a new line"}</span><span>{value.length.toLocaleString()} / {tool === "web" ? "800" : "8,000"}</span></div> : null}
+      {tool === "web" ? <div className="mx-3 mt-2 border-t border-line pt-2 pb-1">
+        <label className="web-search-consent">
+          <input type="checkbox" checked={webConsent} onChange={(event) => setWebConsent(event.target.checked)} aria-describedby="web-sharing-details" className="size-4 shrink-0 accent-fg" />
+          <span>Allow Exa to search this question on the public web</span>
+        </label>
+        <details className="text-caption text-fg-3">
+          <summary className="cursor-pointer py-1">What gets shared?</summary>
+          <p id="web-sharing-details" className="py-1">Only this question is sent. Files, matter details and conversation history stay out of the search. Do not include client-confidential details.</p>
+        </details>
+      </div> : null}
+      {value.trim().length > 0 && value.trim().length < (tool === "web" ? 3 : 8) ? <p className="px-3 pt-1 text-caption text-fg-3">Write at least {tool === "web" ? 3 : 8} characters to send.</p> : null}
+      {value.length > (tool === "web" ? 700 : 7500) ? <p className="px-3 pt-1 text-right text-caption text-fg-3">{value.length.toLocaleString()} / {tool === "web" ? "800" : "8,000"}</p> : null}
     </form>
   );
 }
