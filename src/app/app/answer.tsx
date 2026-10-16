@@ -22,13 +22,16 @@ import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
 import { executionCostLabel, modelCalls } from "@/lib/conversation";
-import { loadExecutionDetails, type ExecutionDetails, type TurnState } from "./actions";
+import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebResearchState } from "./actions";
+import { ResearchState } from "./web-research-result";
 
 export interface Turn {
   readonly key: string;
   readonly question: string;
   /** null while the request is in flight. */
   readonly state: TurnState | null;
+  /** Public reporting is intentionally separate from the verified-law envelope. */
+  readonly web?: { readonly state: WebResearchState | null; readonly mode: "GENERAL_WEB" | "CASE_DISCOVERY" };
   readonly request?: { text: string; tool: "research" | "draft"; fileIds: readonly string[]; sources: readonly string[]; matterId: string | null; conversationId: string | null };
 }
 
@@ -65,31 +68,37 @@ export function TurnView({
   retryDisabled = false,
   onOpenSource,
   onDraft,
+  onResearchWeb,
 }: {
   turn: Turn;
   onRetry: () => void;
   retryDisabled?: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft: () => void;
+  onResearchWeb: (question: string) => void;
 }) {
   const s = turn.state;
   const asksForCurrentCase = /\b(?:case|court|lawsuit|litigation|dispute)\b/i.test(turn.question)
     && /\b(?:current|latest|recent|today|news|update)\b/i.test(turn.question);
+  if (turn.web) return <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
+    <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">{turn.question}</h2>
+    <p className="text-caption text-fg-3">Public web · {turn.web.mode === "CASE_DISCOVERY" ? "cases and reporting" : "general search"} · This result is not saved to the legal conversation.</p>
+    {turn.web.state ? <ResearchState state={turn.web.state} query={turn.question} />
+      : <p role="status" aria-busy="true" className="text-ui text-fg-2">Searching public sources…</p>}
+  </section>;
   return (
     <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
       <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">
         {turn.question}
       </h2>
       {s?.phase === "answered" && (s.envelope.resource === "case" || asksForCurrentCase) ? (
-        <Link
-          href="/app/web-research"
-          onClick={() => {
-            try { sessionStorage.setItem("placedon-web-draft", turn.question.slice(0, 800)); } catch { /* The research screen remains available for direct entry. */ }
-          }}
+        <button
+          type="button"
+          onClick={() => onResearchWeb(turn.question)}
           className="inline-flex min-h-11 w-fit items-center gap-2 rounded-chip border border-line-control px-3 text-ui font-medium text-fg hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           <Globe2 className="size-4" aria-hidden /> Search public reporting for this question
-        </Link>
+        </button>
       ) : null}
       {s === null ? (
         <div aria-busy="true" aria-live="polite">
