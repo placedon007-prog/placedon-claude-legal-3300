@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { HttpGateway } from "../src/lib/gateway/http";
-import { vaultListSchema } from "../src/lib/gateway/types";
+import { vaultFindSchema, vaultListSchema } from "../src/lib/gateway/types";
 
 const page = { documents: [{ document_id: "doc-a", name: "Order.pdf", state: "INGESTED", matter_id: null, byte_count: 42, doc_class: null }], next_offset: null, truncated: false, scope: "unfiled", matter_id: null, note: "Unfiled workspace files" };
 test("vault catalogue sends scoped POST input and parses metadata without leaking document contents", async () => {
@@ -28,4 +28,15 @@ test("vault catalogue keeps outages distinct from empty results and preserves re
     if (result.ok) assert.ok("code" in result.data);
     assert.equal(vaultListSchema.safeParse({ ...page, documents: [{ ...page.documents[0], state: undefined }] }).success, false);
   } finally { globalThis.fetch = original; }
+});
+
+test("vault search preserves the passage text returned by the backend", () => {
+  const result = vaultFindSchema.parse({
+    hits: [{ document_id: "doc-a", ordinal: 2, score: 1.42,
+      text: "The fictional meeting is on 12 October.", name: "Test notice.txt", doc_class: "notice" }],
+    searched_documents: 1, searched_chunks: 3, unsearchable: 0,
+    note: "1 passage found", scope: "tenant", scope_note: "Searched workspace files.",
+  });
+  assert.equal(result.hits[0].text, "The fictional meeting is on 12 October.");
+  assert.equal(result.hits[0].ordinal, 2);
 });

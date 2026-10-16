@@ -201,9 +201,9 @@ export function VaultConsole({ initialList, matters, mattersUnavailable }: {
             ) : (
               <ul className="vault-hits">
                 {find.data.hits.map((h) => (
-                  <li key={h.document_id}>
+                  <li key={`${h.document_id}:${h.ordinal}`}>
                     <p>{h.name ?? h.document_id}</p>
-                    {h.quote && <blockquote className="evidence">{h.quote}</blockquote>}
+                    <blockquote className="evidence">{h.text}</blockquote>
                     <p className="meta">{h.document_id}</p>
                   </li>
                 ))}

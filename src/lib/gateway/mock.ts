@@ -980,9 +980,10 @@ export class MockGateway implements GatewayProvider {
       .slice(0, input.limit ?? 10)
       .map(([id, d]) => ({
         document_id: id,
+        ordinal: 0,
         name: d.name,
         score: 1.42,
-        quote: d.text,
+        text: d.text,
         matter_id: null,
       }));
     const unsearchable = this.vault.size - searchable.length;
