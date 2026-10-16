@@ -4,6 +4,27 @@ import { useId } from "react";
 import { ArrowUpRight, Clock3 } from "lucide-react";
 import type { WebResearchState } from "./actions";
 
+function ResearchSources({ citations, heading }: { citations: NonNullable<Extract<WebResearchState, { phase: "result" }>['result']['citations']>; heading: string }) {
+  if (!citations.length) return null;
+  return <>
+    <h4 className="mt-6 text-ui font-medium">{heading}</h4>
+    <ol className="mt-2 list-decimal space-y-3 pl-6 marker:text-fg-3">
+      {citations.map((citation, index) => (
+        <li key={`${citation.url}-${index}`} className="rounded-card border border-line p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <a href={citation.url} target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">
+              {citation.title}<span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <span className="text-caption text-fg-3">{new URL(citation.url).hostname}{citation.published_at ? ` · ${citation.published_at.slice(0, 10)}` : " · publication date not provided"}</span>
+          </div>
+          {citation.excerpt ? <p className="mt-2 text-ui text-fg-2">{citation.excerpt.length > 240 ? `${citation.excerpt.slice(0, 240).trimEnd()}…` : citation.excerpt}</p> : null}
+          {citation.author ? <p className="mt-2 text-caption text-fg-3">By {citation.author}</p> : null}
+        </li>
+      ))}
+    </ol>
+  </>;
+}
+
 export function ResearchState({ state, query }: { state: WebResearchState; query: string }) {
   const headingId = useId();
   if (state.phase === "failed") {
@@ -32,21 +53,7 @@ export function ResearchState({ state, query }: { state: WebResearchState; query
             <li key={portal.url}><a className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg" href={portal.url} target="_blank" rel="noopener noreferrer">{portal.label}<ArrowUpRight className="size-4" aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a></li>
           ))}</ul>
         </div> : null}
-        <h4 className="mt-6 text-ui font-medium">Sources returned by Exa</h4>
-        <ol className="mt-2 list-decimal space-y-3 pl-6 marker:text-fg-3">
-          {(result.citations ?? []).map((citation, index) => (
-            <li key={`${citation.url}-${index}`} className="rounded-card border border-line p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <a href={citation.url} target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">
-                  {citation.title}<span className="sr-only"> (opens in a new tab)</span>
-                </a>
-                <span className="text-caption text-fg-3">{new URL(citation.url).hostname}{citation.published_at ? ` · ${citation.published_at.slice(0, 10)}` : " · publication date not provided"}</span>
-              </div>
-              {citation.excerpt ? <p className="mt-2 text-ui text-fg-2">{citation.excerpt.length > 240 ? `${citation.excerpt.slice(0, 240).trimEnd()}…` : citation.excerpt}</p> : null}
-              {citation.author ? <p className="mt-2 text-caption text-fg-3">By {citation.author}</p> : null}
-            </li>
-          ))}
-        </ol>
+        <ResearchSources citations={result.citations ?? []} heading="Sources returned by Exa" />
       </section>
     );
   }
@@ -56,6 +63,7 @@ export function ResearchState({ state, query }: { state: WebResearchState; query
       <section role="status" aria-live="polite" className="mt-6 rounded-card border border-line-2 p-4">
         <h3 className="text-title font-medium">{result.status === "NEEDS_CASE_DETAILS" ? "Which case do you mean?" : "Check the official docket"}</h3>
         <p className="mt-2 text-ui text-fg-2">{result.message}</p>
+        {result.status === "OFFICIAL_STATUS_REQUIRED" ? <ResearchSources citations={result.citations ?? []} heading="Reporting leads · not court records" /> : null}
         {result.portals?.length ? <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">{result.portals.map((portal) => (
           <li key={portal.url}><a className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg" href={portal.url} target="_blank" rel="noopener noreferrer">{portal.label}<ArrowUpRight className="size-4" aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a></li>
         ))}</ul> : null}
