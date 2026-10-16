@@ -7,6 +7,7 @@ import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, 
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
+import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { loginGateway } from "@/lib/gateway/provider";
@@ -15,6 +16,7 @@ import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
 import { sourceCatalogFailureMessage } from "@/lib/sources";
+import type { WebResearch } from "@/lib/gateway/types";
 
 
 /**
@@ -188,6 +190,41 @@ export async function searchCaseLawAction(query: string): Promise<CaseLawSearchS
   const result = await (await getGateway()).sourcesSearch({ query: parsed.data });
   if (!result.ok) return { phase: "failed", error: result.error };
   return { phase: "found", model: toCaseLawRenderModel(result.data) };
+}
+
+export type WebResearchState =
+  | { readonly phase: "result"; readonly result: WebResearch }
+  | { readonly phase: "failed"; readonly error: EngineError }
+  | { readonly phase: "signed_out" }
+  | { readonly phase: "invalid"; readonly message: string };
+
+/** Query-only public research. Files, matter IDs and thread history are intentionally absent. */
+export async function webResearchAction(input: {
+  query: string;
+  mode: "GENERAL_WEB" | "CASE_DISCOVERY";
+  externalSearchConsent: boolean;
+}): Promise<WebResearchState> {
+  if (!(await hasSession())) return { phase: "signed_out" };
+  const query = z.string().trim().min(3, "Enter at least three characters.").max(800, "Search is capped at 800 characters.").safeParse(input.query);
+  if (!query.success) return { phase: "invalid", message: query.error.issues[0].message };
+  const mode = z.enum(["GENERAL_WEB", "CASE_DISCOVERY"]).safeParse(input.mode);
+  if (!mode.success) return { phase: "invalid", message: "Choose a research type." };
+  const consent = z.boolean().safeParse(input.externalSearchConsent);
+  if (!consent.success) return { phase: "invalid", message: "Confirm before sending this question to the public web provider." };
+  try {
+    const result = await (await getGateway()).researchWeb({
+      query: query.data,
+      mode: mode.data,
+      externalSearchConsent: consent.data,
+    });
+    if (!result.ok) return { phase: "failed", error: result.error };
+    return { phase: "result", result: result.data };
+  } catch {
+    return { phase: "failed", error: {
+      kind: "transport_error", message: "The research service is temporarily unavailable.",
+      route: GATEWAY_ROUTES.researchWeb,
+    } };
+  }
 }
 
 export async function documentReadinessAction(documentId: string): Promise<{ state: string; note: string }> {

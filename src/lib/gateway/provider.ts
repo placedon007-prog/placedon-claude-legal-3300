@@ -32,6 +32,7 @@ import type {
   SourcesList,
   AuthLoginOk,
   SourcesSearch,
+  WebResearch,
 } from "./types";
 
 /**
@@ -210,6 +211,12 @@ export interface GatewayProvider {
    * judgment is opened.
    */
   sourcesSearch(input: { query: string }): Promise<EngineResult<SourcesSearch>>;
+  /** Explicitly consented, query-only public web answer; never includes Vault context. */
+  researchWeb(input: {
+    query: string;
+    mode: "GENERAL_WEB" | "CASE_DISCOVERY";
+    externalSearchConsent: boolean;
+  }): Promise<EngineResult<WebResearch>>;
   mattersList(): Promise<EngineResult<MattersList>>;
   conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>>;
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>>;

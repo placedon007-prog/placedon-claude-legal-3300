@@ -12,6 +12,7 @@ import {
   runTraceSchema,
   sourcesListSchema,
   sourcesSearchSchema,
+  webResearchSchema,
 } from "./types";
 import type {
   CitationGet,
@@ -19,6 +20,7 @@ import type {
   MattersList,
   SourcesList,
   SourcesSearch,
+  WebResearch,
   ConversationMessage,
   ConversationSend,
   AskResponse,
@@ -493,6 +495,21 @@ export class MockGateway implements GatewayProvider {
 
   async sourcesSearch(input: { query: string }): Promise<EngineResult<SourcesSearch>> {
     return engineOk({ ...SOURCES_SEARCH_FIXTURE, query: input.query });
+  }
+
+  async researchWeb(_input: {
+    query: string;
+    mode: "GENERAL_WEB" | "CASE_DISCOVERY";
+    externalSearchConsent: boolean;
+  }): Promise<EngineResult<WebResearch>> {
+    return engineOk(webResearchSchema.parse({
+      status: "NOT_CONFIGURED",
+      provider: "exa",
+      queried_at: null,
+      answer: null,
+      citations: [],
+      message: "Public web research is unavailable in the isolated demo. Connect the approved backend provider to search live pages.",
+    }));
   }
 
   async mattersList(): Promise<EngineResult<MattersList>> {
