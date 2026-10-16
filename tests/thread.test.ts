@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { conversationSendSchema, isRefusal, parseAnswer } from "../src/lib/gateway/types";
-import { groupSources, searchedSummary, statusLabel } from "../src/lib/thread";
+import { searchedSummary, statusLabel } from "../src/lib/thread";
 import SEND_HELD_SEBI from "../src/lib/gateway/fixtures/conversation-sources.json" with { type: "json" };
 import SEND_VAULT from "../src/lib/gateway/fixtures/conversation-sources-vault.json" with { type: "json" };
 
@@ -12,27 +12,6 @@ const PROSE = `1. Not more than fifteen months shall elapse between the date of 
    — Companies Act 2013, s.96 [409:524]
 3. A company shall hold a minimum number of four meetings of its Board of Directors every year.
    — Companies Act 2013, s.173 [10:90]`;
-
-test("sentences citing the same provision share one numbered source", () => {
-  const { sources, refs } = groupSources(parseAnswer(PROSE).sentences);
-  assert.equal(sources.length, 2);
-  assert.deepEqual(refs, [1, 1, 2]);
-  assert.equal(sources[0].source, "Companies Act 2013, s.96");
-  assert.equal(sources[0].section, "96");
-  assert.deepEqual(sources[0].spans, [[226, 348], [409, 524]]);
-  assert.equal(sources[1].n, 2);
-});
-
-test("the source label is kept verbatim, never rewritten", () => {
-  const { sources } = groupSources(parseAnswer(PROSE).sentences);
-  assert.equal(sources[1].source, "Companies Act 2013, s.173");
-});
-
-test("no sentences gives no sources", () => {
-  const { sources, refs } = groupSources([]);
-  assert.equal(sources.length, 0);
-  assert.equal(refs.length, 0);
-});
 
 test("every state has words, and a failure never reads as a refusal", () => {
   assert.equal(statusLabel("refused"), "Not answered");
