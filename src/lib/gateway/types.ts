@@ -392,9 +392,10 @@ export type VaultDocument = z.infer<typeof vaultDocumentSchema>;
 
 export const vaultHitSchema = z.object({
   document_id: z.string(),
+  ordinal: z.number().int().nonnegative(),
   name: z.string().optional(),
   score: z.number().optional(),
-  quote: z.string().optional(),
+  text: z.string(),
   matter_id: z.string().nullable().optional(),
 });
 

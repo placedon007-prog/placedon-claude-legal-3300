@@ -39,6 +39,7 @@ load_env()
 
 from gateway.app import create_app  # noqa: E402
 from gateway.auth import KeyStore  # noqa: E402
+from gateway.jobs import PostgresQueue  # noqa: E402
 
 db_url = os.environ.get("PLACEDON_DATABASE_URL")
 if not db_url:
@@ -99,6 +100,15 @@ print("Sign-in passcode written to .env.local (APP_PASSCODE), not printed. "
       "`grep APP_PASSCODE .env.local` to read it.", flush=True)
 print(f"Gateway starting on http://127.0.0.1:{PORT} — leave this window open.", flush=True)
 
+# A full local test can opt into the durable job path used by Vault ingestion and
+# longer research runs. Keep the ordinary single-process setup working without a
+# worker, and make the worker requirement visible when the queue is enabled.
+queue = None
+if os.environ.get("PLACEDON_LOCAL_QUEUE") == "1":
+    queue = PostgresQueue(db_url, tenant_id=TENANT, actor_id=ACTOR)
+    print("Durable queue enabled. Start gateway/worker.py --serve for this tenant before uploads.",
+          flush=True)
+
 import uvicorn  # noqa: E402
 
-uvicorn.run(create_app(keys=keys), host="127.0.0.1", port=PORT, log_level="warning")
+uvicorn.run(create_app(keys=keys, queue=queue), host="127.0.0.1", port=PORT, log_level="warning")

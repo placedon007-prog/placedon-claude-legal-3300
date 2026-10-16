@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The local runbook opens 127.0.0.1 while Next dev starts on localhost.
+  // Allow that loopback host to receive the dev assets needed for hydration.
+  allowedDevOrigins: ["127.0.0.1"],
   /**
    * Standalone output builds a self-contained Node server at
    * `.next/standalone/server.js` (what Azure App Service runs via
