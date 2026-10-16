@@ -24,9 +24,8 @@ export function ResearchState({ state, query }: { state: WebResearchState; query
             <Clock3 className="size-3.5" aria-hidden /> Searched {result.queried_at ? new Date(result.queried_at).toLocaleString() : "time not recorded"}
           </span>
         </div>
-        <p className="mt-3 text-caption text-fg-3">Provider-generated summary. Individual claims have not been verified against the linked sources.</p>
+        <p className="mt-3 text-caption text-fg-3">Provider-generated public-web summary. Claims are unverified and do not establish law or live docket status. Review linked sources.</p>
         <p className="mt-4 whitespace-pre-wrap text-read leading-7">{result.answer}</p>
-        <p className="mt-3 text-caption text-fg-3">{result.note}</p>
         {result.portals?.length ? <div className="mt-4 rounded-card border border-line p-4">
           <p className="text-ui font-medium">Verify the court record</p>
           <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">{result.portals.map((portal) => (
