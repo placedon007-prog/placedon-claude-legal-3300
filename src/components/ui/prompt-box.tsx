@@ -16,7 +16,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Globe2, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
@@ -417,6 +417,16 @@ export function PromptBox(props: PromptBoxProps) {
             </ul>
           </PopoverContent>
         </Popover>
+
+        <Link href="/app/web-research" className={chip} onClick={() => {
+          // Keep an unsent question in this tab, without putting it in a URL or sending it
+          // to a public provider. The web screen still asks for explicit query consent.
+          try {
+            if (value.trim()) sessionStorage.setItem("placedon-web-draft", value.trim());
+          } catch { /* The web screen remains usable when tab storage is unavailable. */ }
+        }}>
+          <Globe2 className="size-4" aria-hidden />Web search
+        </Link>
 
         <div className="ml-auto flex items-center gap-1">
           <Tip label={pending ? "Waiting for the answer" : "Send"}>

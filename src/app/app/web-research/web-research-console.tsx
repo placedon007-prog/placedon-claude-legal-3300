@@ -15,6 +15,18 @@ export function WebResearchConsole() {
   const [pending, setPending] = React.useState(false);
   const [state, setState] = React.useState<WebResearchState | null>(null);
 
+  React.useEffect(() => {
+    try {
+      const draft = sessionStorage.getItem("placedon-web-draft");
+      if (!draft) return;
+      const timer = window.setTimeout(() => {
+        setQuery(draft.slice(0, 800));
+        sessionStorage.removeItem("placedon-web-draft");
+      }, 0);
+      return () => window.clearTimeout(timer);
+    } catch { /* A typed question can still be entered directly. */ }
+  }, []);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);

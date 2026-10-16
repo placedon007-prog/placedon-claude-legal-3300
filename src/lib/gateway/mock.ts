@@ -497,11 +497,7 @@ export class MockGateway implements GatewayProvider {
     return engineOk({ ...SOURCES_SEARCH_FIXTURE, query: input.query });
   }
 
-  async researchWeb(_input: {
-    query: string;
-    mode: "GENERAL_WEB" | "CASE_DISCOVERY";
-    externalSearchConsent: boolean;
-  }): Promise<EngineResult<WebResearch>> {
+  async researchWeb(): Promise<EngineResult<WebResearch>> {
     return engineOk(webResearchSchema.parse({
       status: "NOT_CONFIGURED",
       provider: "exa",
