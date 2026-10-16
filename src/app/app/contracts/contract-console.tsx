@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { reviewAction, type ReviewState } from "../actions";
 import { ReviewGate } from "../review-gate";
+import { FileDropInput } from "@/components/ui/file-drop-input";
 import type { Finding, FindingStatus } from "@/lib/gateway/types";
 
 const initial: ReviewState = { phase: "idle" };
@@ -26,18 +27,9 @@ export function ContractConsole() {
   return (
     <>
       <form action={action}>
-        <label htmlFor="file">Upload a contract</label>
-        <input
-          id="file"
-          name="file"
-          type="file"
-          accept=".docx,.pdf,.txt,.md"
-          aria-describedby="file-help"
-        />
-        <p className="meta" id="file-help">
-          .docx, or a .pdf that has a real text layer. A scan has no text layer and is
-          refused rather than half-read. Nothing is stored beyond this deployment.
-        </p>
+        <h3>1. Add the contract</h3>
+        <FileDropInput id="file" disabled={pending} />
+        <p className="meta">A scan without readable text is refused. This review compares the extracted clauses with a draft company playbook; it does not decide enforceability.</p>
 
         <div style={{ height: "1.1rem" }} />
         <label htmlFor="name">Document name</label>
@@ -48,7 +40,7 @@ export function ContractConsole() {
           placeholder="taken from the file when you upload one"
         />
         <div style={{ height: "0.9rem" }} />
-        <label htmlFor="text">…or paste the text</label>
+        <label htmlFor="text">Or paste the contract text</label>
         <textarea
           id="text"
           name="text"

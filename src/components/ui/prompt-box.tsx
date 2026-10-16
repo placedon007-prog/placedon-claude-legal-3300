@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AsOfChip, MatterChip, MentionMenu, SourcesChip, chip } from "@/components/ui/composer-parts";
 import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { mentionMatches, type MentionItem } from "@/lib/sources";
+import { suggestsCurrentPublicResearch } from "@/lib/public-web-intent";
 import { cn } from "@/lib/utils";
 import { VaultPicker, type SelectedVaultFile } from "@/components/ui/vault-browser";
 
@@ -112,6 +113,8 @@ export function PromptBox(props: PromptBoxProps) {
   const vaultOrigin = React.useRef<"files" | "sources">("files");
   const openingVault = React.useRef(false);
   const uploadingBatch = React.useRef(false);
+  const manuallyChosenTool = React.useRef(false);
+  const [suggestedWeb, setSuggestedWeb] = React.useState(false);
   const [filesOpen, setFilesOpen] = React.useState(false);
   const [vaultOpen, setVaultOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
@@ -207,7 +210,9 @@ export function PromptBox(props: PromptBoxProps) {
     setFiles([]);
     setValue("");
     setWebConsent(false);
-    if (tool !== "web") setTool("research");
+    if (tool !== "web" || suggestedWeb) setTool("research");
+    setSuggestedWeb(false);
+    manuallyChosenTool.current = false;
     setMention(null);
   }
 
@@ -340,9 +345,21 @@ export function PromptBox(props: PromptBoxProps) {
         aria-autocomplete="list"
         aria-activedescendant={menuOpen && items.length ? `${MENU_ID}-${Math.min(active, items.length - 1)}` : undefined}
         onChange={(e) => {
-          setValue(e.target.value);
+          const next = e.target.value;
+          setValue(next);
           if (tool === "web") setWebConsent(false);
-          track(e.target.value, e.target.selectionStart ?? e.target.value.length);
+          if (!manuallyChosenTool.current && files.length === 0 && docs.length === 0) {
+            const currentEvent = suggestsCurrentPublicResearch(next);
+            if (currentEvent && tool === "research") {
+              setSuggestedWeb(true);
+              setWebMode("CASE_DISCOVERY");
+              setTool("web");
+            } else if (!currentEvent && tool === "web" && suggestedWeb) {
+              setSuggestedWeb(false);
+              setTool("research");
+            }
+          }
+          track(next, e.target.selectionStart ?? next.length);
         }}
         onClick={(e) => track(e.currentTarget.value, e.currentTarget.selectionStart ?? 0)}
         onKeyDown={(e) => {
@@ -379,6 +396,7 @@ export function PromptBox(props: PromptBoxProps) {
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
       {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Choose one readable file to ask for a document review. Legal research does not read attachments yet.</p> : null}
       {tool === "web" ? <div className="space-y-2 px-3 pb-3 text-ui">
+        {suggestedWeb ? <p role="status" className="text-fg-2">This sounds like a current case or dispute. Public research is selected here in Ask; confirm the exact question below before it is sent.</p> : null}
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Public web research type">
           <button type="button" aria-pressed={webMode === "GENERAL_WEB"} onClick={() => { setWebMode("GENERAL_WEB"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Web search</button>
           <button type="button" aria-pressed={webMode === "CASE_DISCOVERY"} onClick={() => { setWebMode("CASE_DISCOVERY"); setWebConsent(false); }} className="min-h-11 rounded-chip border border-line-control px-3 aria-pressed:bg-fg aria-pressed:text-ground">Cases and reporting</button>
@@ -431,18 +449,16 @@ export function PromptBox(props: PromptBoxProps) {
           <PopoverContent side="top" align="start" sideOffset={8} className="w-72 p-1.5">
             <ul className="flex flex-col">
               <ToolRow icon={Scale} name="Research held law" note={tool === "research" ? "selected" : undefined}
-                onPick={() => { setTool("research"); setToolsOpen(false); }} />
+                onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("research"); setToolsOpen(false); }} />
               <ToolRow icon={Globe2} name="Research the public web" note={tool === "web" ? "selected" : "Only your question is sent"}
-                onPick={() => { setTool("web"); setWebConsent(false); setToolsOpen(false); ref.current?.focus(); }} />
+                onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("web"); setWebConsent(false); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "ask something first"} disabled={!canDraft}
-                onPick={() => { setTool("draft"); setToolsOpen(false); ref.current?.focus(); }} />
+                onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("draft"); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={FileCheck2} name="Check a document" href="/app/document-check" note="opens its screen" />
               <ToolRow icon={FileSearch} name="Review a contract" href="/app/contracts" note="opens its screen" />
             </ul>
           </PopoverContent>
         </Popover>
-
-        {tool !== "web" ? <button type="button" className={chip} onClick={() => { setTool("web"); setWebConsent(false); ref.current?.focus(); }}><Globe2 className="size-4" aria-hidden />Web search</button> : null}
 
         <div className="ml-auto flex items-center gap-1">
           <Tip label={pending ? "Waiting for the answer" : "Send"}>

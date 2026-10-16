@@ -100,6 +100,10 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const chosen = chosenOrDefault(bodies, storedSources ?? initialSources);
   const activeMatter = context.matters.find((matter) => matter.matter_id === matterId);
   const queuedSignature = turns.flatMap((turn) => turn.state?.phase === "queued" ? [turn.key] : []).join(",");
+  const latestCitedAnswer = turns.findLast((turn) => turn.state?.phase === "answered"
+    && turn.state.envelope.status === "ANSWERED" && turn.state.envelope.resource !== "case"
+    && turn.state.envelope.citations.length > 0
+    && Boolean(turn.state.envelope.run_id))?.key;
   const pending = sending || Boolean(queuedSignature);
   // An interrupted response may already have created a conversation on the server.
   // Recover that exact request before allowing another write in this workspace.
@@ -260,7 +264,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   }}
     composerRef={composerApi}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
-    canDraft={turns.some((turn) => turn.state?.phase === "answered" && ["ANSWERED", "PARTIAL"].includes(turn.state.envelope.status))}
+    canDraft={Boolean(latestCitedAnswer)}
     tool={tool} onToolChange={setTool} sources={{ bodies, integrations: context.sources.phase === "loaded" ? context.sources.integrations : [], failed: context.sources.phase !== "loaded", failureMessage: context.sources.phase === "failed" ? context.sources.message : undefined, refreshing: refreshingSources }}
     onRetrySources={retrySources}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
@@ -290,7 +294,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
           {turns.map((turn) => <TurnView key={turn.key} turn={turn}
             retryDisabled={pending || Boolean(uncertain && uncertain.key !== turn.key)}
             onRetry={() => { void send(turn.question, turn.request?.tool ?? "research", turn.request?.fileIds ?? [], turn, turn.state?.phase === "answered" && turn.state.envelope.status === "FAILED"); }}
-            onOpenSource={openSource} onDraft={() => { setTool("draft"); composerRef.current?.querySelector("textarea")?.focus(); }}
+            onOpenSource={openSource} onDraft={turn.key === latestCitedAnswer ? () => { setTool("draft"); composerApi.current?.setText("Draft a research memo from the cited answer above."); composerRef.current?.querySelector("textarea")?.focus(); } : undefined}
             onResearchWeb={(question) => { setTool("web"); composerApi.current?.setText(question.slice(0, 800)); composerRef.current?.querySelector("textarea")?.focus(); }} />)}
           <div ref={endRef} />
         </div></div>

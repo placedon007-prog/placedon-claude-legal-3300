@@ -26,9 +26,14 @@ export default async function DraftsPage({
       <div className="drafts-heading">
         <div>
           <h2>Drafts</h2>
-          <p className="meta">Shared with this workspace. Draft text appears after you open one.</p>
+          <p className="meta">Shared with this workspace. Open a draft to read and revise its text.</p>
         </div>
-        <Link className="primary drafts-new-link" href="/app/drafts/new">New draft</Link>
+        <Link className="primary drafts-new-link" href="/app">Research then draft</Link>
+      </div>
+      <div className="drafts-empty">
+        <h3>Generate from a cited answer</h3>
+        <p>Ask a held-law question, inspect the cited passages, then choose “Create draft from latest cited answer” in the conversation. The resulting draft appears here for lawyer review.</p>
+        <p className="meta">Public-web reports alone cannot generate a verified legal draft. You can also <Link href="/app/drafts/new">start a draft manually</Link>.</p>
       </div>
 
       {!result.ok ? (
@@ -42,7 +47,7 @@ export default async function DraftsPage({
         <div className="drafts-empty">
           <h3>{cursor ? "No drafts on this page" : "No drafts yet"}</h3>
           <p className="meta">{result.data.note}</p>
-          <p><Link href="/app/drafts/new">Create a draft</Link> to begin.</p>
+          <p><Link href="/app">Research then draft</Link>, or <Link href="/app/drafts/new">start manually</Link>.</p>
           {cursor && <p><Link href="/app/drafts">Back to the first page</Link></p>}
         </div>
       ) : (

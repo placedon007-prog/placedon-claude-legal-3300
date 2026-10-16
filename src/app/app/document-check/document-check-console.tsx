@@ -1,7 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
+import { FileDropInput } from "@/components/ui/file-drop-input";
 import { documentCheckAction, type DocumentCheckState } from "./actions";
+import { vaultUploadAction, type VaultState } from "../vault/actions";
+import { documentReadinessAction } from "../actions";
 import type { DocumentCheckOk, DocCheckLine } from "@/lib/gateway/types";
 
 const initial: DocumentCheckState = { phase: "idle" };
@@ -31,24 +35,94 @@ function lineGlyph(result: string): { glyph: string; cls: string } {
 /** `initialDocumentId` arrives from the composer's attach flow (Wall System → here). */
 export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocumentId?: string }) {
   const [state, action, pending] = useActionState(documentCheckAction, initial);
+  const [documentId, setDocumentId] = useState(initialDocumentId);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [readiness, setReadiness] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProblem, setUploadProblem] = useState<string | null>(null);
+  const [readinessChecks, setReadinessChecks] = useState(0);
+
+  function clearDocument() {
+    setDocumentId("");
+    setSelectedName(null);
+    setReadiness(null);
+  }
+
+  useEffect(() => {
+    if (!documentId || readiness !== "PENDING" || readinessChecks >= 5) return;
+    let live = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const current = await documentReadinessAction(documentId);
+        if (live) setReadiness(current.state);
+      } catch {
+        if (live) setReadiness("UNKNOWN");
+      } finally {
+        if (live) setReadinessChecks((n) => n + 1);
+      }
+    }, Math.min(15_000, 1_500 * 2 ** readinessChecks));
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [documentId, readiness, readinessChecks]);
+
+  async function upload(file: File) {
+    if (uploading) return;
+    setUploading(true);
+    setUploadProblem(null);
+    clearDocument();
+    const data = new FormData();
+    data.set("file", file);
+    data.set("name", file.name);
+    try {
+      const result: VaultState = await vaultUploadAction({ phase: "idle" }, data);
+      if (result.phase === "uploaded") {
+        setDocumentId(result.documentId);
+        setSelectedName(result.name);
+        setReadiness(result.state);
+        setReadinessChecks(0);
+      } else {
+        setUploadProblem(result.phase === "invalid" ? result.message
+          : result.phase === "refused" ? result.detail
+          : result.phase === "failed" ? "The upload did not complete. Try again." : "The upload did not complete.");
+      }
+    } catch {
+      setUploadProblem("The upload was interrupted. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <>
+      <section aria-labelledby="document-check-file-title">
+        <h3 id="document-check-file-title">1. Add a document</h3>
+        <FileDropInput id="document-check-file" onSelected={(file) => { void upload(file); }}
+          onInvalid={clearDocument} disabled={uploading || pending} />
+        <p className="meta">The file is stored in Wall System before checking. Do not upload client-confidential files to this shared-passcode prototype.</p>
+        {uploading ? <p role="status">Storing and reading the document…</p> : null}
+        {uploadProblem ? <p role="alert" className="form-error">{uploadProblem}</p> : null}
+        {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
+        {documentId && !selectedName ? <p role="status">Stored document selected: {documentId}</p> : null}
+        {selectedName && readiness !== "INGESTED" && readiness !== "CANNOT_READ" ? <button type="button" onClick={async () => {
+          try {
+            const current = await documentReadinessAction(documentId);
+            setReadiness(current.state);
+            setReadinessChecks(0);
+          } catch {
+            setReadiness("UNKNOWN");
+            setUploadProblem("File status could not be refreshed. Try again.");
+          }
+        }}>Refresh file status</button> : null}
+        <p className="meta"><Link href="/app/vault">Browse Wall System</Link> to find an existing document.</p>
+      </section>
       <form action={action}>
-        <label htmlFor="document_id">Document id</label>
-        <input
-          id="document_id"
-          name="document_id"
-          type="text"
-          defaultValue={initialDocumentId}
-          placeholder="the sha256 or vault id — copy it from Wall System"
-          aria-describedby="doc-help"
-        />
-        <p className="meta" id="doc-help">
-          This checks a document already in your vault. It reads the stored bytes, so the
-          document is never re-uploaded here. Upload first in Wall System and paste its
-          id.
-        </p>
+        <h3>2. Set the check date and known facts</h3>
+        <input name="document_id" type="hidden" value={documentId} />
+        <details>
+          <summary>Use an existing Wall System document ID</summary>
+          <label htmlFor="document-id-manual">Document ID</label>
+          <input id="document-id-manual" type="text" value={documentId} maxLength={128}
+            placeholder="Paste the ID from Wall System" onChange={(event) => { setDocumentId(event.target.value); setSelectedName(null); setReadiness(null); }} />
+        </details>
 
         <div className="field-row">
           <div>
@@ -87,7 +161,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         </div>
 
         <div className="row">
-          <button type="submit" disabled={pending}>
+          <button type="submit" disabled={pending || uploading || !documentId || readiness === "CANNOT_READ" || readiness === "PENDING" || readiness === "UNKNOWN"}>
             {pending ? "Checking…" : "Check document"}
           </button>
         </div>
