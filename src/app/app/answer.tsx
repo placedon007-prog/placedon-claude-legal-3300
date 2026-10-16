@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { executionCostLabel, modelCalls } from "@/lib/conversation";
 import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebResearchState } from "./actions";
 import { ResearchState } from "./web-research-result";
+import { ResearchActivity } from "./research-activity";
 
 export interface Turn {
   readonly key: string;
@@ -84,7 +85,7 @@ export function TurnView({
     <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">{turn.question}</h2>
     <p className="text-caption text-fg-3">Public web · {turn.web.mode === "CASE_DISCOVERY" ? "cases and reporting" : "general search"} · This result is not saved to the legal conversation.</p>
     {turn.web.state ? <ResearchState state={turn.web.state} query={turn.question} />
-      : <p role="status" aria-busy="true" className="text-ui text-fg-2">Searching public sources…</p>}
+      : <ResearchActivity kind="web" />}
   </section>;
   return (
     <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
@@ -101,9 +102,7 @@ export function TurnView({
         </button>
       ) : null}
       {s === null ? (
-        <div aria-busy="true" aria-live="polite">
-          <StatusLine kind="pending" />
-        </div>
+        <ResearchActivity kind="sending" />
       ) : s.phase === "invalid" ? (
         <p className="text-body text-fg-2">{s.message}</p>
       ) : s.phase === "signed_out" ? (
@@ -137,11 +136,7 @@ export function TurnView({
         </div>
       ) : s.phase === "queued" ? (
         <div className="flex flex-col gap-2">
-          <StatusLine kind="queued" />
-          <p className="text-read text-fg-2">
-            Your request is saved. The answer will appear here when the work finishes.
-            {s.note ? ` ${s.note}` : ""}
-          </p>
+          <ResearchActivity kind="queued" note={s.note} />
           {s.runId ? <RunLink runId={s.runId} /> : null}
         </div>
       ) : (
