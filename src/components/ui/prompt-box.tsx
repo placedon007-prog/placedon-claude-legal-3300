@@ -470,7 +470,7 @@ export function PromptBox(props: PromptBoxProps) {
         </div>
       </div>
       {tool === "web" ? <div className="mx-3 mt-2 border-t border-line pt-2 pb-1">
-        <label className="flex min-h-9 cursor-pointer items-center gap-2 text-caption text-fg-2">
+        <label className="web-search-consent">
           <input type="checkbox" checked={webConsent} onChange={(event) => setWebConsent(event.target.checked)} aria-describedby="web-sharing-details" className="size-4 shrink-0 accent-fg" />
           <span>Allow Exa to search this question on the public web</span>
         </label>
