@@ -51,7 +51,7 @@ export function WebResearchConsole() {
         <button
           type="button"
           aria-pressed={mode === "GENERAL_WEB"}
-          onClick={() => setMode("GENERAL_WEB")}
+          onClick={() => { setMode("GENERAL_WEB"); setState(null); }}
           className="inline-flex min-h-11 items-center gap-2 rounded-chip border border-line-control px-3 text-ui aria-pressed:bg-fg aria-pressed:text-ground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           <Globe2 className="size-4" aria-hidden /> Search the web
@@ -59,7 +59,7 @@ export function WebResearchConsole() {
         <button
           type="button"
           aria-pressed={mode === "CASE_DISCOVERY"}
-          onClick={() => setMode("CASE_DISCOVERY")}
+          onClick={() => { setMode("CASE_DISCOVERY"); setState(null); }}
           className="inline-flex min-h-11 items-center gap-2 rounded-chip border border-line-control px-3 text-ui aria-pressed:bg-fg aria-pressed:text-ground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           <Scale className="size-4" aria-hidden /> Find cases and reporting
@@ -74,6 +74,7 @@ export function WebResearchConsole() {
           onChange={(event) => {
             setQuery(event.target.value);
             setConsent(false);
+            setState(null);
           }}
           maxLength={800}
           rows={4}
@@ -115,12 +116,12 @@ export function WebResearchConsole() {
         live-status request is handled locally and is not sent to Exa.
       </p>
 
-      {state ? <ResearchState state={state} /> : null}
+      {state ? <ResearchState state={state} query={query} /> : null}
     </div>
   );
 }
 
-function ResearchState({ state }: { state: WebResearchState }) {
+function ResearchState({ state, query }: { state: WebResearchState; query: string }) {
   if (state.phase === "failed") {
     return <p role="alert" className="mt-6 rounded-card border border-dashed border-line-control p-4 text-ui">The research service did not return an answer. {state.error.message}</p>;
   }
@@ -177,5 +178,13 @@ function ResearchState({ state }: { state: WebResearchState }) {
       : result.status === "CONSENT_REQUIRED" ? "Confirm before searching"
         : result.status === "NO_RESULTS" ? "No citable results returned"
           : "Research did not complete";
-  return <p role="status" aria-live="polite" className="mt-6 rounded-card border border-dashed border-line-control p-4 text-ui"><strong className="font-medium">{title}.</strong> {result.message ?? "Try again later."}</p>;
+  return <div role="status" aria-live="polite" className="mt-6 rounded-card border border-dashed border-line-control p-4 text-ui">
+    <p><strong className="font-medium">{title}.</strong> {result.message ?? "Try again later."}</p>
+    {result.status === "NOT_CONFIGURED" ? <a
+      href={`https://www.google.com/search?q=${encodeURIComponent(query)}`}
+      target="_blank" rel="noopener noreferrer"
+      className="mt-3 inline-flex min-h-11 items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+    >Open this question in Google<ArrowUpRight className="size-4" aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a> : null}
+    {result.status === "NOT_CONFIGURED" ? <p className="mt-1 text-caption text-fg-3">This sends the question to Google when you choose the link. Results open outside Placedon.</p> : null}
+  </div>;
 }
