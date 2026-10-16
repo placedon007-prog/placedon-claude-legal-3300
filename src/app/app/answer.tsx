@@ -75,7 +75,7 @@ export function TurnView({
   onRetry: () => void;
   retryDisabled?: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
-  onDraft: () => void;
+  onDraft?: () => void;
   onResearchWeb: (question: string) => void;
 }) {
   const s = turn.state;
@@ -338,12 +338,12 @@ function Answered({
   onRetry?: () => void;
   retryDisabled: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
-  onDraft: () => void;
+  onDraft?: () => void;
 }) {
   // A case-routed turn is never a statute answer and never an abstention: it gets its own
   // render path so the two registers can never bleed into each other on screen.
   if (envelope.resource === "case") {
-    return <CaseAnswered envelope={envelope} sources={sources} onDraft={onDraft} />;
+    return <CaseAnswered envelope={envelope} sources={sources} />;
   }
   const kind = envelopeKind(envelope.status);
   const [first, ...rest] = envelope.text_blocks;
@@ -419,6 +419,10 @@ function Answered({
       {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
 
       {groups.length > 0 && !setAside ? <Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /> : null}
+      {onDraft && kind === "answered" && envelope.citations.length > 0 ? <button type="button" onClick={onDraft}
+        className="flex min-h-11 items-center gap-2 self-start rounded-chip border border-line-control px-3 text-ui text-fg hover:bg-wash">
+        <PenLine className="size-4" aria-hidden />Create draft from latest cited answer
+      </button> : null}
 
       {envelope.bodies.length > 0 && kind !== "answered" ? <Bodies envelope={envelope} /> : null}
 
@@ -446,7 +450,7 @@ function Answered({
       ))}
 
       <ResultLine envelope={envelope} />
-      <Actions envelope={envelope} onDraft={onDraft} />
+      <Actions envelope={envelope} />
     </article>
   );
 }
@@ -461,11 +465,9 @@ function Answered({
 function CaseAnswered({
   envelope,
   sources,
-  onDraft,
 }: {
   envelope: Envelope;
   sources?: SourceReport;
-  onDraft: () => void;
 }) {
   const abstained = envelope.status === "ABSTAINED";
   const { hits } = toCaseAnswerRenderModel(envelope, sources);
@@ -510,7 +512,7 @@ function CaseAnswered({
       {sources ? <Searched report={sources} /> : null}
 
       <ResultLine envelope={envelope} />
-      <Actions envelope={envelope} onDraft={onDraft} />
+      <Actions envelope={envelope} />
     </article>
   );
 }
@@ -608,7 +610,7 @@ function ResultLine({ envelope }: { envelope: Envelope }) {
   );
 }
 
-function Actions({ envelope, onDraft }: { envelope: Envelope; onDraft: () => void }) {
+function Actions({ envelope }: { envelope: Envelope }) {
   const [copied, setCopied] = React.useState(false);
   async function copy() {
     const quotes = envelope.citations.map((c) => `— ${c.instrument}, ${c.provision}: “${c.quote.replace(/\s+/g, " ")}”`);
@@ -640,11 +642,6 @@ function Actions({ envelope, onDraft }: { envelope: Envelope; onDraft: () => voi
           className={cn(btn, "cursor-not-allowed text-fg-3 hover:bg-transparent hover:text-fg-3")}
         >
           <CalendarPlus className="size-4" aria-hidden />
-        </button>
-      </Act>
-      <Act label="Draft from this">
-        <button type="button" className={btn} onClick={onDraft} aria-label="Draft from this">
-          <PenLine className="size-4" aria-hidden />
         </button>
       </Act>
       {envelope.run_id ? (

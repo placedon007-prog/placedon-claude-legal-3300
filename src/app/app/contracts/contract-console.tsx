@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { reviewAction, type ReviewState } from "../actions";
 import { ReviewGate } from "../review-gate";
+import { FileDropInput } from "@/components/ui/file-drop-input";
 import type { Finding, FindingStatus } from "@/lib/gateway/types";
 
 const initial: ReviewState = { phase: "idle" };
@@ -26,18 +27,9 @@ export function ContractConsole() {
   return (
     <>
       <form action={action}>
-        <label htmlFor="file">Upload a contract</label>
-        <input
-          id="file"
-          name="file"
-          type="file"
-          accept=".docx,.pdf,.txt,.md"
-          aria-describedby="file-help"
-        />
-        <p className="meta" id="file-help">
-          .docx, or a .pdf that has a real text layer. A scan has no text layer and is
-          refused rather than half-read. Nothing is stored beyond this deployment.
-        </p>
+        <h3>1. Add the contract</h3>
+        <FileDropInput id="file" disabled={pending} />
+        <p className="meta">A scan without readable text is refused. This review compares the extracted clauses with a draft company playbook; it does not decide enforceability.</p>
 
         <div style={{ height: "1.1rem" }} />
         <label htmlFor="name">Document name</label>
@@ -48,7 +40,7 @@ export function ContractConsole() {
           placeholder="taken from the file when you upload one"
         />
         <div style={{ height: "0.9rem" }} />
-        <label htmlFor="text">…or paste the text</label>
+        <label htmlFor="text">Or paste the contract text</label>
         <textarea
           id="text"
           name="text"
@@ -132,7 +124,7 @@ function Findings({
         </p>
       </div>
 
-      <table className="findings">
+      <table className="findings findings-labeled">
         <caption className="meta">
           Every row is a potential issue against a company standard — never a statement that
           a clause is valid, enforceable or void.
@@ -193,11 +185,11 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
   const s = STATUS[finding.status];
   return (
     <tr>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Rule</span>
         <span className="mono">{finding.rule_id}</span>
         <div className="meta">{finding.clause}</div>
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Status</span>
         <span className={`status status-${finding.status.toLowerCase()}`}>
           <span className="glyph" aria-hidden="true">
             {s.glyph}
@@ -206,7 +198,7 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
         </span>
         <div className="meta">{s.meaning}</div>
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Document text</span>
         <p className="quoted">{finding.detail}</p>
         {/* Only on the rows a person must resolve. A control offering to approve a MATCHES
             is how a reviewer learns to click through the ones that matter. */}
@@ -219,7 +211,7 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
           />
         ) : null}
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Company standard</span>
         {finding.standard_text ? (
           <>
             <p className="standard-text">{finding.standard_text}</p>

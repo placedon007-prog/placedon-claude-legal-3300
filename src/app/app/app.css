@@ -372,11 +372,26 @@
 .empty { color: var(--c-fg-3); }
 .field-error { color: var(--c-fg); font-weight: 500; font-size: var(--text-ui); margin-top: 0.6rem; }
 
+.mobile-cell-label { display: none; }
 @media (max-width: 40rem) {
   .findings thead, .steps thead { display: none; }
   .findings tr, .steps tr { display: grid; gap: 0.3rem; padding: 0.8rem 0; }
   .findings td, .steps td { border: 0; padding: 0; }
   .findings tr { border-bottom: 1px solid var(--c-line); }
+  .findings-labeled thead {
+    display: table-header-group;
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .findings-labeled .mobile-cell-label {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--c-fg-2);
+  }
 }
 
 /* ── the human gate ───────────────────────────────────────────────────────── */
@@ -424,6 +439,25 @@
   margin-top: 1.1rem;
 }
 .field-row label { display: block; }
+.console .file-drop-input {
+  display: flex;
+  min-height: 144px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px dashed var(--c-line-control);
+  border-radius: 10px;
+  background: var(--c-wash);
+  color: var(--c-fg);
+  cursor: pointer;
+  text-align: center;
+}
+.console .file-drop-input:hover,
+.console .file-drop-input-active { border-style: solid; background: var(--c-wash-2); }
+input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline-offset: 3px; }
+.console .file-drop-input-disabled { cursor: wait; opacity: 0.6; }
 .result-head { margin: 0 0 0.5rem; }
 .lede-sm { margin: 0.6rem 0 0; }
 
@@ -438,38 +472,69 @@
   border-radius: 12px;
   background: var(--c-wash);
 }
-.research-orbit {
+.research-book {
   position: relative;
-  display: grid;
   flex: none;
-  place-items: center;
-  width: 48px;
+  width: 56px;
   height: 48px;
+  perspective: 180px;
 }
-.research-orbit-track,
-.research-orbit-sweep {
+.research-book-cover {
   position: absolute;
-  inset: 1px;
-  border-radius: 50%;
+  inset: 6px 3px 5px;
+  border: 2px solid var(--c-fg);
+  border-radius: 3px 3px 5px 5px;
+  background: var(--c-fg);
 }
-.research-orbit-track { border: 1px solid var(--c-line-2); }
-.research-orbit-sweep {
-  border: 2px solid transparent;
-  border-top-color: var(--c-fg);
-  border-right-color: var(--c-fg-3);
-  animation: research-orbit-turn 2.4s linear infinite;
+.research-book-left,
+.research-book-right,
+.research-book-leaf {
+  position: absolute;
+  top: 8px;
+  width: 23px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 4px;
+  background: var(--c-ground);
+  border: 1px solid var(--c-line-2);
 }
-.research-orbit-mark {
-  width: 22px;
-  height: 22px;
-  color: var(--c-fg);
-  animation: research-orbit-breathe 2.4s ease-in-out infinite;
+.research-book-left { left: 5px; border-radius: 2px 0 0 2px; }
+.research-book-right { right: 5px; border-radius: 0 2px 2px 0; }
+.research-book-leaf {
+  left: 28px;
+  z-index: 2;
+  transform-origin: left center;
+  backface-visibility: visible;
+  animation: research-book-turn 2.8s cubic-bezier(0.6, 0, 0.25, 1) infinite;
 }
-@keyframes research-orbit-turn { to { transform: rotate(360deg); } }
-@keyframes research-orbit-breathe { 50% { transform: scale(0.91); opacity: 0.76; } }
+.research-book-left i,
+.research-book-right i,
+.research-book-leaf i {
+  display: block;
+  height: 1px;
+  width: 100%;
+  background: var(--c-line-control);
+}
+.research-book-left i:last-child,
+.research-book-right i:last-child,
+.research-book-leaf i:last-child { width: 70%; }
+.research-book-spine {
+  position: absolute;
+  z-index: 3;
+  top: 9px;
+  left: 27px;
+  width: 2px;
+  height: 31px;
+  background: var(--c-fg);
+}
+@keyframes research-book-turn {
+  0%, 15%, 100% { transform: rotateY(0); }
+  58%, 78% { transform: rotateY(-168deg); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .research-orbit-sweep,
-  .research-orbit-mark { animation: none; }
+  .research-book-leaf { animation: none; display: none; }
 }
 .watch { margin-bottom: 1.5rem; display: grid; gap: 0.5rem; }
 .watch .lede { margin: 0; }

@@ -21,7 +21,7 @@ export type VaultState =
   | { readonly phase: "idle" }
   | { readonly phase: "listed"; readonly data: VaultStatus }
   | { readonly phase: "uploaded"; readonly documentId: string; readonly name: string;
-      readonly state: string; readonly note: string; readonly data: VaultStatus }
+      readonly state: string; readonly note: string; readonly data: VaultStatus | null; readonly listRefreshWarning?: string }
   | { readonly phase: "found"; readonly query: string; readonly data: VaultFind }
   | { readonly phase: "verified"; readonly documentId: string; readonly data: VaultVerify }
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
@@ -94,14 +94,16 @@ export async function vaultUploadAction(
   // Re-read the list, so the new file appears with its state beside the others rather
   // than as a lone confirmation that says nothing about the rest of the vault.
   const after = await gateway.vaultStatus();
-  if (!after.ok) return { phase: "failed", error: after.error };
+  // The write is acknowledged already. A list read failure must not erase its ID
+  // or invite a duplicate upload. The browser can refresh the list independently.
   return {
     phase: "uploaded",
     documentId: result.data.document_id,
     name: result.data.name ?? parsedName.data,
     state: result.data.state,
     note: result.data.note ?? "",
-    data: after.data,
+    data: after.ok ? after.data : null,
+    ...(!after.ok ? { listRefreshWarning: "Your document was stored, but the file list could not be refreshed. Reload the list; do not upload the file again." } : {}),
   };
 }
 

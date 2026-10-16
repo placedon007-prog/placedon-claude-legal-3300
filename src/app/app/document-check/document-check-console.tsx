@@ -1,7 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
+import { FileDropInput } from "@/components/ui/file-drop-input";
 import { documentCheckAction, type DocumentCheckState } from "./actions";
+import { vaultUploadAction, type VaultState } from "../vault/actions";
+import { documentReadinessAction } from "../actions";
 import type { DocumentCheckOk, DocCheckLine } from "@/lib/gateway/types";
 
 const initial: DocumentCheckState = { phase: "idle" };
@@ -30,34 +34,120 @@ function lineGlyph(result: string): { glyph: string; cls: string } {
 
 /** `initialDocumentId` arrives from the composer's attach flow (Wall System → here). */
 export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocumentId?: string }) {
-  const [state, action, pending] = useActionState(documentCheckAction, initial);
+  const [selectionVersion, setSelectionVersion] = useState(0);
+  const [check, action, pending] = useActionState(async (_previous: { version: string; result: DocumentCheckState }, data: FormData) => ({
+    version: String(data.get("selection_version") ?? ""),
+    result: await documentCheckAction(initial, data),
+  }), { version: "", result: initial });
+  const state = check.version === String(selectionVersion) ? check.result : initial;
+  const [documentId, setDocumentId] = useState(initialDocumentId);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [readiness, setReadiness] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [asOf, setAsOf] = useState("");
+  const [revokedOn, setRevokedOn] = useState("");
+  const [supersededBy, setSupersededBy] = useState("");
+  const [renewable, setRenewable] = useState(false);
+  const [uploadProblem, setUploadProblem] = useState<string | null>(null);
+  const [readinessChecks, setReadinessChecks] = useState(0);
+
+  function clearDocument() {
+    setSelectionVersion((version) => version + 1);
+    setDocumentId("");
+    setSelectedName(null);
+    setReadiness(null);
+  }
+
+  useEffect(() => {
+    if (!documentId || readiness !== "PENDING" || readinessChecks >= 5) return;
+    let live = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const current = await documentReadinessAction(documentId);
+        if (live) setReadiness(current.state);
+      } catch {
+        if (live) setReadiness("UNKNOWN");
+      } finally {
+        if (live) setReadinessChecks((n) => n + 1);
+      }
+    }, Math.min(15_000, 1_500 * 2 ** readinessChecks));
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [documentId, readiness, readinessChecks]);
+
+  async function upload(file: File) {
+    if (uploading) return;
+    setUploading(true);
+    setUploadProblem(null);
+    clearDocument();
+    const data = new FormData();
+    data.set("file", file);
+    data.set("name", file.name);
+    try {
+      const result: VaultState = await vaultUploadAction({ phase: "idle" }, data);
+      if (result.phase === "uploaded") {
+        setDocumentId(result.documentId);
+        setSelectedName(result.name);
+        setReadiness(result.state);
+        setReadinessChecks(0);
+      } else {
+        setUploadProblem(result.phase === "invalid" ? result.message
+          : result.phase === "refused" ? result.detail
+          : result.phase === "failed" ? "The upload did not complete. Try again." : "The upload did not complete.");
+      }
+    } catch {
+      setUploadProblem("The upload was interrupted. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <>
-      <form action={action}>
-        <label htmlFor="document_id">Document id</label>
-        <input
-          id="document_id"
-          name="document_id"
-          type="text"
-          defaultValue={initialDocumentId}
-          placeholder="the sha256 or vault id — copy it from Wall System"
-          aria-describedby="doc-help"
-        />
-        <p className="meta" id="doc-help">
-          This checks a document already in your vault. It reads the stored bytes, so the
-          document is never re-uploaded here. Upload first in Wall System and paste its
-          id.
-        </p>
+      <section aria-labelledby="document-check-file-title">
+        <h3 id="document-check-file-title">1. Add a document</h3>
+        <FileDropInput id="document-check-file" onSelected={(file) => { void upload(file); }}
+          onInvalid={clearDocument} onRemoved={clearDocument} disabled={uploading || pending || refreshing} />
+        <p className="meta">Readable text is stored in Wall System before checking. The original file and its digital signature are not preserved by this upload. Do not upload client-confidential files to this shared-passcode prototype.</p>
+        {uploading ? <p role="status">Storing and reading the document…</p> : null}
+        {uploadProblem ? <p role="alert" className="form-error">{uploadProblem}</p> : null}
+        {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
+        {documentId && !selectedName ? <p role="status">Stored document selected: {documentId}</p> : null}
+        {selectedName && readiness !== "INGESTED" && readiness !== "CANNOT_READ" ? <button type="button" disabled={refreshing || pending || uploading} onClick={async () => {
+          setRefreshing(true);
+          try {
+            const current = await documentReadinessAction(documentId);
+            setReadiness(current.state);
+            setReadinessChecks(0);
+          } catch {
+            setReadiness("UNKNOWN");
+            setUploadProblem("File status could not be refreshed. Try again.");
+          } finally {
+            setRefreshing(false);
+          }
+        }}>Refresh file status</button> : null}
+        <p className="meta"><Link href="/app/vault">Browse Wall System</Link> to find an existing document.</p>
+      </section>
+      <form action={action} onChange={() => setSelectionVersion((version) => version + 1)}>
+        <fieldset disabled={pending || uploading || refreshing} className="m-0 min-w-0 border-0 p-0">
+        <input name="selection_version" type="hidden" value={selectionVersion} />
+        <h3>2. Set the check date and known facts</h3>
+        <input name="document_id" type="hidden" value={documentId} />
+        <details>
+          <summary>Use an existing Wall System document ID</summary>
+          <label htmlFor="document-id-manual">Document ID</label>
+          <input id="document-id-manual" type="text" value={documentId} maxLength={128}
+            placeholder="Paste the ID from Wall System" onChange={(event) => { setDocumentId(event.target.value); setSelectedName(null); setReadiness(null); }} />
+        </details>
 
         <div className="field-row">
           <div>
             <label htmlFor="as_of">Judge validity as of</label>
-            <input id="as_of" name="as_of" type="date" aria-describedby="asof-help" />
+            <input id="as_of" name="as_of" type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} aria-describedby="asof-help" />
           </div>
           <div>
             <label htmlFor="revoked_on">Revoked on</label>
-            <input id="revoked_on" name="revoked_on" type="date" />
+            <input id="revoked_on" name="revoked_on" type="date" value={revokedOn} onChange={(event) => setRevokedOn(event.target.value)} />
           </div>
         </div>
         <p className="meta" id="asof-help">
@@ -71,6 +161,8 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         <input
           id="superseded_by"
           name="superseded_by"
+          value={supersededBy}
+          onChange={(event) => setSupersededBy(event.target.value)}
           type="text"
           placeholder="the instrument that replaced this one, if you know of one"
         />
@@ -81,16 +173,17 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
 
         <div className="row">
           <label className="check-inline" htmlFor="renewable">
-            <input id="renewable" name="renewable" type="checkbox" />
+            <input id="renewable" name="renewable" type="checkbox" checked={renewable} onChange={(event) => setRenewable(event.target.checked)} />
             <span>This class of document can be renewed rather than replaced</span>
           </label>
         </div>
 
         <div className="row">
-          <button type="submit" disabled={pending}>
+          <button type="submit" disabled={pending || uploading || !documentId || readiness === "CANNOT_READ" || readiness === "PENDING" || readiness === "UNKNOWN"}>
             {pending ? "Checking…" : "Check document"}
           </button>
         </div>
+        </fieldset>
       </form>
 
       {state.phase === "invalid" ? (
@@ -175,7 +268,7 @@ function Result({ data }: { data: DocumentCheckOk }) {
         <span className="mono">{data.verification.overall}</span>
         <span className="meta"> — was it signed, and are the bytes unchanged?</span>
       </div>
-      <table className="findings">
+      <table className="findings findings-labeled">
         <thead>
           <tr>
             <th scope="col">Check</th>
@@ -188,8 +281,9 @@ function Result({ data }: { data: DocumentCheckOk }) {
             const g = lineGlyph(c.result);
             return (
               <tr key={c.field ?? c.name}>
-                <td>{c.name}</td>
+                <td><span className="mobile-cell-label" aria-hidden="true">Check</span>{c.name}</td>
                 <td>
+                  <span className="mobile-cell-label" aria-hidden="true">Result</span>
                   <span className={`status ${g.cls}`}>
                     <span className="glyph" aria-hidden="true">
                       {g.glyph}
@@ -197,7 +291,7 @@ function Result({ data }: { data: DocumentCheckOk }) {
                     <span className="status-word">{c.result}</span>
                   </span>
                 </td>
-                <td className="meta">{c.detail}</td>
+                <td className="meta"><span className="mobile-cell-label" aria-hidden="true">Detail</span>{c.detail}</td>
               </tr>
             );
           })}
