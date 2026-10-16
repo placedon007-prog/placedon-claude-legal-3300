@@ -93,8 +93,8 @@ function Failure({ state }: { state: Extract<VaultState, { phase: "failed" }> })
         {state.error.status ? ` · HTTP ${state.error.status}` : ""}
       </p>
       <p className="meta">
-        A transport failure. Nothing was uploaded, searched or verified, and no document has
-        been judged either way.
+        The result could not be confirmed. Check the stored files before retrying an upload.
+        This is not a finding about the document.
       </p>
     </div>
   );
@@ -122,7 +122,7 @@ export function VaultConsole({ initialList, matters, mattersUnavailable }: {
   const [find, findAction, finding] = useActionState(vaultFindAction, initial);
   const [verify, verifyAction, verifying] = useActionState(vaultVerifyAction, initial);
 
-  const list = upload.phase === "uploaded" ? upload.data : initialList;
+  const list = upload.phase === "uploaded" ? upload.data ?? initialList : initialList;
 
   return (
     <>
@@ -167,6 +167,7 @@ export function VaultConsole({ initialList, matters, mattersUnavailable }: {
               {upload.name} — {stateOf(upload.state).word}
             </p>
             <p className="meta">{upload.note}</p>
+            {upload.listRefreshWarning ? <p>{upload.listRefreshWarning}</p> : null}
           </div>
         )}
       </section>

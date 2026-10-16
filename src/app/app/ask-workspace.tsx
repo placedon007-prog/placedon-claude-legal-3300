@@ -8,6 +8,7 @@ import { PromptBox, type AttachOutcome, type ComposerHandle, type ComposerTool, 
 import type { CitationGroup } from "@/lib/thread";
 import { chosenOrDefault, toggleSource } from "@/lib/sources";
 import { conversationPollDelay, conversationTurns } from "@/lib/conversation";
+import { draftableAnswerKey } from "@/lib/draft-source";
 import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
@@ -100,10 +101,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const chosen = chosenOrDefault(bodies, storedSources ?? initialSources);
   const activeMatter = context.matters.find((matter) => matter.matter_id === matterId);
   const queuedSignature = turns.flatMap((turn) => turn.state?.phase === "queued" ? [turn.key] : []).join(",");
-  const latestCitedAnswer = turns.findLast((turn) => turn.state?.phase === "answered"
-    && turn.state.envelope.status === "ANSWERED" && turn.state.envelope.resource !== "case"
-    && turn.state.envelope.citations.length > 0
-    && Boolean(turn.state.envelope.run_id))?.key;
+  const latestCitedAnswer = draftableAnswerKey(turns);
   const pending = sending || Boolean(queuedSignature);
   // An interrupted response may already have created a conversation on the server.
   // Recover that exact request before allowing another write in this workspace.

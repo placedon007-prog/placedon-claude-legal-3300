@@ -34,15 +34,26 @@ function lineGlyph(result: string): { glyph: string; cls: string } {
 
 /** `initialDocumentId` arrives from the composer's attach flow (Wall System → here). */
 export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocumentId?: string }) {
-  const [state, action, pending] = useActionState(documentCheckAction, initial);
+  const [selectionVersion, setSelectionVersion] = useState(0);
+  const [check, action, pending] = useActionState(async (_previous: { version: string; result: DocumentCheckState }, data: FormData) => ({
+    version: String(data.get("selection_version") ?? ""),
+    result: await documentCheckAction(initial, data),
+  }), { version: "", result: initial });
+  const state = check.version === String(selectionVersion) ? check.result : initial;
   const [documentId, setDocumentId] = useState(initialDocumentId);
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [readiness, setReadiness] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [asOf, setAsOf] = useState("");
+  const [revokedOn, setRevokedOn] = useState("");
+  const [supersededBy, setSupersededBy] = useState("");
+  const [renewable, setRenewable] = useState(false);
   const [uploadProblem, setUploadProblem] = useState<string | null>(null);
   const [readinessChecks, setReadinessChecks] = useState(0);
 
   function clearDocument() {
+    setSelectionVersion((version) => version + 1);
     setDocumentId("");
     setSelectedName(null);
     setReadiness(null);
@@ -96,13 +107,14 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
       <section aria-labelledby="document-check-file-title">
         <h3 id="document-check-file-title">1. Add a document</h3>
         <FileDropInput id="document-check-file" onSelected={(file) => { void upload(file); }}
-          onInvalid={clearDocument} disabled={uploading || pending} />
-        <p className="meta">The file is stored in Wall System before checking. Do not upload client-confidential files to this shared-passcode prototype.</p>
+          onInvalid={clearDocument} onRemoved={clearDocument} disabled={uploading || pending || refreshing} />
+        <p className="meta">Readable text is stored in Wall System before checking. The original file and its digital signature are not preserved by this upload. Do not upload client-confidential files to this shared-passcode prototype.</p>
         {uploading ? <p role="status">Storing and reading the document…</p> : null}
         {uploadProblem ? <p role="alert" className="form-error">{uploadProblem}</p> : null}
         {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
         {documentId && !selectedName ? <p role="status">Stored document selected: {documentId}</p> : null}
-        {selectedName && readiness !== "INGESTED" && readiness !== "CANNOT_READ" ? <button type="button" onClick={async () => {
+        {selectedName && readiness !== "INGESTED" && readiness !== "CANNOT_READ" ? <button type="button" disabled={refreshing || pending || uploading} onClick={async () => {
+          setRefreshing(true);
           try {
             const current = await documentReadinessAction(documentId);
             setReadiness(current.state);
@@ -110,11 +122,15 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
           } catch {
             setReadiness("UNKNOWN");
             setUploadProblem("File status could not be refreshed. Try again.");
+          } finally {
+            setRefreshing(false);
           }
         }}>Refresh file status</button> : null}
         <p className="meta"><Link href="/app/vault">Browse Wall System</Link> to find an existing document.</p>
       </section>
-      <form action={action}>
+      <form action={action} onChange={() => setSelectionVersion((version) => version + 1)}>
+        <fieldset disabled={pending || uploading || refreshing} className="m-0 min-w-0 border-0 p-0">
+        <input name="selection_version" type="hidden" value={selectionVersion} />
         <h3>2. Set the check date and known facts</h3>
         <input name="document_id" type="hidden" value={documentId} />
         <details>
@@ -127,11 +143,11 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         <div className="field-row">
           <div>
             <label htmlFor="as_of">Judge validity as of</label>
-            <input id="as_of" name="as_of" type="date" aria-describedby="asof-help" />
+            <input id="as_of" name="as_of" type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} aria-describedby="asof-help" />
           </div>
           <div>
             <label htmlFor="revoked_on">Revoked on</label>
-            <input id="revoked_on" name="revoked_on" type="date" />
+            <input id="revoked_on" name="revoked_on" type="date" value={revokedOn} onChange={(event) => setRevokedOn(event.target.value)} />
           </div>
         </div>
         <p className="meta" id="asof-help">
@@ -145,6 +161,8 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         <input
           id="superseded_by"
           name="superseded_by"
+          value={supersededBy}
+          onChange={(event) => setSupersededBy(event.target.value)}
           type="text"
           placeholder="the instrument that replaced this one, if you know of one"
         />
@@ -155,7 +173,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
 
         <div className="row">
           <label className="check-inline" htmlFor="renewable">
-            <input id="renewable" name="renewable" type="checkbox" />
+            <input id="renewable" name="renewable" type="checkbox" checked={renewable} onChange={(event) => setRenewable(event.target.checked)} />
             <span>This class of document can be renewed rather than replaced</span>
           </label>
         </div>
@@ -165,6 +183,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
             {pending ? "Checking…" : "Check document"}
           </button>
         </div>
+        </fieldset>
       </form>
 
       {state.phase === "invalid" ? (
@@ -249,7 +268,7 @@ function Result({ data }: { data: DocumentCheckOk }) {
         <span className="mono">{data.verification.overall}</span>
         <span className="meta"> — was it signed, and are the bytes unchanged?</span>
       </div>
-      <table className="findings">
+      <table className="findings findings-labeled">
         <thead>
           <tr>
             <th scope="col">Check</th>
@@ -262,8 +281,9 @@ function Result({ data }: { data: DocumentCheckOk }) {
             const g = lineGlyph(c.result);
             return (
               <tr key={c.field ?? c.name}>
-                <td>{c.name}</td>
+                <td><span className="mobile-cell-label" aria-hidden="true">Check</span>{c.name}</td>
                 <td>
+                  <span className="mobile-cell-label" aria-hidden="true">Result</span>
                   <span className={`status ${g.cls}`}>
                     <span className="glyph" aria-hidden="true">
                       {g.glyph}
@@ -271,7 +291,7 @@ function Result({ data }: { data: DocumentCheckOk }) {
                     <span className="status-word">{c.result}</span>
                   </span>
                 </td>
-                <td className="meta">{c.detail}</td>
+                <td className="meta"><span className="mobile-cell-label" aria-hidden="true">Detail</span>{c.detail}</td>
               </tr>
             );
           })}

@@ -15,20 +15,48 @@ export function fileSelectionProblem(file: File): string | null {
   return null;
 }
 
-export function FileDropInput({ id, name = "file", onSelected, onInvalid, disabled = false }: {
+export function FileDropInput({ id, name = "file", onSelected, onInvalid, onRemoved, disabled = false }: {
   id: string;
   name?: string;
   onSelected?: (file: File) => void;
   onInvalid?: () => void;
+  onRemoved?: () => void;
   disabled?: boolean;
 }) {
   const input = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [problem, setProblem] = React.useState<string | null>(null);
+  const [announcement, setAnnouncement] = React.useState("");
+
+  React.useEffect(() => {
+    const form = input.current?.form;
+    if (!form) return;
+    function resetSelection() {
+      setSelected(null);
+      setProblem(null);
+      setDragging(false);
+      setAnnouncement("");
+    }
+    form.addEventListener("reset", resetSelection);
+    return () => form.removeEventListener("reset", resetSelection);
+  }, []);
+
+  function remove() {
+    if (disabled) return;
+    const removedName = selected;
+    if (input.current) input.current.value = "";
+    setSelected(null);
+    setProblem(null);
+    setDragging(false);
+    setAnnouncement(`${removedName ?? "File"} removed.`);
+    onRemoved?.();
+    input.current?.focus();
+  }
 
   function choose(file: File | undefined, dropped: boolean) {
     if (!file) return;
+    setAnnouncement("");
     const issue = fileSelectionProblem(file);
     setProblem(issue);
     setSelected(issue ? null : file.name);
@@ -37,7 +65,7 @@ export function FileDropInput({ id, name = "file", onSelected, onInvalid, disabl
       if (input.current) input.current.value = "";
       return;
     }
-    if (dropped && input.current) {
+    if (dropped && !onSelected && input.current) {
       try {
         const transfer = new DataTransfer();
         transfer.items.add(file);
@@ -50,7 +78,12 @@ export function FileDropInput({ id, name = "file", onSelected, onInvalid, disabl
         return;
       }
     }
-    onSelected?.(file);
+    if (onSelected) {
+      // Callback uploads own the File. Clear the native selection so retrying the
+      // same file after a failed upload still emits a change event.
+      if (input.current) input.current.value = "";
+      onSelected(file);
+    }
   }
 
   return (
@@ -79,6 +112,11 @@ export function FileDropInput({ id, name = "file", onSelected, onInvalid, disabl
         <span className="font-medium">{selected ?? "Drop a document here, or choose a file"}</span>
         <span className="text-ui text-fg-2" id={`${id}-help`}>PDF, DOCX, TXT or MD · up to 10 MB · text-layer PDFs only</span>
       </label>
+      {selected ? <button type="button" disabled={disabled} onClick={remove}
+        aria-label={`Remove file ${selected}`} className="mt-2 min-h-11 rounded-chip border border-line-control px-3 text-ui focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">
+        Remove file
+      </button> : null}
+      <p role="status" aria-atomic="true" className="sr-only">{announcement}</p>
       {problem ? <p id={`${id}-error`} role="alert" className="form-error">{problem}</p> : null}
     </div>
   );

@@ -124,7 +124,7 @@ function Findings({
         </p>
       </div>
 
-      <table className="findings">
+      <table className="findings findings-labeled">
         <caption className="meta">
           Every row is a potential issue against a company standard — never a statement that
           a clause is valid, enforceable or void.
@@ -185,11 +185,11 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
   const s = STATUS[finding.status];
   return (
     <tr>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Rule</span>
         <span className="mono">{finding.rule_id}</span>
         <div className="meta">{finding.clause}</div>
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Status</span>
         <span className={`status status-${finding.status.toLowerCase()}`}>
           <span className="glyph" aria-hidden="true">
             {s.glyph}
@@ -198,7 +198,7 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
         </span>
         <div className="meta">{s.meaning}</div>
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Document text</span>
         <p className="quoted">{finding.detail}</p>
         {/* Only on the rows a person must resolve. A control offering to approve a MATCHES
             is how a reviewer learns to click through the ones that matter. */}
@@ -211,7 +211,7 @@ function Row({ finding, runId }: { finding: Finding; runId: string | null | unde
           />
         ) : null}
       </td>
-      <td>
+      <td><span className="mobile-cell-label" aria-hidden="true">Company standard</span>
         {finding.standard_text ? (
           <>
             <p className="standard-text">{finding.standard_text}</p>

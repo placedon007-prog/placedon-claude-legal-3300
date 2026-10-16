@@ -372,11 +372,26 @@
 .empty { color: var(--c-fg-3); }
 .field-error { color: var(--c-fg); font-weight: 500; font-size: var(--text-ui); margin-top: 0.6rem; }
 
+.mobile-cell-label { display: none; }
 @media (max-width: 40rem) {
   .findings thead, .steps thead { display: none; }
   .findings tr, .steps tr { display: grid; gap: 0.3rem; padding: 0.8rem 0; }
   .findings td, .steps td { border: 0; padding: 0; }
   .findings tr { border-bottom: 1px solid var(--c-line); }
+  .findings-labeled thead {
+    display: table-header-group;
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .findings-labeled .mobile-cell-label {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--c-fg-2);
+  }
 }
 
 /* ── the human gate ───────────────────────────────────────────────────────── */

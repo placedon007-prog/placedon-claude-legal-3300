@@ -16,7 +16,7 @@ export default async function DocumentCheckPage({
     <>
       <h2>Document Check</h2>
       <p className="lede">
-        Upload a document to check its recorded facts, date-sensitive status and next action.
+        Upload readable document text to check its recorded facts, date-sensitive status and next action.
         Results flag what needs lawyer review; they do not certify legal validity.
       </p>
       <DocumentCheckConsole initialDocumentId={initial} />
