@@ -28,16 +28,26 @@ test("actual backend HTTP source picker retains provider IDs", () => {
 
 test("web-research outcomes keep provider setup, ambiguity and citations distinct", () => {
   const unavailable = webResearchSchema.parse({
-    status: "NOT_CONFIGURED", provider: "exa", queried_at: null, answer: null,
+    status: "NOT_CONFIGURED", queried_at: null, answer: null,
     citations: [], message: "provider setup required",
   });
   assert.equal(unavailable.status, "NOT_CONFIGURED");
   const ambiguous = webResearchSchema.parse({
-    status: "NEEDS_CASE_DETAILS", provider: "exa", queried_at: null, answer: null,
+    status: "NEEDS_CASE_DETAILS", queried_at: null, answer: null,
     citations: [], message: "identify the court and case",
-    portals: [{ label: "High Court case status", url: "https://hcservices.ecourts.gov.in/hcservices/" }],
   });
   assert.equal(ambiguous.status, "NEEDS_CASE_DETAILS");
+  assert.equal(webResearchSchema.safeParse({
+    status: "NEEDS_CASE_DETAILS", answer: "Maybe this case?", message: "identify the court",
+  }).success, false);
+  assert.equal(webResearchSchema.safeParse({
+    status: "OFFICIAL_STATUS_REQUIRED", answer: null, message: "Check the docket",
+  }).success, false);
+  assert.equal(webResearchSchema.safeParse({
+    status: "OFFICIAL_STATUS_REQUIRED", answer: null, message: "Check the docket", portals: [
+      { label: "Supreme Court case status", url: "https://www.sci.gov.in/case-status-court/" },
+    ],
+  }).success, true);
   const answer = webResearchSchema.parse({
     status: "ANSWERED", provider: "exa", queried_at: "2026-10-16T00:00:00+00:00",
     answer: "Public web summary.", note: "Not verified law.",

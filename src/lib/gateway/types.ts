@@ -1099,7 +1099,7 @@ export type SourcesSearch = z.infer<typeof sourcesSearchSchema>;
 /** Public web research is not an answer-envelope legal finding or live docket record. */
 export const webResearchSchema = z.object({
   status: z.enum([
-    "ANSWERED", "NO_RESULTS", "NEEDS_CASE_DETAILS", "OFFICIAL_STATUS_REQUIRED",
+    "ANSWERED", "SUMMARY_UNAVAILABLE", "NO_RESULTS", "NEEDS_CASE_DETAILS", "OFFICIAL_STATUS_REQUIRED",
     "NOT_CONFIGURED", "CONSENT_REQUIRED", "BUSY", "UNAVAILABLE", "BAD_REQUEST",
   ]),
   provider: z.string().optional(),
@@ -1125,6 +1125,18 @@ export const webResearchSchema = z.object({
 }).superRefine((result, context) => {
   if (result.status === "ANSWERED" && (!result.answer?.trim() || !result.citations?.length)) {
     context.addIssue({ code: "custom", message: "Answered research requires text and citable sources." });
+  }
+  if (result.status === "SUMMARY_UNAVAILABLE"
+      && (result.answer !== null && result.answer !== undefined
+        || !result.citations?.length || !result.message?.trim())) {
+    context.addIssue({ code: "custom", message: "Unavailable summaries may expose source leads but no answer text." });
+  }
+  if (result.status === "NEEDS_CASE_DETAILS" && (!result.message?.trim() || Boolean(result.answer?.trim()))) {
+    context.addIssue({ code: "custom", message: "Case clarification requires a prompt and no answer text." });
+  }
+  if (result.status === "OFFICIAL_STATUS_REQUIRED"
+      && (!result.portals?.length || Boolean(result.answer?.trim()))) {
+    context.addIssue({ code: "custom", message: "Live docket outcomes require official portals and no answer text." });
   }
 });
 export type WebResearch = z.infer<typeof webResearchSchema>;

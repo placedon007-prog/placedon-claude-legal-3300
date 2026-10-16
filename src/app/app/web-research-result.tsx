@@ -58,6 +58,16 @@ export function ResearchState({ state, query }: { state: WebResearchState; query
     );
   }
 
+  if (result.status === "SUMMARY_UNAVAILABLE") {
+    return (
+      <section className="mt-6 rounded-card border border-line-2 p-4">
+        <h3 className="text-title font-medium">Summary unavailable</h3>
+        <p role="status" aria-live="polite" className="mt-2 text-ui text-fg-2">{result.message}</p>
+        <ResearchSources citations={result.citations ?? []} heading="Sources returned by Exa · leads only" />
+      </section>
+    );
+  }
+
   if (result.status === "NEEDS_CASE_DETAILS" || result.status === "OFFICIAL_STATUS_REQUIRED") {
     return (
       <section role="status" aria-live="polite" className="mt-6 rounded-card border border-line-2 p-4">

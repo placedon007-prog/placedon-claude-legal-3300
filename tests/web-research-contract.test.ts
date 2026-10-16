@@ -24,3 +24,14 @@ test("credentialed citation URLs are rejected", () => {
       published_at: null, author: null, excerpt: "" }],
   }).success, false);
 });
+
+test("unmatched provider citations cannot be represented as an answer", () => {
+  const citation = { title: "Report", url: "https://example.com/report", domain: "example.com",
+    published_at: null, author: null, excerpt: "A source excerpt." };
+  assert.equal(webResearchSchema.safeParse({ status: "SUMMARY_UNAVAILABLE", answer: null,
+    message: "Review these links as leads.", citations: [citation] }).success, true);
+  assert.equal(webResearchSchema.safeParse({ status: "SUMMARY_UNAVAILABLE", answer: "A fallback presented as prose.",
+    message: "Review these links as leads.", citations: [citation] }).success, false);
+  assert.equal(webResearchSchema.safeParse({ status: "SUMMARY_UNAVAILABLE", answer: null,
+    message: "Review these links as leads.", citations: [] }).success, false);
+});
