@@ -14,7 +14,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
-import { CalendarPlus, Check, Copy, GitBranch, History, PenLine } from "lucide-react";
+import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
@@ -73,11 +73,24 @@ export function TurnView({
   onDraft: () => void;
 }) {
   const s = turn.state;
+  const asksForCurrentCase = /\b(?:case|court|lawsuit|litigation|dispute)\b/i.test(turn.question)
+    && /\b(?:current|latest|recent|today|news|update)\b/i.test(turn.question);
   return (
     <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
       <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">
         {turn.question}
       </h2>
+      {s?.phase === "answered" && (s.envelope.resource === "case" || asksForCurrentCase) ? (
+        <Link
+          href="/app/web-research"
+          onClick={() => {
+            try { sessionStorage.setItem("placedon-web-draft", turn.question.slice(0, 800)); } catch { /* The research screen remains available for direct entry. */ }
+          }}
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-chip border border-line-control px-3 text-ui font-medium text-fg hover:bg-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+        >
+          <Globe2 className="size-4" aria-hidden /> Search public reporting for this question
+        </Link>
+      ) : null}
       {s === null ? (
         <div aria-busy="true" aria-live="polite">
           <StatusLine kind="pending" />

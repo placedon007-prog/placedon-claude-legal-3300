@@ -112,8 +112,9 @@ export function WebResearchConsole() {
 
       <p className="mt-3 text-caption text-fg-3">
         Current case status requires an official court record and a specific case identifier. Web
-        reports and past judgments are shown as research sources, never as live docket status. A
-        live-status request is handled locally and is not sent to Exa.
+        reports and past judgments are shown as research sources, never as live docket status.
+        A question with a court and case identifier is routed to official portals; exploratory
+        case questions search public sources only after you consent.
       </p>
 
       {state ? <ResearchState state={state} query={query} /> : null}
@@ -142,6 +143,12 @@ function ResearchState({ state, query }: { state: WebResearchState; query: strin
         </div>
         <p className="mt-4 whitespace-pre-wrap text-read leading-7">{result.answer}</p>
         <p className="mt-3 text-caption text-fg-3">{result.note}</p>
+        {result.portals?.length ? <div className="mt-4 rounded-card border border-line p-4">
+          <p className="text-ui font-medium">Verify the court record</p>
+          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">{result.portals.map((portal) => (
+            <li key={portal.url}><a className="inline-flex min-h-11 items-center gap-1 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg" href={portal.url} target="_blank" rel="noopener noreferrer">{portal.label}<ArrowUpRight className="size-4" aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a></li>
+          ))}</ul>
+        </div> : null}
         <h4 className="mt-6 text-ui font-medium">Sources returned by Exa</h4>
         <ol className="mt-2 space-y-3">
           {(result.citations ?? []).map((citation, index) => (
