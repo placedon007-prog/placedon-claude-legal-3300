@@ -16,7 +16,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -25,6 +25,8 @@ import { executionCostLabel, modelCalls } from "@/lib/conversation";
 import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebResearchState } from "./actions";
 import { ResearchState } from "./web-research-result";
 import { ResearchActivity } from "./research-activity";
+import { DocumentEvidenceAnswer } from "./document-evidence-answer";
+import { documentEvidenceLabel } from "@/lib/document-evidence";
 
 export interface Turn {
   readonly key: string;
@@ -141,7 +143,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} documentEvidence={s.documentEvidence} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -154,6 +156,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
   const executionRequest = React.useRef(false);
   const state = turn.state;
   const envelope = state?.phase === "answered" ? state.envelope : null;
+  const documentEvidence = state?.phase === "answered" ? state.documentEvidence : undefined;
   const report = state?.phase === "answered" ? state.sources : undefined;
   const citationGroups = envelope
     ? linkCitations(parseAnswer(envelope.text_blocks[0]?.text ?? "").sentences, envelope.citations).groups
@@ -179,12 +182,12 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
 
   const questionStatus = state === null ? "Sending" : state.phase === "invalid" || state.phase === "signed_out" ? "Not sent" : "Recorded";
   const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
-  const searchStatus = report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
-  const evidenceStatus = envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
+  const searchStatus = documentEvidence || report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
+  const evidenceStatus = documentEvidence ? `${documentEvidence.passages.length} document excerpts` : envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
   const answerStatus = state === null
     ? "Sending"
     : state.phase === "answered"
-      ? statusLabel(envelopeKind(state.envelope.status))
+      ? state.documentEvidence ? documentEvidenceLabel(state.documentEvidence) : statusLabel(envelopeKind(state.envelope.status))
       : state.phase === "queued"
         ? statusLabel("queued")
         : state.phase === "failed"
@@ -195,7 +198,9 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
               ? "Not sent · session ended"
               : state.message;
 
-  const searchDetails = report
+  const searchDetails = documentEvidence
+    ? `${documentEvidence.searched_document_ids.length} attached documents searched. ${documentEvidenceLabel(documentEvidence)}.`
+    : report
     ? report.report.map((item) => {
         const name = traceSourceName(item.id);
         if (item.outcome === "SEARCHED_EMPTY") return `${name}: searched; no matches`;
@@ -226,7 +231,9 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
       ? `${fileCount} file${fileCount === 1 ? " was" : "s were"} selected; per-file processing results are not available yet.`
       : "No file processing result is recorded for this turn.";
 
-  const citationDetails = envelope
+  const citationDetails = documentEvidence
+    ? `${documentEvidence.passages.length} exact document excerpts are shown above. They are saved extraction snapshots, not statutory citations or official verification.`
+    : envelope
     ? envelope.citations.length
       ? Array.from(new Set(envelope.citations.map((citation) => `${citation.instrument}${citation.provision ? `, ${citation.provision}` : ""}`))).join(" · ")
       : "The answer returned no citations. A source search alone does not show that evidence supported the answer."
@@ -323,6 +330,7 @@ function Answered({
   draftId,
   code,
   sources,
+  documentEvidence,
   artifacts,
   onRetry,
   retryDisabled,
@@ -334,12 +342,14 @@ function Answered({
   draftId: string | null;
   code?: string | null;
   sources?: SourceReport;
+  documentEvidence?: DocumentEvidence;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft?: () => void;
 }) {
+  if (documentEvidence) return <DocumentEvidenceAnswer evidence={documentEvidence} />;
   // A case-routed turn is never a statute answer and never an abstention: it gets its own
   // render path so the two registers can never bleed into each other on screen.
   if (envelope.resource === "case") {

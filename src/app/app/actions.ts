@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
-import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
+import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
@@ -38,6 +38,7 @@ export type TurnState =
   | { readonly phase: "answered"; readonly conversationId: string; readonly envelope: Envelope;
       readonly draftId: string | null;
       readonly sources?: SourceReport;
+      readonly documentEvidence?: DocumentEvidence;
       readonly artifacts?: readonly ConversationArtifact[];
       /** The refusal/failure code the gateway returned beside the envelope (NO_MODEL,
        *  NOTHING_TRACED, NO_EVIDENCE…), so the screen can tell a model shortfall from an
@@ -134,6 +135,7 @@ export async function sendAction(input: {
     code: data.code ?? null,
     region: null,
     sources: data.metadata?.sources ?? data.sources,
+    documentEvidence: data.metadata?.document_evidence ?? data.document_evidence,
     artifacts: data.metadata?.artifacts ?? [
       ...(data.draft_id ? [{ type: "draft" as const, id: data.draft_id, version: data.version }] : []),
       ...(data.grid_id ? [{ type: "review_table" as const, id: data.grid_id }] : []),

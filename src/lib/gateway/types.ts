@@ -887,10 +887,53 @@ export const artifactSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("review_table"), id: z.string() }),
 ]);
 export type ConversationArtifact = z.infer<typeof artifactSchema>;
+/** Document excerpts are a separate evidence contract, never statutory citations. */
+const evidenceText = (max: number) => z.string().max(max * 2).refine((text) => Array.from(text).length <= max);
+const evidenceId = z.string().min(1).max(128);
+const evidenceHash = z.string().regex(/^[a-f0-9]{64}$/).nullable();
+export const documentEvidenceSchema = z.object({
+  schema: z.literal("document_evidence.v1"),
+  mode: z.enum(["question", "overview"]),
+  status: z.enum(["EXCERPTS_FOUND", "NO_MATCH", "UNAVAILABLE", "NOT_SEARCHED"]),
+  query: evidenceText(8000),
+  searched_document_ids: z.array(evidenceId).max(20),
+  documents: z.array(z.object({
+    document_id: evidenceId, name: evidenceText(512), sha256: evidenceHash,
+    status: z.enum(["SEARCHED", "UNAVAILABLE", "LIMIT_EXCEEDED", "NOT_SEARCHED"]),
+    reason: evidenceText(2000).nullable(), total_chars: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+  })).max(20),
+  passages: z.array(z.object({
+    id: evidenceId, document_id: evidenceId, name: evidenceText(512), sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    start: z.number().int().nonnegative().max(200000), end: z.number().int().positive().max(200000),
+    text: evidenceText(1200).refine((text) => text.length > 0),
+  })).max(8),
+  limitations: z.array(evidenceText(2000)).max(20),
+}).superRefine((value, ctx) => {
+  const documents = new Map(value.documents.map((document) => [document.document_id, document]));
+  const searched = new Set(value.searched_document_ids);
+  const reject = (message: string) => ctx.addIssue({ code: "custom", message });
+  if (documents.size !== value.documents.length || searched.size !== value.searched_document_ids.length) reject("Duplicate document identity");
+  if (new Set(value.passages.map((passage) => passage.id)).size !== value.passages.length) reject("Duplicate passage identity");
+  if ((value.status === "EXCERPTS_FOUND") !== (value.passages.length > 0)) reject("Document outcome does not match its excerpts");
+  if ((value.status === "NO_MATCH" || value.status === "EXCERPTS_FOUND") && searched.size === 0) reject("Search outcome requires a searched document");
+  if ((value.status === "UNAVAILABLE" || value.status === "NOT_SEARCHED") && searched.size > 0) reject("Unsearched outcome cannot include searched documents");
+  for (const id of searched) if (documents.get(id)?.status !== "SEARCHED") reject("Search refers to an unread document");
+  for (const document of value.documents) {
+    if (document.status !== "SEARCHED") continue;
+    if (!searched.has(document.document_id) || document.sha256 === null || document.total_chars === null
+      || document.total_chars <= 0 || document.total_chars > 200000) reject("Searched document requires its identity, hash and bounded text length");
+  }
+  for (const passage of value.passages) {
+    const document = documents.get(passage.document_id);
+    if (!document || !searched.has(passage.document_id) || document.sha256 !== passage.sha256 || document.name !== passage.name) reject("Excerpt does not match its document record");
+    if (passage.end - passage.start !== Array.from(passage.text).length || (document?.total_chars != null && passage.end > document.total_chars)) reject("Excerpt character range is invalid");
+  }
+});
+export type DocumentEvidence = z.infer<typeof documentEvidenceSchema>;
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
-  sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
+  sources: sourceReportSchema.optional(), document_evidence: documentEvidenceSchema.optional(), artifacts: z.array(artifactSchema).default([]),
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
@@ -906,6 +949,7 @@ export const conversationSendOkSchema = z.object({
   grid_id: z.string().optional(),
   sources: sourceReportSchema.optional(),
   metadata: turnMetadataSchema.optional(),
+  document_evidence: documentEvidenceSchema.optional(),
   note: z.string().optional(),
   /**
    * The refusal code, as a sibling of the envelope — NOT inside it (answer_envelope.v1 is
