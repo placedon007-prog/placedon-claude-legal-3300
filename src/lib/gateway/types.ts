@@ -608,7 +608,16 @@ export const slotOriginSchema = z.enum([
 ]);
 export type SlotOrigin = z.infer<typeof slotOriginSchema>;
 
+export const draftReviewItemSchema = z.object({
+  code: z.string(),
+  field: z.string(),
+  message: z.string(),
+});
+
 export const draftSlotSchema = z.object({
+  type: z.string().optional(),
+  source: z.string().optional(),
+  working: z.string().optional(),
   name: z.string(),
   value: z.string().optional(),
   origin: z.string().optional(),
@@ -626,6 +635,7 @@ export const draftStatusSchema = z.object({
   requires_review: z.boolean(),
   /** Slot names that block approval. Each one needs a person. */
   blocking: z.array(z.string()),
+  review_items: z.array(draftReviewItemSchema).optional(),
   approved: z.boolean(),
   approved_by: z.string().nullable(),
   note: z.string().optional(),
@@ -685,9 +695,11 @@ export const draftVersionSchema = z.object({
   citations: z.array(z.unknown()),
   ready: z.boolean(),
   approved: z.boolean(),
+  historical_approval: z.boolean().optional(),
   approved_by: z.string().nullable(),
   approved_at: z.string().nullable(),
   blocking: z.array(z.string()),
+  review_items: z.array(draftReviewItemSchema).optional(),
 });
 export type DraftVersion = z.infer<typeof draftVersionSchema>;
 
