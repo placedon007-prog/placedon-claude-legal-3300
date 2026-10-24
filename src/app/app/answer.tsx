@@ -16,7 +16,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type SourceReport, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -141,7 +141,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -323,6 +323,7 @@ function Answered({
   draftId,
   code,
   sources,
+  documentEvidence,
   artifacts,
   onRetry,
   retryDisabled,
@@ -334,6 +335,7 @@ function Answered({
   draftId: string | null;
   code?: string | null;
   sources?: SourceReport;
+  documentEvidence?: DocumentEvidence;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
@@ -438,6 +440,7 @@ function Answered({
         </section>
       ) : null}
 
+      {documentEvidence ? <DocumentExcerpts evidence={documentEvidence} /> : null}
       {sources ? <Searched report={sources} /> : null}
       {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
         {envelope.files.map((file) => <li key={file.file_id}>{file.name} — {file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}{file.reason ? ` · ${file.reason}` : ""}</li>)}
@@ -705,4 +708,29 @@ function StatusIcon({ kind }: { kind: StatusKind }) {
     case "pending":
       return <span className="pulse-dot mr-0! flex-none" aria-hidden />;
   }
+}
+
+/**
+ * Excerpts from the user's own attached documents, quoted verbatim with their character
+ * range. They are the user's text, not law and not an answer: the envelope's own words say
+ * so above them, and nothing here re-labels or summarises them.
+ */
+function DocumentExcerpts({ evidence }: { evidence: DocumentEvidence }) {
+  if (!evidence.passages.length && !evidence.limitations.length) return null;
+  return (
+    <section aria-label="Excerpts from your documents" className="flex flex-col gap-3 border-t border-line pt-3">
+      <h3 className="text-ui font-medium text-fg">Excerpts from your documents</h3>
+      {evidence.passages.length ? <ol className="flex flex-col gap-3">
+        {evidence.passages.map((p) => (
+          <li key={p.id} className="flex flex-col gap-1">
+            <p className="font-mono text-caption text-fg-3">{p.name} · chars {p.start}–{p.end}</p>
+            <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{p.text}</blockquote>
+          </li>
+        ))}
+      </ol> : null}
+      {evidence.limitations.length ? <ul className="flex flex-col gap-1 text-caption text-fg-3">
+        {evidence.limitations.map((l) => <li key={l}>{l}</li>)}
+      </ul> : null}
+    </section>
+  );
 }
