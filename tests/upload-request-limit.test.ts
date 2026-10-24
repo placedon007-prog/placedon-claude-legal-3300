@@ -14,6 +14,6 @@ test("a maximum-sized file plus multipart and action metadata fits the framework
   assert.ok(bodyBytes > MAX_UPLOAD_BYTES);
   assert.ok(bodyBytes < Number(limit), "the Next parser must not reject an upload accepted by the application");
   assert.ok(Number(limit) <= 12 * 1024 * 1024, "the transport cap remains bounded");
-  const oversized = extractText("document.pdf", new Uint8Array(MAX_UPLOAD_BYTES + 1));
+  const oversized = await extractText("document.pdf", new Uint8Array(MAX_UPLOAD_BYTES + 1));
   assert.equal(oversized.ok, false, "multipart allowance must not raise the individual file limit");
 });

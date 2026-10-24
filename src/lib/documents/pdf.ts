@@ -16,9 +16,11 @@ import { EXPANSION_LIMIT_REASON, MAX_EXPANDED_BYTES, MAX_PDF_STREAMS } from "./l
  * than return an empty string: "an empty string here would review as a contract with no
  * clauses in it, which is the opposite of what it is."
  *
- * Not a general PDF reader. It handles FlateDecode content streams and the text-showing
- * operators, which is what Word and most contract tooling emit. Anything else is refused,
- * by design, rather than half-read.
+ * pdf.js (through `unpdf`) reads first; this file's own reader is the fallback when pdf.js
+ * cannot open the file. The fallback handles FlateDecode content streams and the
+ * text-showing operators, which is what Word and most contract tooling emit. Whatever
+ * either produces, the confidence gate decides, and anything else is refused, by design,
+ * rather than half-read.
  */
 
 export class PdfError extends Error {}
@@ -166,11 +168,52 @@ export function looksLikeProse(text: string): boolean {
   return words.length >= 40;
 }
 
-export function pdfToText(bytes: Uint8Array): string {
+/** A filing is tens of pages; an ICSI guidance note is under 200. More is a book, not a document. */
+export const MAX_PDF_PAGES = 500;
+
+/**
+ * The text layer through pdf.js, which decodes what the reader below cannot: CID fonts
+ * through their ToUnicode maps, object streams, cross-reference streams. Measured on
+ * 24-10-2026: the reader below refused all 14 real filings in the backend's
+ * `corpus/testdocs/_raw/` (Route Mobile, Titan, Sonata, both ICSI guidance notes); this
+ * read all 14. `null` when pdf.js cannot open the file -- the caller then falls back to the
+ * reader below, whose refusals name the reason.
+ */
+async function pdfJsText(bytes: Uint8Array): Promise<string | null> {
+  const { getDocumentProxy, extractText } = await import("unpdf");
+  let pdf;
+  try {
+    // A copy: pdf.js transfers the buffer it is given, which would empty the caller's.
+    pdf = await getDocumentProxy(new Uint8Array(bytes));
+  } catch {
+    return null;
+  }
+  try {
+    if (pdf.numPages > MAX_PDF_PAGES) {
+      throw new PdfError(
+        `This PDF has ${pdf.numPages} pages; the limit is ${MAX_PDF_PAGES}. Split it into smaller documents.`,
+      );
+    }
+    const { text } = await extractText(pdf, { mergePages: false });
+    return text.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  } catch (cause) {
+    if (cause instanceof PdfError) throw cause;
+    return null;
+  } finally {
+    await pdf.destroy();
+  }
+}
+
+export async function pdfToText(bytes: Uint8Array): Promise<string> {
   const buf = Buffer.from(bytes);
   if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") {
     throw new PdfError("This file does not begin with %PDF- and is not a PDF.");
   }
+  // The confidence gate below still decides: pdf.js output is used only when it reads as
+  // prose. A font pdf.js cannot map either, or a scan, falls through to the same refusals.
+  const viaPdfJs = await pdfJsText(bytes);
+  if (viaPdfJs !== null && looksLikeProse(viaPdfJs)) return viaPdfJs;
+
   const streams = inflateStreams(buf);
   if (streams.length === 0) {
     throw new PdfError(

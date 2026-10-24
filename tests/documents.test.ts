@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { deflateRawSync, deflateSync } from "node:zlib";
 
 import { docxToText, extractText, looksLikeProse } from "../src/lib/documents";
@@ -63,32 +64,32 @@ test("a .docx entity is decoded, never shown raw", () => {
   assert.match(text, /Acme & Beta — terms/);
 });
 
-test("a file that is not a zip is REFUSED by name, not half-read", () => {
-  const r = extractText("nda.docx", new TextEncoder().encode("this is not a zip at all"));
+test("a file that is not a zip is REFUSED by name, not half-read", async () => {
+  const r = await extractText("nda.docx", new TextEncoder().encode("this is not a zip at all"));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.reason, /not a readable \.docx/i);
 });
 
-test("an unknown extension is refused rather than guessed at", () => {
-  const r = extractText("book.xlsx", new Uint8Array([1, 2, 3]));
+test("an unknown extension is refused rather than guessed at", async () => {
+  const r = await extractText("book.xlsx", new Uint8Array([1, 2, 3]));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.reason, /spreadsheet gets reviewed as an NDA/);
 });
 
-test("an empty file is refused", () => {
-  const r = extractText("nda.docx", new Uint8Array());
+test("an empty file is refused", async () => {
+  const r = await extractText("nda.docx", new Uint8Array());
   assert.equal(r.ok, false);
 });
 
-test("an oversized file is refused before it is parsed", () => {
-  const r = extractText("nda.docx", new Uint8Array(11 * 1024 * 1024));
+test("an oversized file is refused before it is parsed", async () => {
+  const r = await extractText("nda.docx", new Uint8Array(11 * 1024 * 1024));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.reason, /the limit is 10 MB/);
 });
 
-test("a .txt is taken as-is, byte for byte", () => {
+test("a .txt is taken as-is, byte for byte", async () => {
   const body = "MUTUAL NDA\n\nThis Agreement continues for five years.";
-  const r = extractText("nda.txt", new TextEncoder().encode(body));
+  const r = await extractText("nda.txt", new TextEncoder().encode(body));
   assert.ok(r.ok);
   if (r.ok) {
     assert.equal(r.text, body);
@@ -96,14 +97,14 @@ test("a .txt is taken as-is, byte for byte", () => {
   }
 });
 
-test("a .pdf that is not a PDF is refused on its magic bytes", () => {
-  const r = extractText("nda.pdf", new TextEncoder().encode("PK this is a zip"));
+test("a .pdf that is not a PDF is refused on its magic bytes", async () => {
+  const r = await extractText("nda.pdf", new TextEncoder().encode("PK this is a zip"));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.reason, /%PDF-/);
 });
 
-test("a PDF with no readable stream refuses and names OCR", () => {
-  const r = extractText("scan.pdf", new TextEncoder().encode("%PDF-1.7\nno streams here\n"));
+test("a PDF with no readable stream refuses and names OCR", async () => {
+  const r = await extractText("scan.pdf", new TextEncoder().encode("%PDF-1.7\nno streams here\n"));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.reason, /needs OCR/);
 });
@@ -125,16 +126,16 @@ test("the prose gate accepts a contract and rejects a font dump", () => {
   assert.equal(looksLikeProse("short"), false, "too short to judge");
 });
 
-test("a small DOCX that expands past the budget is refused even when it lies about its size", () => {
+test("a small DOCX that expands past the budget is refused even when it lies about its size", async () => {
   const docx = Buffer.from(makeDocx("x".repeat(MAX_EXPANDED_BYTES + 1)));
   assert.ok(docx.length < 100_000, "the compressed upload is small");
-  const declared = extractText("oversized.docx", docx);
+  const declared = await extractText("oversized.docx", docx);
   assert.equal(declared.ok, false);
   if (!declared.ok) assert.match(declared.reason, /expanded-content limit/);
 
   const centralOffset = docx.readUInt32LE(docx.length - 6);
   docx.writeUInt32LE(1, centralOffset + 24);
-  const dishonest = extractText("dishonest.docx", docx);
+  const dishonest = await extractText("dishonest.docx", docx);
   assert.equal(dishonest.ok, false);
   if (!dishonest.ok) assert.match(dishonest.reason, /expanded-content limit/);
 });
@@ -150,30 +151,41 @@ function pdfWithStreams(streams: readonly Buffer[]): Buffer {
   ]);
 }
 
-test("a PDF expansion over the budget is refused, never silently skipped", () => {
+test("a PDF expansion over the budget is refused, never silently skipped", async () => {
   const stream = deflateSync(Buffer.alloc(MAX_EXPANDED_BYTES + 1, "x"));
-  const result = extractText("oversized.pdf", pdfWithStreams([stream]));
+  const result = await extractText("oversized.pdf", pdfWithStreams([stream]));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.reason, /expanded-content limit/);
 });
 
-test("the PDF expansion budget is shared across all streams", () => {
+test("the PDF expansion budget is shared across all streams", async () => {
   const stream = deflateSync(Buffer.alloc(MAX_EXPANDED_BYTES / 2 + 1, "x"));
-  const result = extractText("aggregate.pdf", pdfWithStreams([stream, stream]));
+  const result = await extractText("aggregate.pdf", pdfWithStreams([stream, stream]));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.reason, /expanded-content limit/);
 });
 
-test("PDF stream processing is bounded even when every stream is tiny", () => {
+test("PDF stream processing is bounded even when every stream is tiny", async () => {
   const stream = deflateSync(Buffer.from("x"));
-  const result = extractText("many-streams.pdf", pdfWithStreams(Array(MAX_PDF_STREAMS + 1).fill(stream)));
+  const result = await extractText("many-streams.pdf", pdfWithStreams(Array(MAX_PDF_STREAMS + 1).fill(stream)));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.reason, /too many streams/);
 });
 
-test("an ordinary compressed PDF still produces complete prose", () => {
+test("an ordinary compressed PDF still produces complete prose", async () => {
   const prose = "This agreement is made between Acme Limited and Beta Limited. Each party shall keep the other party information confidential and shall not disclose it without prior written consent. ".repeat(4);
-  const result = extractText("normal.pdf", pdfWithStreams([deflateSync(Buffer.from(`BT (${prose}) Tj ET`))]));
+  const result = await extractText("normal.pdf", pdfWithStreams([deflateSync(Buffer.from(`BT (${prose}) Tj ET`))]));
   assert.ok(result.ok);
   if (result.ok) assert.equal(result.text, prose.trim());
+});
+
+test("a real filing with CID-encoded fonts reads as its words, not a refusal", async () => {
+  const bytes = new Uint8Array(readFileSync(new URL("./fixtures/route_agm_2025.pdf", import.meta.url)));
+  const result = await extractText("route_agm_2025.pdf", bytes);
+  assert.equal(result.ok, true, result.ok ? "" : result.reason);
+  if (result.ok) {
+    assert.equal(result.kind, "pdf");
+    assert.match(result.text, /NOTICE is hereby given that the Twenty First/);
+    assert.match(result.text, /Annual General Meeting/);
+  }
 });

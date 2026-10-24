@@ -353,7 +353,7 @@ export async function reviewAction(
         message: `That file is larger than ${MAX_UPLOAD_BYTES / 1_048_576} MB.`,
       };
     }
-    const extracted = extractText(file.name, new Uint8Array(await file.arrayBuffer()));
+    const extracted = await extractText(file.name, new Uint8Array(await file.arrayBuffer()));
     if (!extracted.ok) return { phase: "invalid", message: extracted.reason };
     raw = extracted.text;
     source = {
@@ -454,7 +454,7 @@ export async function reviewDocumentAction(
         message: `That file is larger than ${MAX_UPLOAD_BYTES / 1_048_576} MB.`,
       };
     }
-    const extracted = extractText(file.name, new Uint8Array(await file.arrayBuffer()));
+    const extracted = await extractText(file.name, new Uint8Array(await file.arrayBuffer()));
     if (!extracted.ok) return { phase: "invalid", message: extracted.reason };
     raw = extracted.text;
     source = { name: file.name, kind: extracted.kind, bytes: file.size, sha256: null };
