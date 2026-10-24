@@ -133,3 +133,22 @@ test("matter history calls the scoped server verb and parses saved thread identi
     else throw new Error("saved matter history is unavailable");
   } finally { globalThis.fetch = original; }
 });
+
+test("reload keeps the excerpts from attached documents that the backend served", () => {
+  const document_evidence = {
+    schema: "document_evidence.v1", mode: "question", status: "EXCERPTS_FOUND", query: "resolutions",
+    searched_document_ids: ["doc"], documents: [],
+    passages: [{ id: "doc-1-10-40", document_id: "doc", name: "route_agm_2025.pdf", sha256: "a".repeat(64),
+      start: 10, end: 40, text: "Resolution(s) passed by Members" }],
+    limitations: ["These excerpts have not been checked against law."],
+  };
+  const payload = conversationGetOkSchema.parse({ conversation: { conversation_id: "thread", title: "Q" }, messages: [
+    { message_id: "user", ordinal: 1, role: "user", text: "What resolutions?", file_ids: ["doc"] },
+    { message_id: "assistant", ordinal: 2, role: "assistant", text: "", envelope: { ...RECORDED.send_answered.envelope, status: "PARTIAL" },
+      metadata: { ...metadata, document_evidence } },
+  ] });
+  const [turn] = conversationTurns("thread", payload.messages);
+  if (turn.state?.phase !== "answered") throw new Error("missing answer");
+  assert.equal(turn.state.documentEvidence?.passages[0].text, "Resolution(s) passed by Members");
+  assert.deepEqual(turn.state.documentEvidence?.limitations, document_evidence.limitations);
+});

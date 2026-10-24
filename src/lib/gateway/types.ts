@@ -887,11 +887,27 @@ export const artifactSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("review_table"), id: z.string() }),
 ]);
 export type ConversationArtifact = z.infer<typeof artifactSchema>;
+/**
+ * Excerpts from the user's own attached documents (backend `gateway/document_evidence.py`,
+ * `document_evidence.v1`). Quoted data, never checked against law, and never part of the
+ * versioned envelope -- it rides the turn's metadata, so the thread must read it from there.
+ */
+export const documentEvidenceSchema = z.object({
+  schema: z.literal("document_evidence.v1"),
+  status: z.string(),
+  passages: z.array(z.object({
+    id: z.string(), name: z.string(), text: z.string(),
+    start: z.number().int(), end: z.number().int(),
+  })).default([]),
+  limitations: z.array(z.string()).default([]),
+});
+export type DocumentEvidence = z.infer<typeof documentEvidenceSchema>;
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
   sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
+  document_evidence: documentEvidenceSchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 
@@ -906,6 +922,7 @@ export const conversationSendOkSchema = z.object({
   grid_id: z.string().optional(),
   sources: sourceReportSchema.optional(),
   metadata: turnMetadataSchema.optional(),
+  document_evidence: documentEvidenceSchema.optional(),
   note: z.string().optional(),
   /**
    * The refusal code, as a sibling of the envelope — NOT inside it (answer_envelope.v1 is
