@@ -160,8 +160,11 @@ export class HttpGateway implements GatewayProvider {
     if (!response.ok) {
       // A 4xx REFUSAL from a verb is a product state, not a transport failure: the
       // pipeline decided, and the decision has a code. It is parsed, not discarded.
+      // 409 is the vault's CONFLICT ("these bytes are already in this workspace's vault"):
+      // read as a transport failure it showed "Upload interrupted, try again", and trying
+      // again could never succeed.
       const refusal = refusalSchema.safeParse(body);
-      if (refusal.success && (response.status === 404 || response.status === 503)) {
+      if (refusal.success && [404, 409, 503].includes(response.status)) {
         return engineOk(refusal.data as z.infer<S>);
       }
       const detail =
