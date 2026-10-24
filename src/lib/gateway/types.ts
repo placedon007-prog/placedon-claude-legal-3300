@@ -913,6 +913,10 @@ export const documentEvidenceSchema = z.object({
     document_id: evidenceId, name: evidenceText(512), sha256: evidenceHash,
     status: z.enum(["SEARCHED", "UNAVAILABLE", "LIMIT_EXCEEDED", "NOT_SEARCHED"]),
     reason: evidenceText(2000).nullable(), total_chars: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+    excerpt_chars: z.number().int().nonnegative().max(200000).optional(),
+    excerpt_coverage_ratio: z.number().min(0).max(1).nullable().optional(),
+    total_passages: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+    shown_passages: z.number().int().nonnegative().max(8).optional(),
   })).max(20),
   passages: z.array(z.object({
     id: evidenceId, document_id: evidenceId, name: evidenceText(512), sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -932,6 +936,9 @@ export const documentEvidenceSchema = z.object({
   for (const id of searched) if (documents.get(id)?.status !== "SEARCHED") reject("Search refers to an unread document");
   for (const document of value.documents) {
     if (document.status !== "SEARCHED") continue;
+    if (document.shown_passages !== undefined && document.shown_passages !== value.passages.filter((passage) => passage.document_id === document.document_id).length) reject("Shown passage count does not match excerpts");
+    if (document.shown_passages !== undefined && document.total_passages !== undefined && document.shown_passages > document.total_passages) reject("Shown passage count exceeds available passages");
+    if (document.excerpt_chars !== undefined && document.total_chars !== null && document.excerpt_chars > document.total_chars) reject("Excerpt length exceeds document text");
     if (!searched.has(document.document_id) || document.sha256 === null || document.total_chars === null
       || document.total_chars <= 0 || document.total_chars > 200000) reject("Searched document requires its identity, hash and bounded text length");
   }
