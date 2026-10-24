@@ -61,9 +61,13 @@ with psycopg.connect(db_url, autocommit=True) as conn:
         "ON CONFLICT DO NOTHING",
         (TENANT,),
     )
+    # role = 'lawyer' to match the key minted below. The column defaults to 'viewer', and the
+    # worker re-reads the actor row before every queued job (backend b3997d9): a viewer actor
+    # behind a lawyer key had every queued answer FAILED with "lacks queued-work permission".
     conn.execute(
-        "INSERT INTO actors (actor_id, tenant_id, label) VALUES (%s, %s, 'local-console') "
-        "ON CONFLICT DO NOTHING",
+        "INSERT INTO actors (actor_id, tenant_id, label, role) "
+        "VALUES (%s, %s, 'local-console', 'lawyer') "
+        "ON CONFLICT (actor_id) DO UPDATE SET role = 'lawyer', disabled_at = NULL",
         (ACTOR, TENANT),
     )
 
