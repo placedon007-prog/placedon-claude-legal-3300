@@ -6,7 +6,7 @@ import { Check, FileText, FolderOpen, RefreshCw, Search } from "lucide-react";
 import { browseVaultAction, type VaultBrowseResult } from "@/app/app/vault/actions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export type SelectedVaultFile = { id: string; name: string };
+export type SelectedVaultFile = { id: string; sha256?: string; name: string };
 const PAGE_SIZE = 30;
 const stateLabel: Record<string, string> = {
   INGESTED: "Ready to read", PENDING: "Processing", CANNOT_READ: "Needs a text layer",
@@ -61,7 +61,7 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
           return <li key={file.document_id}>
             {onToggle ? <button type="button" role="checkbox" aria-checked={checked} disabled={disabled}
               aria-label={`${file.name} — ${label}`} className="vault-file-row" data-selected={checked}
-              onClick={() => onToggle({ id: file.document_id, name: file.name })}>
+              onClick={() => onToggle({ id: file.document_id, sha256: file.sha256, name: file.name })}>
               {content}<span className="vault-file-check" aria-hidden>{checked ? <Check className="size-3.5" /> : null}</span>
             </button> : <div className="vault-file-row">{content}<Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link></div>}
           </li>;

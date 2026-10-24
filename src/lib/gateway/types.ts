@@ -368,7 +368,7 @@ export const vaultStatusSchema = z.object({
 });
 export type VaultStatus = z.infer<typeof vaultStatusSchema>;
 export const vaultFileSchema = z.object({
-  document_id: z.string(), name: z.string(), state: z.string(),
+  document_id: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/), name: z.string(), state: z.string(),
   matter_id: z.string().nullable(), byte_count: z.number().int().nonnegative(),
   doc_class: z.string().nullable(),
 });
