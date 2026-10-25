@@ -6,6 +6,8 @@ import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
   authLoginOkSchema,
+  authLogoutOkSchema,
+  type AuthLogoutOk,
   calendarSchema,
   draftDiffSchema,
   draftExportSchema,
@@ -88,10 +90,14 @@ export class HttpGateway implements GatewayProvider {
 
   private readonly origin: string;
   private readonly key: string;
+  /** Set when `key` is a person's session (accounts mode): a 401 then means the session
+   *  ended -- revoked, expired, or signed out elsewhere -- and the caller ends it here too. */
+  private readonly onUnauthorized?: () => void;
 
-  constructor(origin: string, key: string) {
+  constructor(origin: string, key: string, options?: { onUnauthorized?: () => void }) {
     this.origin = origin;
     this.key = key;
+    this.onUnauthorized = options?.onUnauthorized;
     let parsed: URL;
     try {
       parsed = new URL(origin);
@@ -171,6 +177,7 @@ export class HttpGateway implements GatewayProvider {
         typeof body === "object" && body && "detail" in body
           ? String((body as { detail: unknown }).detail)
           : undefined;
+      if (response.status === 401) this.onUnauthorized?.();
       return engineFail({
         kind:
           response.status === 401
@@ -185,7 +192,9 @@ export class HttpGateway implements GatewayProvider {
         retryAfterSeconds: Math.min(60, Math.max(1, Number(response.headers.get("retry-after")) || 5)),
         message:
           response.status === 401
-            ? "The gateway rejected this deployment's API key."
+            ? this.onUnauthorized
+              ? "Your session has ended. Sign in again."
+              : "The gateway rejected this deployment's API key."
             : `The gateway answered ${response.status}.`,
         detail,
       });
@@ -222,6 +231,12 @@ export class HttpGateway implements GatewayProvider {
       method: "POST",
       body: { email: input.email, password: input.password },
     });
+  }
+
+  /** Revoke the caller's own backend session (auth.logout). Only meaningful with a session. */
+  authLogout(): Promise<EngineResult<AuthLogoutOk>> {
+    return this.call(GATEWAY_ROUTES.authLogout, GATEWAY_ROUTES.authLogout, authLogoutOkSchema,
+      { method: "POST", body: {} });
   }
 
   reviewContract(input: {

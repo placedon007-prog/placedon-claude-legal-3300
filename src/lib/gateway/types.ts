@@ -61,6 +61,9 @@ export const authLoginOkSchema = z.object({
   email: z.string().optional(),
 });
 export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+/** auth.logout: the caller's own session, revoked at the gateway. */
+export const authLogoutOkSchema = z.object({ status: z.string(), revoked: z.boolean().optional() });
+export type AuthLogoutOk = z.infer<typeof authLogoutOkSchema>;
 
 /* ── review_contract ──────────────────────────────────────────────────────── */
 

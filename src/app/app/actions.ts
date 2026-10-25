@@ -696,6 +696,12 @@ export async function accountLoginAction(
 }
 
 export async function logoutAction(): Promise<void> {
+  // Accounts mode: revoke the session at the gateway first, so a copied token stops
+  // working now rather than at its expiry. A failed revoke still signs this browser out.
+  const { sessionKind } = await import("@/lib/auth/config");
+  if (sessionKind() === "account" && (await hasSession())) {
+    try { await (await getGateway()).authLogout(); } catch { /* signing out locally anyway */ }
+  }
   await endSession();
   redirect("/login");
 }

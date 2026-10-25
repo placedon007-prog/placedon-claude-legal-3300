@@ -34,6 +34,7 @@ export const GATEWAY_ROUTES = {
   // Personal sign-in. The ONE verb reached before a session exists, so it is called
   // through `loginGateway()` (no `requireSession`), never `getGateway()`.
   authLogin: "/v2/auth/login",
+  authLogout: "/v2/auth/logout",
   reviewContract: "/v2/review-contract",
   runGet: "/v2/runs/{run_id}",
   runTrace: "/v2/runs/{run_id}/trace",
