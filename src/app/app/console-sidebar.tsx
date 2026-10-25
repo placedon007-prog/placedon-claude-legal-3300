@@ -88,7 +88,7 @@ function useCurrent() {
   return (href: string) => (href === "/app" ? path === "/app" : path.startsWith(href));
 }
 
-export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
+export function ConsoleSidebar({ passcode, account = false }: { passcode: boolean; account?: boolean }) {
   const [expanded, setExpanded] = useSidebarExpanded();
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
@@ -111,7 +111,7 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
             }}
           >
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <Expanded passcode={passcode} />
+            <Expanded passcode={passcode} account={account} />
           </SheetContent>
         </Sheet>
         <Brand />
@@ -148,7 +148,7 @@ export function ConsoleSidebar({ passcode }: { passcode: boolean }) {
               </button>
             </Tip>
           </div>
-          {expanded ? <Expanded passcode={passcode} /> : <Rail passcode={passcode} />}
+          {expanded ? <Expanded passcode={passcode} account={account} /> : <Rail passcode={passcode} account={account} />}
         </aside>
       </div>
     </>
@@ -168,7 +168,7 @@ function Brand() {
   );
 }
 
-function Rail({ passcode }: { passcode: boolean }) {
+function Rail({ passcode, account }: { passcode: boolean; account: boolean }) {
   const current = useCurrent();
   return (
     <nav aria-label="Console" className="mt-2 flex flex-1 flex-col items-center gap-0.5">
@@ -186,13 +186,13 @@ function Rail({ passcode }: { passcode: boolean }) {
         </Tip>
       ))}
       <div className="mt-auto">
-        <UserMenu passcode={passcode} compact />
+        <UserMenu passcode={passcode} account={account} compact />
       </div>
     </nav>
   );
 }
 
-function Expanded({ passcode }: { passcode: boolean }) {
+function Expanded({ passcode, account }: { passcode: boolean; account: boolean }) {
   const current = useCurrent();
   return (
     <div className="mt-2 flex min-h-0 flex-1 flex-col">
@@ -210,7 +210,7 @@ function Expanded({ passcode }: { passcode: boolean }) {
         ))}
       </nav>
       <div className="mt-2 border-t border-line pt-2">
-        <UserMenu passcode={passcode} />
+        <UserMenu passcode={passcode} account={account} />
       </div>
     </div>
   );
@@ -299,12 +299,12 @@ function Avatar({ name }: { name: string | null }) {
   );
 }
 
-function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: boolean }) {
+function UserMenu({ passcode, account, compact = false }: { passcode: boolean; account: boolean; compact?: boolean }) {
   const [name] = useDisplayName();
   const [nicknames, setNicknames] = useNicknamesOn();
   const earned = persona(useActivity());
   const [naming, setNaming] = React.useState(false);
-  const access = passcode ? "Shared passcode" : "Demo · synthetic data";
+  const access = account ? "Your account" : passcode ? "Shared passcode" : "Demo · synthetic data";
   const trigger = (
     <button
       type="button"
@@ -366,7 +366,9 @@ function UserMenu({ passcode, compact = false }: { passcode: boolean; compact?: 
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
-            {passcode
+            {account
+              ? "You are signed in with your own account: the matters you can open and the files you upload are tied to it. The display name above is stored in this browser only."
+              : passcode
               ? "There are no personal accounts yet: everyone signs in with the shared passcode. Your display name is stored in this browser only; it is not your account identity."
               : "Demo workspace: recorded examples and synthetic data only. No live legal research or client documents."}
           </DropdownMenuLabel>

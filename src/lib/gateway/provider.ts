@@ -245,14 +245,20 @@ export interface GatewayProvider {
 export async function getGateway(): Promise<GatewayProvider> {
   const { requireSession } = await import("../auth/session");
   await requireSession();
-  const { gatewayConfiguration } = await import("../auth/config");
+  const { gatewayConfiguration, gatewayCredential } = await import("../auth/config");
   const config = gatewayConfiguration();
   if (config.mode === "demo") {
     const { MockGateway } = await import("./mock");
     return new MockGateway();
   }
+  const { accountSessionToken } = await import("../auth/session");
+  const credential = gatewayCredential(process.env, await accountSessionToken());
+  if (!credential) {
+    const { redirect } = await import("next/navigation");
+    return redirect("/login");
+  }
   const { HttpGateway } = await import("./http");
-  return new HttpGateway(config.origin, config.key);
+  return new HttpGateway(config.origin, credential);
 }
 
 /** Only `auth.login` — the verb reached before a session exists. */

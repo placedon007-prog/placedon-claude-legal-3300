@@ -8,7 +8,7 @@ import { GATEWAY_ROUTES } from "../src/lib/engine/types";
 import type { EngineResult, EngineErrorKind } from "../src/lib/engine/errors";
 import type { AuthLoginOk } from "../src/lib/gateway/types";
 
-const OK: AuthLoginOk = { token: "sess-token", expires_at: "2026-10-15T00:00:00.000Z", actor: "a1", role: "lawyer" };
+const OK: AuthLoginOk = { token: "sess-token", expires_at: "2026-10-15T00:00:00.000Z", actor_id: "a1", role: "lawyer" };
 const fail = (status: number | undefined, extra: Record<string, unknown> = {}, kind: EngineErrorKind = "bad_request"): EngineResult<AuthLoginOk> =>
   ({ ok: false, error: { kind, route: GATEWAY_ROUTES.authLogin, message: "x", ...(status ? { status } : {}), ...extra } });
 
@@ -47,7 +47,7 @@ test("a transport failure is its own state, never the credential message", () =>
 test("authLoginOkSchema accepts the contract and rejects a broken one", () => {
   assert.equal(authLoginOkSchema.safeParse(OK).success, true);
   assert.equal(authLoginOkSchema.safeParse({ ...OK, role: "superuser" }).success, false, "unknown role rejected");
-  assert.equal(authLoginOkSchema.safeParse({ expires_at: OK.expires_at, actor: "a", role: "viewer" }).success, false, "missing token rejected");
+  assert.equal(authLoginOkSchema.safeParse({ expires_at: OK.expires_at, actor_id: "a", role: "viewer" }).success, false, "missing token rejected");
   assert.equal(authLoginOkSchema.safeParse({ ...OK, token: "" }).success, false, "empty token rejected");
 });
 
@@ -59,4 +59,15 @@ test("accounts mode needs a configured gateway, not a passcode", () => {
     null,
     "gateway configured → ok, and APP_PASSCODE is NOT required in accounts mode",
   );
+});
+
+test("the exact body the live gateway returns for auth.login parses (recorded 2026-10-25)", () => {
+  // gateway/verbs.py _auth_login, token redacted. The old schema wanted `actor` and so
+  // rejected every successful sign-in as a transport failure.
+  const live = { status: "ok", token: "redacted", actor_id: "4cdac3f7-474a-4a30-802b-e12d6ef27b79",
+    tenant_id: "00000000-0000-0000-0000-000000000001", role: "lawyer",
+    expires_at: "2026-11-01 17:42:28.855350+00:00" };
+  const parsed = authLoginOkSchema.safeParse(live);
+  assert.equal(parsed.success, true);
+  assert.equal(accountLoginOutcome({ ok: true, data: parsed.data! }).kind, "ok");
 });

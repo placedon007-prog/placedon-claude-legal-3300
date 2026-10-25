@@ -53,7 +53,10 @@ export const authLoginOkSchema = z.object({
   token: z.string().min(1),
   /** ISO-8601, the backend's session expiry. Drives the cookie's lifetime verbatim. */
   expires_at: z.string().min(1),
-  actor: z.string().min(1),
+  /** The backend's field is `actor_id` (gateway/verbs.py `_auth_login`). This schema said
+   *  `actor`, so every correct password failed validation as "Couldn't reach sign-in". */
+  actor_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional(),
   role: accountRoleSchema,
   email: z.string().optional(),
 });
