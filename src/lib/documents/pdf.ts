@@ -25,6 +25,23 @@ import { EXPANSION_LIMIT_REASON, MAX_EXPANDED_BYTES, MAX_PDF_STREAMS } from "./l
 
 export class PdfError extends Error {}
 
+/** Joins a PDF's pages: a form feed, as pdftotext writes, so the backend can name pages. */
+export const PAGE_BREAK = String.fromCharCode(12);
+/** A page with fewer non-space characters than this has no text layer worth the name. */
+const MIN_PAGE_CHARS = 20;
+
+export type PdfText = {
+  readonly text: string;
+  /** Pages pdf.js read; null when only the fallback reader could open the file. */
+  readonly pageCount: number | null;
+  /** 1-indexed pages with no text layer -- a scanned annexure, a stamped signature page. */
+  readonly pagesWithoutText: readonly number[];
+};
+
+const NO_OCR =
+  "Reading it needs OCR, which is not enabled in this deployment. Nothing was stored. " +
+  "Upload a PDF with a text layer, or the .docx.";
+
 // Built from code points rather than written as escapes: backspace and form feed are
 // control characters, and a source file containing them literally is one nobody can
 // review in a diff.
@@ -152,7 +169,9 @@ function inflateStreams(buf: Buffer): string[] {
 export function looksLikeProse(text: string): boolean {
   const t = text.trim();
   if (t.length < 200) return false;
-  const letters = (t.match(/[A-Za-z]/g) ?? []).length;
+  // Letters of ANY script, with their combining vowel signs. `[A-Za-z]` alone refused
+  // every Hindi, Tamil or Bengali document as "not prose".
+  const letters = (t.match(/[\p{L}\p{M}]/gu) ?? []).length;
   const spaces = (t.match(/\s/g) ?? []).length;
   // Counted by code point, not by a regex literal: the class would otherwise put raw
   // control characters in this file.
@@ -164,8 +183,28 @@ export function looksLikeProse(text: string): boolean {
   if (letters / t.length < 0.55) return false;
   if (spaces / t.length < 0.08) return false;
   // Real prose has words of ordinary length. A font dump has none.
-  const words = t.split(/\s+/).filter((w) => /^[A-Za-z][A-Za-z'’-]{2,}$/.test(w));
+  const words = t.split(/\s+/).filter((w) => /^\p{L}[\p{L}\p{M}'’-]{2,}$/u.test(w));
   return words.length >= 40;
+}
+
+/**
+ * Whether an Indian-script text layer came out garbled. pdf.js maps glyphs back to
+ * characters through the font's ToUnicode table, and for Indic shaping that table often
+ * cannot express a reordered vowel sign: measured on a synthetic Hindi agreement printed by
+ * Chromium, every one of its 14 "ि" (the pre-base i-matra) was lost and 48 of 115 words
+ * came out wrong. Such text is not the document's words, so it is refused, not stored.
+ */
+export function indicTextLayerGarbled(text: string): boolean {
+  const indic = (text.match(/[\u0900-\u0D7F]/g) ?? []).length;
+  const letters = (text.match(/[\p{L}\p{M}]/gu) ?? []).length;
+  if (indic < 100 || indic < letters * 0.3) return false;
+  const devanagari = (text.match(/[\u0900-\u097F]/g) ?? []).length;
+  // "ि" is among the commonest Devanagari vowel signs; 300 characters without one is a
+  // layer that dropped it, not a document that never used it.
+  if (devanagari >= 300 && !text.includes("\u093F")) return true;
+  // A word cannot begin with a combining vowel sign: one that does was split from its letter.
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.filter((w) => /^\p{M}/u.test(w)).length > words.length * 0.02;
 }
 
 /** A filing is tens of pages; an ICSI guidance note is under 200. More is a book, not a document. */
@@ -179,7 +218,7 @@ export const MAX_PDF_PAGES = 500;
  * read all 14. `null` when pdf.js cannot open the file -- the caller then falls back to the
  * reader below, whose refusals name the reason.
  */
-async function pdfJsText(bytes: Uint8Array): Promise<string | null> {
+async function pdfJsPages(bytes: Uint8Array): Promise<string[] | null> {
   const { getDocumentProxy, extractText } = await import("unpdf");
   let pdf;
   try {
@@ -195,7 +234,7 @@ async function pdfJsText(bytes: Uint8Array): Promise<string | null> {
       );
     }
     const { text } = await extractText(pdf, { mergePages: false });
-    return text.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+    return text.map((page) => page.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim());
   } catch (cause) {
     if (cause instanceof PdfError) throw cause;
     return null;
@@ -204,15 +243,33 @@ async function pdfJsText(bytes: Uint8Array): Promise<string | null> {
   }
 }
 
-export async function pdfToText(bytes: Uint8Array): Promise<string> {
+export async function pdfToText(bytes: Uint8Array): Promise<PdfText> {
   const buf = Buffer.from(bytes);
   if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") {
     throw new PdfError("This file does not begin with %PDF- and is not a PDF.");
   }
   // The confidence gate below still decides: pdf.js output is used only when it reads as
-  // prose. A font pdf.js cannot map either, or a scan, falls through to the same refusals.
-  const viaPdfJs = await pdfJsText(bytes);
-  if (viaPdfJs !== null && looksLikeProse(viaPdfJs)) return viaPdfJs;
+  // prose. A font pdf.js cannot map either falls through to the same refusals.
+  const pages = await pdfJsPages(bytes);
+  if (pages !== null && pages.length > 0) {
+    const read = pages.map((page) => (page.replace(/\s/g, "").length >= MIN_PAGE_CHARS ? page : ""));
+    const pagesWithoutText = read.flatMap((page, i) => (page ? [] : [i + 1]));
+    if (pagesWithoutText.length === pages.length) {
+      throw new PdfError(
+        `This PDF has no text layer on any of its ${pages.length} page${pages.length === 1 ? "" : "s"} ` +
+          `— it is a scan, or pages saved as images. ${NO_OCR}`,
+      );
+    }
+    const readable = read.filter(Boolean).join("\n\n");
+    if (indicTextLayerGarbled(readable)) {
+      throw new PdfError(
+        "This PDF's text layer garbles its Indian-language text: vowel signs are missing or " +
+          "out of order, so the words it yields are not the document's words. " + NO_OCR,
+      );
+    }
+    // Empty pages stay in the join, so page N of the text is page N of the PDF.
+    if (looksLikeProse(readable)) return { text: read.join(PAGE_BREAK), pageCount: pages.length, pagesWithoutText };
+  }
 
   const streams = inflateStreams(buf);
   if (streams.length === 0) {
@@ -236,5 +293,6 @@ export async function pdfToText(bytes: Uint8Array): Promise<string> {
         "send the .docx, or paste the contract text.",
     );
   }
-  return text;
+  // The fallback reader has no notion of pages, so it claims none.
+  return { text, pageCount: null, pagesWithoutText: [] };
 }

@@ -903,16 +903,49 @@ export const documentEvidenceSchema = z.object({
   passages: z.array(z.object({
     id: z.string(), name: z.string(), text: z.string(),
     start: z.number().int(), end: z.number().int(),
+    /** 1-indexed PDF page; null for text with no pages (a .docx, a .txt). */
+    page: z.number().int().nullable().optional(),
   })).default([]),
   limitations: z.array(z.string()).default([]),
 });
 export type DocumentEvidence = z.infer<typeof documentEvidenceSchema>;
+
+/**
+ * A review-draft summary of the user's own document (backend `gateway/document_summary.py`,
+ * `document_summary.v1`). Every point but an open question carries an exact quote; the
+ * document TYPE is the backend's rules classifier, never the model. It rides the turn's
+ * metadata like the excerpts above.
+ */
+export const documentSummarySchema = z.object({
+  schema: z.literal("document_summary.v1"),
+  status: z.string(),
+  sections: z.array(z.object({
+    heading: z.string(),
+    items: z.array(z.object({
+      text: z.string(),
+      basis: z.string().optional(),
+      quotes: z.array(z.object({
+        quote: z.string(), document_name: z.string(),
+        start: z.number().int(), end: z.number().int(),
+        page: z.number().int().nullable().optional(),
+      })).default([]),
+    })).default([]),
+  })).default([]),
+  coverage: z.array(z.object({
+    document_id: z.string(), name: z.string(),
+    doc_class: z.string().nullable().optional(), class_reason: z.string().nullable().optional(),
+  })).default([]),
+  withheld_items: z.number().int().default(0),
+  limitations: z.array(z.string()).default([]),
+});
+export type DocumentSummary = z.infer<typeof documentSummarySchema>;
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
   sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
   document_evidence: documentEvidenceSchema.optional(),
+  document_summary: documentSummarySchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 

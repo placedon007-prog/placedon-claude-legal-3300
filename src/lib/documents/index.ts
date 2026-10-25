@@ -1,14 +1,22 @@
 import { docxToText, DocxError } from "./docx";
 import { pdfToText, PdfError } from "./pdf";
 
-export { looksLikeProse } from "./pdf";
+export { looksLikeProse, indicTextLayerGarbled, PAGE_BREAK } from "./pdf";
 export { docxToText, pdfToText, DocxError, PdfError };
 
 /** 10 MB. A contract is words; anything larger is a scan, which has no text layer. */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export type Extraction =
-  | { readonly ok: true; readonly text: string; readonly kind: "docx" | "pdf" | "text" }
+  | {
+      readonly ok: true;
+      readonly text: string;
+      readonly kind: "docx" | "pdf" | "text";
+      /** PDF pages read; null for formats without pages, or when pages could not be counted. */
+      readonly pageCount: number | null;
+      /** 1-indexed PDF pages with no text layer; the document is stored as PARTIAL. */
+      readonly pagesWithoutText: readonly number[];
+    }
   | { readonly ok: false; readonly reason: string };
 
 /**
@@ -34,15 +42,15 @@ export async function extractText(filename: string, bytes: Uint8Array): Promise<
     if (lower.endsWith(".docx")) {
       const text = docxToText(bytes);
       if (!text.trim()) return { ok: false, reason: "That .docx contains no text." };
-      return { ok: true, text, kind: "docx" };
+      return { ok: true, text, kind: "docx", pageCount: null, pagesWithoutText: [] };
     }
     if (lower.endsWith(".pdf")) {
-      return { ok: true, text: await pdfToText(bytes), kind: "pdf" };
+      return { ok: true, kind: "pdf", ...(await pdfToText(bytes)) };
     }
     if (lower.endsWith(".txt") || lower.endsWith(".md")) {
       const text = new TextDecoder("utf-8").decode(bytes);
       if (!text.trim()) return { ok: false, reason: "That file contains no text." };
-      return { ok: true, text, kind: "text" };
+      return { ok: true, text, kind: "text", pageCount: null, pagesWithoutText: [] };
     }
   } catch (cause) {
     if (cause instanceof DocxError || cause instanceof PdfError) {
