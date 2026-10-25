@@ -612,7 +612,7 @@ function ResultLine({ envelope }: { envelope: Envelope }) {
       {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span>
       {envelope.task === "REVIEW_CONTRACT" ? <> · Playbook DRAFT — not approved by a lawyer</> : null}
       {envelope.run_id ? <> · Recorded model and region details are in the answer trace</> : null}
-      · Not legal advice
+      {" · Not legal advice"}
     </p>
   );
 }
@@ -745,10 +745,14 @@ function DocumentSummaryView({ summary }: { summary: DocumentSummary }) {
                 <p className="text-read text-fg">{item.text}</p>
                 {item.basis === "NOT_STATED_IN_DOCUMENT" ? (
                   <p className="font-mono text-caption text-fg-3">not stated in the document — no quote</p>
+                ) : item.quotes.length === 0 ? (
+                  // The backend never sends a quoted point without a quote; if one arrives,
+                  // it must not read as supported.
+                  <p className="font-mono text-caption text-fg-3">no supporting quote was returned — treat as unverified</p>
                 ) : item.quotes.map((q, j) => (
                   <figure key={j} className="flex flex-col gap-1">
                     <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{q.quote}</blockquote>
-                    <figcaption className="font-mono text-caption text-fg-3">{q.document_name} · {passageLocation(q)}</figcaption>
+                    <figcaption className="font-mono text-caption text-fg-3">{q.document_name} · <span className="whitespace-nowrap">{passageLocation(q)}</span></figcaption>
                   </figure>
                 ))}
               </li>
@@ -776,7 +780,7 @@ function DocumentExcerpts({ evidence }: { evidence: DocumentEvidence }) {
       {evidence.passages.length ? <ol className="flex flex-col gap-3">
         {evidence.passages.map((p) => (
           <li key={p.id} className="flex flex-col gap-1">
-            <p className="font-mono text-caption text-fg-3">{p.name} · {passageLocation(p)}</p>
+            <p className="font-mono text-caption text-fg-3">{p.name} · <span className="whitespace-nowrap">{passageLocation(p)}</span></p>
             <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{p.text}</blockquote>
           </li>
         ))}

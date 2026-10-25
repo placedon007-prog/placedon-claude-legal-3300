@@ -53,8 +53,8 @@ export default async function DraftsPage({
         </div>
       ) : (
         <>
-          <p className="meta">Showing drafts for this tenant. A shared passcode does not identify an individual author.</p>
-          <ul className="drafts-list" aria-label="Drafts in this workspace">
+          {sessionKind() === "passcode" ? <p className="meta">A shared passcode does not identify an individual author.</p> : null}
+          <ul className="drafts-list" aria-label="Your drafts">
             {result.data.drafts.map((draft) => (
               <li key={draft.draft_id}>
                 <Link href={`/app/drafts/${encodeURIComponent(draft.draft_id)}`}>

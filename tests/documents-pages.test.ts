@@ -23,7 +23,7 @@ test("a scanned PDF is refused as a scan with no text layer, and says OCR is not
   const r = await extractText("services-agreement-scanned.pdf", fixture("services-agreement-scanned.pdf"));
   assert.equal(r.ok, false);
   if (r.ok) return;
-  assert.match(r.reason, /no text layer on any of its 1 page/);
+  assert.match(r.reason, /^This PDF's only page has no text layer — it is a scan/);
   assert.match(r.reason, /OCR/);
   assert.match(r.reason, /Nothing was stored/);
 });

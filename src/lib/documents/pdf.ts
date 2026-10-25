@@ -38,9 +38,7 @@ export type PdfText = {
   readonly pagesWithoutText: readonly number[];
 };
 
-const NO_OCR =
-  "Reading it needs OCR, which is not enabled in this deployment. Nothing was stored. " +
-  "Upload a PDF with a text layer, or the .docx.";
+const NOTHING_STORED = "OCR is not enabled in this deployment. Nothing was stored.";
 
 // Built from code points rather than written as escapes: backspace and form feed are
 // control characters, and a source file containing them literally is one nobody can
@@ -256,15 +254,18 @@ export async function pdfToText(bytes: Uint8Array): Promise<PdfText> {
     const pagesWithoutText = read.flatMap((page, i) => (page ? [] : [i + 1]));
     if (pagesWithoutText.length === pages.length) {
       throw new PdfError(
-        `This PDF has no text layer on any of its ${pages.length} page${pages.length === 1 ? "" : "s"} ` +
-          `— it is a scan, or pages saved as images. ${NO_OCR}`,
+        `${pages.length === 1 ? "This PDF's only page has no" : `None of this PDF's ${pages.length} pages has a`} ` +
+          "text layer — it is a scan, or pages saved as images, and reading it needs OCR. " +
+          `${NOTHING_STORED} ` +
+          "Upload a PDF with a text layer, or the .docx.",
       );
     }
     const readable = read.filter(Boolean).join("\n\n");
     if (indicTextLayerGarbled(readable)) {
       throw new PdfError(
         "This PDF's text layer garbles its Indian-language text: vowel signs are missing or " +
-          "out of order, so the words it yields are not the document's words. " + NO_OCR,
+          "out of order, so the words it yields are not the document's words. Exporting the PDF " +
+          `again will not fix this. Upload the .docx or a .txt of the same document. ${NOTHING_STORED}`,
       );
     }
     // Empty pages stay in the join, so page N of the text is page N of the PDF.

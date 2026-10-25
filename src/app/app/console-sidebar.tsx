@@ -343,12 +343,12 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
             </span>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="min-h-10" onSelect={() => setNaming(true)}>
+          <DropdownMenuItem className="min-h-11" onSelect={() => setNaming(true)}>
             <PenLine className="size-4" aria-hidden />
             {name ? "Change your name" : "What should we call you?"}
           </DropdownMenuItem>
           <DropdownMenuCheckboxItem
-            className="min-h-10"
+            className="min-h-11"
             checked={nicknames}
             onCheckedChange={(on) => setNicknames(on === true)}
             onSelect={(e) => e.preventDefault()}
@@ -360,7 +360,7 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
               ? `You’re a ${PERSONA_NAME[earned]}: ${PERSONA_REASON[earned]}.`
               : "From the time you open the console, and from your habits over a few days. Read in this browser only; never sent anywhere."}
           </DropdownMenuLabel>
-          <DropdownMenuItem className="min-h-10" onSelect={() => forgetActivity()}>
+          <DropdownMenuItem className="min-h-11" onSelect={() => forgetActivity()}>
             <History className="size-4" aria-hidden />
             Forget my pattern
           </DropdownMenuItem>
@@ -374,7 +374,7 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
           </DropdownMenuLabel>
           <form action={logoutAction}>
             <DropdownMenuItem asChild>
-              <button type="submit" className="flex min-h-10 w-full items-center gap-2">
+              <button type="submit" className="flex min-h-11 w-full items-center gap-2">
                 <LogOut className="size-4" aria-hidden />
                 Sign out
               </button>
