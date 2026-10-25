@@ -16,7 +16,8 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type SourceReport, type DocumentEvidence, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { documentTypeLabel, passageLocation } from "@/lib/document-location";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -141,7 +142,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -324,6 +325,7 @@ function Answered({
   code,
   sources,
   documentEvidence,
+  documentSummary,
   artifacts,
   onRetry,
   retryDisabled,
@@ -336,6 +338,7 @@ function Answered({
   code?: string | null;
   sources?: SourceReport;
   documentEvidence?: DocumentEvidence;
+  documentSummary?: DocumentSummary;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
@@ -440,6 +443,7 @@ function Answered({
         </section>
       ) : null}
 
+      {documentSummary ? <DocumentSummaryView summary={documentSummary} /> : null}
       {documentEvidence ? <DocumentExcerpts evidence={documentEvidence} /> : null}
       {sources ? <Searched report={sources} /> : null}
       {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
@@ -608,7 +612,7 @@ function ResultLine({ envelope }: { envelope: Envelope }) {
       {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span>
       {envelope.task === "REVIEW_CONTRACT" ? <> · Playbook DRAFT — not approved by a lawyer</> : null}
       {envelope.run_id ? <> · Recorded model and region details are in the answer trace</> : null}
-      · Not legal advice
+      {" · Not legal advice"}
     </p>
   );
 }
@@ -715,6 +719,59 @@ function StatusIcon({ kind }: { kind: StatusKind }) {
  * range. They are the user's text, not law and not an answer: the envelope's own words say
  * so above them, and nothing here re-labels or summarises them.
  */
+/**
+ * A review-draft summary of the user's own document. Each point shows the exact quote it
+ * rests on and where (page when the PDF carried one); an open question shows that the
+ * document does NOT answer it. The document type is the backend's rules classifier.
+ */
+function DocumentSummaryView({ summary }: { summary: DocumentSummary }) {
+  return (
+    <section aria-label="Summary of your document" className="flex flex-col gap-4 border-t border-line pt-3">
+      <h3 className="text-ui font-medium text-fg">Summary draft — for lawyer review</h3>
+      {summary.coverage.map((c) => (
+        <p key={c.document_id} className="text-body text-fg-2">
+          {c.name} · Document type: {documentTypeLabel(c.doc_class)}
+          <span className="block font-mono text-caption text-fg-3">classified by rules, not by the model</span>
+        </p>
+      ))}
+      {summary.sections.length === 0 ? (
+        <p className="text-body text-fg-2">No summary point passed the quotation checks, so none is shown.</p>
+      ) : summary.sections.map((section) => (
+        <div key={section.heading} className="flex flex-col gap-2">
+          <h4 className="text-body font-medium text-fg">{section.heading}</h4>
+          <ul className="flex flex-col gap-3">
+            {section.items.map((item, i) => (
+              <li key={i} className="flex flex-col gap-1">
+                <p className="text-read text-fg">{item.text}</p>
+                {item.basis === "NOT_STATED_IN_DOCUMENT" ? (
+                  <p className="font-mono text-caption text-fg-3">not stated in the document — no quote</p>
+                ) : item.quotes.length === 0 ? (
+                  // The backend never sends a quoted point without a quote; if one arrives,
+                  // it must not read as supported.
+                  <p className="font-mono text-caption text-fg-3">no supporting quote was returned — treat as unverified</p>
+                ) : item.quotes.map((q, j) => (
+                  <figure key={j} className="flex flex-col gap-1">
+                    <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{q.quote}</blockquote>
+                    <figcaption className="font-mono text-caption text-fg-3">{q.document_name} · <span className="whitespace-nowrap">{passageLocation(q)}</span></figcaption>
+                  </figure>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {summary.withheld_items > 0 ? (
+        <p className="text-caption text-fg-3">
+          {summary.withheld_items} point{summary.withheld_items === 1 ? " was" : "s were"} withheld: no exact quote supported {summary.withheld_items === 1 ? "it" : "them"}.
+        </p>
+      ) : null}
+      {summary.limitations.length ? <ul className="flex flex-col gap-1 text-caption text-fg-3">
+        {summary.limitations.map((l) => <li key={l}>{l}</li>)}
+      </ul> : null}
+    </section>
+  );
+}
+
 function DocumentExcerpts({ evidence }: { evidence: DocumentEvidence }) {
   if (!evidence.passages.length && !evidence.limitations.length) return null;
   return (
@@ -723,7 +780,7 @@ function DocumentExcerpts({ evidence }: { evidence: DocumentEvidence }) {
       {evidence.passages.length ? <ol className="flex flex-col gap-3">
         {evidence.passages.map((p) => (
           <li key={p.id} className="flex flex-col gap-1">
-            <p className="font-mono text-caption text-fg-3">{p.name} · chars {p.start}–{p.end}</p>
+            <p className="font-mono text-caption text-fg-3">{p.name} · <span className="whitespace-nowrap">{passageLocation(p)}</span></p>
             <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{p.text}</blockquote>
           </li>
         ))}

@@ -1,4 +1,4 @@
-import { demoModeEnabled } from "@/lib/auth/config";
+import { demoModeEnabled, sessionKind } from "@/lib/auth/config";
 import { gateEnabled } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { loadComposerContext, loadMatterHistory, loadThread } from "./actions";
@@ -12,7 +12,9 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   const { c } = await searchParams;
   const composer = await loadComposerContext();
   const demo = demoModeEnabled();
-  const sharedPasscode = !demo && gateEnabled();
+  // Only the passcode prototype is anonymous. A signed-in account IS identified, and its
+  // matter membership is enforced, so the shared-passcode warning would be untrue there.
+  const sharedPasscode = !demo && gateEnabled() && sessionKind() === "passcode";
   if (!c) {
     return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
   }

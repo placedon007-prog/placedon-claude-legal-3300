@@ -122,6 +122,12 @@ export async function hasSession(): Promise<boolean> {
   return tokenIsValid(jar.get(SESSION_COOKIE)?.value, secret());
 }
 
+/** The backend session token of the person signed in (accounts mode), if any. Server-only. */
+export async function accountSessionToken(): Promise<string | undefined> {
+  const jar = await cookies();
+  return jar.get(ACCOUNT_SESSION_COOKIE)?.value;
+}
+
 /** Enforced at the data boundary, including direct Server Action requests. */
 export async function requireSession(): Promise<void> {
   if (!(await hasSession())) redirect("/login");

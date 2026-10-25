@@ -31,6 +31,7 @@ import type {
   MattersList,
   SourcesList,
   AuthLoginOk,
+  AuthLogoutOk,
   SourcesSearch,
   WebResearch,
 } from "./types";
@@ -53,6 +54,8 @@ export interface GatewayProvider {
    * result is a credential: it goes straight into an httpOnly cookie and is never logged.
    */
   authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>>;
+  /** Revoke the signed-in person's own backend session (accounts mode sign-out). */
+  authLogout(): Promise<EngineResult<AuthLogoutOk>>;
   ask(question: string): Promise<EngineResult<AskResponse>>;
   reviewContract(input: {
     text: string;
@@ -245,14 +248,26 @@ export interface GatewayProvider {
 export async function getGateway(): Promise<GatewayProvider> {
   const { requireSession } = await import("../auth/session");
   await requireSession();
-  const { gatewayConfiguration } = await import("../auth/config");
+  const { gatewayConfiguration, gatewayCredential, sessionKind } = await import("../auth/config");
   const config = gatewayConfiguration();
   if (config.mode === "demo") {
     const { MockGateway } = await import("./mock");
     return new MockGateway();
   }
+  const { accountSessionToken } = await import("../auth/session");
+  const credential = gatewayCredential(process.env, await accountSessionToken());
+  if (!credential) {
+    const { redirect } = await import("next/navigation");
+    return redirect("/login");
+  }
   const { HttpGateway } = await import("./http");
-  return new HttpGateway(config.origin, config.key);
+  // A person's session that the backend rejects has ended; /session-ended clears the
+  // cookie (only a route handler may) and returns them to sign-in, instead of leaving a
+  // console that fails every call.
+  // redirect() throws, synchronously, out of the gateway call -- Next.js handles it.
+  const { redirect } = await import("next/navigation");
+  return new HttpGateway(config.origin, credential,
+    sessionKind() === "account" ? { onUnauthorized: () => redirect("/session-ended") } : undefined);
 }
 
 /** Only `auth.login` — the verb reached before a session exists. */

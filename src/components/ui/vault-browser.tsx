@@ -1,5 +1,6 @@
 "use client";
 
+import { isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
 import { Check, FileText, FolderOpen, RefreshCw, Search } from "lucide-react";
@@ -53,7 +54,7 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
         data?.documents.length === 0 ? <div className="vault-browser-empty"><FolderOpen className="size-7" aria-hidden /><p>{query ? "No filenames match this search." : "No files stored in this scope yet."}</p><p className="text-caption text-fg-3">Upload a file here, or choose its matter in Wall System.</p></div> :
         <ul>{data?.documents.map((file) => {
           const checked = selected.some((d) => d.id === file.document_id);
-          const readable = file.state === "INGESTED";
+          const readable = isReadableVaultState(file.state);
           const disabled = !readable || (!checked && selected.length >= capacity);
           const label = stateLabel[file.state] ?? "Status unavailable";
           const content = <><span className="vault-file-art"><FileText className="size-5" aria-hidden /></span>

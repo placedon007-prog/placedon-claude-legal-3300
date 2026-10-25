@@ -62,7 +62,7 @@ test("draft inbox uses the generated tenant-scoped route and requests metadata o
     calledUrl = String(url);
     calledBody = String(init?.body ?? "");
     return new Response(JSON.stringify({
-      drafts: [], next_cursor: null, scope: "tenant", note: "metadata only",
+      drafts: [], next_cursor: null, scope: "author", note: "metadata only",
     }));
   };
   try {
@@ -100,5 +100,43 @@ test("public web research sends only the explicit query, mode and consent to its
     });
     assert.ok(!calledBody.includes("fixture-key"));
     assert.equal(calledHeaders?.get("Authorization"), "Bearer fixture-key");
+  } finally { globalThis.fetch = original; }
+});
+
+test("the exact draft.list body the live gateway returns parses (recorded 2026-10-25, after 028)", async () => {
+  const { draftListSchema } = await import("../src/lib/gateway/types");
+  const live = { drafts: [{ draft_id: "cd914491-beac-4644-9c1e-c0fa99d13859", kind: "unknown",
+    title: "Board resolution (synthetic)", updated_at: "2026-10-25T23:33:08.926539+05:30", version: 1,
+    blocking_count: 1, approved: false, actor_id: "4cdac3f7-474a-4a30-802b-e12d6ef27b79", matter_id: null }],
+    next_cursor: null, scope: "author", note: "Titles and review state of your drafts. Draft text is not included." };
+  assert.equal(draftListSchema.safeParse(live).success, true);
+});
+
+test("a 401 on a person's session ends that session instead of blaming the API key", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "unauthorized" }), { status: 401 });
+  let ended = 0;
+  try {
+    const gw = new HttpGateway("http://localhost:8021", "session-token", { onUnauthorized: () => { ended += 1; } });
+    const result = await gw.conversationSend(request);
+    assert.equal(ended, 1, "the session-ended hook runs");
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.match(result.error.message, /session has ended/i);
+    const keyed = await new HttpGateway("http://localhost:8021", "fixture-key").conversationSend(request);
+    if (!keyed.ok) assert.match(keyed.error.message, /API key/, "the deployment-key wording stays for passcode mode");
+  } finally { globalThis.fetch = original; }
+});
+
+test("signing out revokes the session at the gateway, with the person's own token", async () => {
+  const original = globalThis.fetch;
+  const seen: { url: string; auth: string | null }[] = [];
+  globalThis.fetch = async (url, init) => {
+    seen.push({ url: String(url), auth: new Headers(init?.headers).get("authorization") });
+    return new Response(JSON.stringify({ status: "ok", revoked: true }), { status: 200 });
+  };
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "session-token").authLogout();
+    assert.equal(result.ok, true);
+    assert.deepEqual(seen, [{ url: "http://localhost:8021/v2/auth/logout", auth: "Bearer session-token" }]);
   } finally { globalThis.fetch = original; }
 });

@@ -14,6 +14,7 @@
  *  - Tools: Research (default), Draft (a removable chip), and two that open their screens.
  *  - Unavailable voice input is omitted; no browser speech API handles legal questions.
  */
+import { isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Globe2, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
@@ -172,7 +173,7 @@ export function PromptBox(props: PromptBoxProps) {
           ? lookup.note
           : null;
 
-  const waitingForFiles = files.some((f) => f.state !== "stored" || f.readiness !== "INGESTED");
+  const waitingForFiles = files.some((f) => f.state !== "stored" || !isReadableVaultState(f.readiness));
   const overAttachmentLimit = files.length + docs.length > 20;
   const webReady = tool === "web" && value.trim().length >= 3 && value.trim().length <= 800
     && webConsent && files.length === 0 && docs.length === 0;
@@ -205,7 +206,7 @@ export function PromptBox(props: PromptBoxProps) {
   function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!canSend) return;
-    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && f.readiness === "INGESTED" ? [f.id] : [])])], webMode, webConsent);
+    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && isReadableVaultState(f.readiness) ? [f.id] : [])])], webMode, webConsent);
     setDocs([]);
     setFiles([]);
     setValue("");
