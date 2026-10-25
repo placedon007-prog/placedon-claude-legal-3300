@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { HttpGateway } from "../src/lib/gateway/http";
 import { vaultFindSchema, vaultListSchema } from "../src/lib/gateway/types";
 
-const page = { documents: [{ document_id: "doc-a", name: "Order.pdf", state: "INGESTED", matter_id: null, byte_count: 42, doc_class: null }], next_offset: null, truncated: false, scope: "unfiled", matter_id: null, note: "Unfiled workspace files" };
+const page = { documents: [{ document_id: "doc-a", sha256: "a".repeat(64), name: "Order.pdf", state: "INGESTED", matter_id: null, byte_count: 42, doc_class: null }], next_offset: null, truncated: false, scope: "unfiled", matter_id: null, note: "Unfiled workspace files" };
 test("vault catalogue sends scoped POST input and parses metadata without leaking document contents", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (url, options) => {

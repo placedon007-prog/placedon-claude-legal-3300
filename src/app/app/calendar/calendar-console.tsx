@@ -52,7 +52,8 @@ export function CalendarConsole() {
           <div>
             <label htmlFor="incorporation_date">Incorporated</label>
             <input id="incorporation_date" name="incorporation_date" type="date"
-                   defaultValue="2019-06-01" required />
+                   required aria-describedby="incorporation-help" />
+            <p className="meta" id="incorporation-help">Required. Enter the actual date from the company record; no date is assumed.</p>
           </div>
         </div>
 
