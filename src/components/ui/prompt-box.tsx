@@ -571,11 +571,13 @@ function ToolRow({
   onPick?: () => void;
 }) {
   const cls =
-    "flex min-h-11 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-body text-fg transition-colors duration-150 hover:bg-wash-2 disabled:cursor-not-allowed disabled:text-fg-3 disabled:hover:bg-transparent";
+    "flex min-h-11 w-full flex-wrap items-center gap-x-2.5 gap-y-0.5 rounded-md px-2.5 py-1.5 text-left text-body text-fg transition-colors duration-150 hover:bg-wash-2 disabled:cursor-not-allowed disabled:text-fg-3 disabled:hover:bg-transparent";
+  // The row wraps: a note too long to sit beside the name drops to its own line instead of
+  // squeezing the name onto two lines in the narrow tools menu.
   const inner = (
     <>
       <Icon className="size-4 flex-none" aria-hidden />
-      <span>{name}</span>
+      <span className="whitespace-nowrap">{name}</span>
       {note ? <span className="ml-auto text-caption text-fg-3">{note}</span> : null}
     </>
   );
