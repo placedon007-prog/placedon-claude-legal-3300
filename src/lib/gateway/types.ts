@@ -649,7 +649,9 @@ export type DraftSummary = z.infer<typeof draftSummarySchema>;
 export const draftListSchema = z.object({
   drafts: z.array(draftSummarySchema),
   next_cursor: z.string().nullable(),
-  scope: z.literal("tenant"),
+  /** 028 (backend PR #117): drafts are their author's, so the inbox lists the caller's own.
+   *  This said "tenant", and the page failed with schema_mismatch from that merge on. */
+  scope: z.literal("author"),
   note: z.string(),
 });
 export type DraftList = z.infer<typeof draftListSchema>;

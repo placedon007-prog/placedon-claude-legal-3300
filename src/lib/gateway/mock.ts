@@ -993,8 +993,8 @@ export class MockGateway implements GatewayProvider {
           ? `${hits.length} passage(s) across ${searchable.length} searchable document(s).`
           : `no passage matched. ${unsearchable} document(s) could not be looked at, so ` +
             "this is not 'no document matches'.",
-      scope: "tenant",
-      scope_note: "searched the whole firm's vault, not one matter.",
+      scope: "accessible",
+      scope_note: "searched every document you can read: the matters you are a member of, your own unfiled files, and files shared with the firm.",
     });
   }
 
@@ -1446,7 +1446,7 @@ export class MockGateway implements GatewayProvider {
     return engineOk({
       drafts: [],
       next_cursor: null,
-      scope: "tenant",
+      scope: "author",
       note: "Demo mode does not retain drafts between requests.",
     });
   }
