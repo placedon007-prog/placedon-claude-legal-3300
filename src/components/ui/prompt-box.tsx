@@ -123,7 +123,7 @@ export function PromptBox(props: PromptBoxProps) {
   const [webConsent, setWebConsent] = React.useState(false);
   const [toolsOpen, setToolsOpen] = React.useState(false);
   const [files, setFiles] = React.useState<Attached[]>([]);
-  const [docs, setDocs] = React.useState<{ id: string; name: string }[]>([]);
+  const [docs, setDocs] = React.useState<SelectedVaultFile[]>([]);
   const [mention, setMention] = React.useState<{ query: string; start: number } | null>(null);
   const [active, setActive] = React.useState(0);
   const [found, setFound] = React.useState<{ query: string; result: DocumentLookup } | null>(null);

@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { FolderOpen, X } from "lucide-react";
+import { VaultPicker, type SelectedVaultFile } from "@/components/ui/vault-browser";
 import {
   tableCancelAction,
   tableCreateAction,
@@ -8,7 +10,7 @@ import {
   tableStatusAction,
   type TableState,
 } from "./actions";
-import type { CellState, TableStatus } from "@/lib/gateway/types";
+import type { CellState, MattersList, TableStatus } from "@/lib/gateway/types";
 
 const initial: TableState = { phase: "idle" };
 
@@ -112,11 +114,14 @@ function Grid({ data }: { data: TableStatus }) {
   );
 }
 
-export function TablesConsole({ initialGridId = "", initialStatus = initial }: { initialGridId?: string; initialStatus?: TableState }) {
+export function TablesConsole({ initialGridId = "", initialStatus = initial, matters = [], mattersUnavailable = false }: { initialGridId?: string; initialStatus?: TableState; matters?: MattersList["matters"]; mattersUnavailable?: boolean }) {
   const [created, createAction, creating] = useActionState(tableCreateAction, initial);
   const [status, statusAction, loading] = useActionState(tableStatusAction, initialStatus);
   const [exported, exportAction, exporting] = useActionState(tableExportAction, initial);
   const [cancelled, cancelAction, cancelling] = useActionState(tableCancelAction, initial);
+  const [matterId, setMatterId] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedVaultFile[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <>
@@ -126,13 +131,33 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial }: {
           <label htmlFor="name">Table name</label>
           <input id="name" name="name" type="text" defaultValue="NDA diligence" />
 
-          <label htmlFor="document_ids">Documents</label>
-          <textarea id="document_ids" name="document_ids" rows={3}
-                    aria-describedby="docs-help"
-                    defaultValue={`${"a".repeat(64)}\n${"b".repeat(64)}`} />
-          <p className="meta" id="docs-help">
-            One sha256 per line, as returned by the vault or an upload.
-          </p>
+          <fieldset className="table-document-picker">
+            <legend>Documents</legend>
+            <label htmlFor="table-matter">Choose from</label>
+            <select id="table-matter" value={matterId ?? ""}
+                    onChange={(event) => { setMatterId(event.target.value || null); setSelectedFiles([]); }}>
+              <option value="">Unfiled workspace</option>
+              {matters.map((matter) => <option key={matter.matter_id} value={matter.matter_id}>{matter.name}</option>)}
+            </select>
+            {mattersUnavailable && <p role="status" className="meta">Matter choices could not be loaded. You can still use unfiled files; reload this page to retry.</p>}
+            <button type="button" onClick={() => setPickerOpen(true)}>
+              <FolderOpen aria-hidden="true" className="size-4" /> Select from Wall System
+            </button>
+          </fieldset>
+          <input type="hidden" name="document_ids" value={selectedFiles.map((file) => file.sha256 ?? "").filter(Boolean).join("\n")} />
+          {selectedFiles.length ? (
+            <ul aria-label="Selected documents">
+              {selectedFiles.map((file) => <li key={file.id}>
+                <span>{file.name}</span>
+                <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setSelectedFiles((current) => current.filter((item) => item.id !== file.id))}>
+                  <X aria-hidden="true" className="size-4" />
+                </button>
+              </li>)}
+            </ul>
+          ) : <p className="meta" id="docs-help">Choose at least one ready document from Wall System.</p>}
+          <VaultPicker open={pickerOpen} onOpenChange={setPickerOpen} matterId={matterId}
+            selected={selectedFiles} capacity={20} onAdd={(files) => setSelectedFiles([...files])}
+            returnFocus={() => document.getElementById("table-matter")?.focus()} />
 
           <label htmlFor="columns">Questions</label>
           <textarea id="columns" name="columns" rows={4} aria-describedby="cols-help"

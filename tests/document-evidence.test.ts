@@ -91,3 +91,28 @@ test("document research requests require visible vault selection while other tas
   assert.equal(requiresDocumentSource("draft", 1, ["held"]), false);
   assert.equal(requiresDocumentSource("web", 1, ["held"]), false);
 });
+
+
+test("optional excerpt coverage survives parsing while old saved answers stay readable", () => {
+  const document = { ...evidence.documents[0], excerpt_chars: [...quote].length, excerpt_coverage_ratio: [...quote].length / 100, total_passages: 4, shown_passages: 1 };
+  const parsed = documentEvidenceSchema.parse({ ...evidence, documents: [document] });
+  assert.deepEqual(parsed.documents[0], document);
+  assert.equal(documentEvidenceSchema.safeParse(evidence).success, true);
+  assert.equal(documentEvidenceSchema.safeParse({ ...evidence, status: "UNAVAILABLE", searched_document_ids: [], passages: [], documents: [{ ...document, status: "UNAVAILABLE", total_chars: null, sha256: null, total_passages: 0, shown_passages: 0, excerpt_chars: 0, excerpt_coverage_ratio: null }] }).success, true);
+  for (const changes of [
+    { shown_passages: 2 }, { shown_passages: -1 }, { total_passages: 0 },
+    { excerpt_chars: 101 }, { excerpt_coverage_ratio: 1.1 }, { excerpt_coverage_ratio: -0.1 },
+    { total_passages: 1.5 },
+  ]) assert.equal(documentEvidenceSchema.safeParse({ ...evidence, documents: [{ ...document, ...changes }] }).success, false);
+});
+
+import { documentCoverageLabel } from "../src/lib/document-evidence";
+test("coverage labels describe displayed excerpts without implying complete review", () => {
+  const document = documentEvidenceSchema.parse(evidence).documents[0];
+  assert.equal(documentCoverageLabel(document), null);
+  assert.equal(documentCoverageLabel({ ...document, total_passages: 4 }), null);
+  const covered = { ...document, shown_passages: 1, total_passages: 4 };
+  assert.match(documentCoverageLabel(covered)!, /^1 of 4 text passages shown/);
+  assert.match(documentCoverageLabel(covered)!, /do not establish a complete review or verification/);
+  assert.equal(documentCoverageLabel({ ...covered, status: "UNAVAILABLE" }), null);
+});
