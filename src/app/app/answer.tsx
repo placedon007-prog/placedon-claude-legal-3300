@@ -16,7 +16,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type SourceReport, type DocumentEvidence, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -26,6 +26,8 @@ import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebRe
 import { ResearchState } from "./web-research-result";
 import { ResearchActivity } from "./research-activity";
 import { DocumentEvidenceAnswer } from "./document-evidence-answer";
+import { DocumentSummaryAnswer } from "./document-summary-answer";
+import { shouldRenderDocumentSummary } from "@/lib/document-summary";
 import { documentEvidenceLabel } from "@/lib/document-evidence";
 
 export interface Turn {
@@ -143,7 +145,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} documentEvidence={s.documentEvidence} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -157,6 +159,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
   const state = turn.state;
   const envelope = state?.phase === "answered" ? state.envelope : null;
   const documentEvidence = state?.phase === "answered" ? state.documentEvidence : undefined;
+  const documentSummary = state?.phase === "answered" ? state.documentSummary : undefined;
   const report = state?.phase === "answered" ? state.sources : undefined;
   const citationGroups = envelope
     ? linkCitations(parseAnswer(envelope.text_blocks[0]?.text ?? "").sentences, envelope.citations).groups
@@ -183,7 +186,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
   const questionStatus = state === null ? "Sending" : state.phase === "invalid" || state.phase === "signed_out" ? "Not sent" : "Recorded";
   const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
   const searchStatus = documentEvidence || report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
-  const evidenceStatus = documentEvidence ? `${documentEvidence.passages.length} document excerpts` : envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
+  const evidenceStatus = documentSummary ? `${documentSummary.coverage.length} summarized document${documentSummary.coverage.length === 1 ? "" : "s"}` : documentEvidence ? `${documentEvidence.passages.length} document excerpts` : envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
   const answerStatus = state === null
     ? "Sending"
     : state.phase === "answered"
@@ -331,6 +334,7 @@ function Answered({
   code,
   sources,
   documentEvidence,
+  documentSummary,
   artifacts,
   onRetry,
   retryDisabled,
@@ -343,12 +347,16 @@ function Answered({
   code?: string | null;
   sources?: SourceReport;
   documentEvidence?: DocumentEvidence;
+  documentSummary?: DocumentSummary;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft?: () => void;
 }) {
+  if (shouldRenderDocumentSummary(documentSummary, envelope)) {
+    return <DocumentSummaryAnswer summary={documentSummary} />;
+  }
   if (documentEvidence) return <DocumentEvidenceAnswer evidence={documentEvidence} />;
   // A case-routed turn is never a statute answer and never an abstention: it gets its own
   // render path so the two registers can never bleed into each other on screen.

@@ -1,5 +1,5 @@
 import type { DocumentEvidence } from "@/lib/gateway/types";
-import { documentEvidenceExplanation, documentEvidenceLabel } from "@/lib/document-evidence";
+import { documentCoverageLabel, documentEvidenceExplanation, documentEvidenceLabel } from "@/lib/document-evidence";
 
 /** Snapshot excerpts remain distinct from reverified citations in held law. */
 export function DocumentEvidenceAnswer({ evidence }: { evidence: DocumentEvidence }) {
@@ -30,6 +30,7 @@ export function DocumentEvidenceAnswer({ evidence }: { evidence: DocumentEvidenc
           {evidence.documents.map((document) => (
             <li key={document.document_id} className="break-words">
               <span className="font-medium">{document.name}</span> — {document.status === "SEARCHED" ? "text searched" : document.status === "LIMIT_EXCEEDED" ? "not searched: document limit exceeded" : document.status === "UNAVAILABLE" ? "text unavailable" : "not searched"}
+              {documentCoverageLabel(document) ? <p className="text-caption">{documentCoverageLabel(document)}</p> : null}
               {document.reason ? <p>{document.reason}</p> : null}
             </li>
           ))}

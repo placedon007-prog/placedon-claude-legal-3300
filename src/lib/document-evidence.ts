@@ -25,3 +25,9 @@ export function documentEvidenceExplanation(evidence: DocumentEvidence): string 
 export function requiresDocumentSource(tool: string, attachmentCount: number, chosen: readonly string[]): boolean {
   return tool === "research" && attachmentCount > 0 && !chosen.includes("vault");
 }
+
+/** Displayed excerpt counts describe selection, not full-document review. */
+export function documentCoverageLabel(document: DocumentEvidence["documents"][number]): string | null {
+  if (document.status !== "SEARCHED" || document.shown_passages === undefined || document.total_passages === undefined) return null;
+  return `${document.shown_passages} of ${document.total_passages} text passages shown. Excerpts do not establish a complete review or verification.`;
+}
