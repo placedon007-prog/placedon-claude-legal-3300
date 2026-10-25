@@ -449,7 +449,7 @@ export function PromptBox(props: PromptBoxProps) {
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("research"); setToolsOpen(false); }} />
               <ToolRow icon={Globe2} name="Research the public web" note={tool === "web" ? "selected" : "Only your question is sent"}
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("web"); setWebConsent(false); setToolsOpen(false); ref.current?.focus(); }} />
-              <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "ask something first"} disabled={!canDraft}
+              <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "needs a fully answered, cited reply as the latest answer"} disabled={!canDraft}
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("draft"); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={FileCheck2} name="Check a document" href="/app/document-check" note="opens its screen" />
               <ToolRow icon={FileSearch} name="Review a contract" href="/app/contracts" note="opens its screen" />
