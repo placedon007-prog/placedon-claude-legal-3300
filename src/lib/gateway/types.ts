@@ -61,6 +61,16 @@ export const authLoginOkSchema = z.object({
   email: z.string().optional(),
 });
 export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+/** invites.accept (public): the account the invite creates. Role and email come from the
+ *  invite, never from this request. Refusals arrive as HTTP 200 with status REFUSED. */
+export const inviteAcceptOkSchema = z.object({
+  status: z.literal("accepted"), actor_id: z.string().min(1), tenant_id: z.string().min(1),
+  role: z.string().min(1),
+});
+export const inviteAcceptSchema = z.union([inviteAcceptOkSchema, z.object({
+  status: z.literal("REFUSED"), code: z.string(), detail: z.string(),
+})]);
+export type InviteAccept = z.infer<typeof inviteAcceptSchema>;
 /** auth.logout: the caller's own session, revoked at the gateway. */
 export const authLogoutOkSchema = z.object({ status: z.string(), revoked: z.boolean().optional() });
 export type AuthLogoutOk = z.infer<typeof authLogoutOkSchema>;

@@ -31,6 +31,7 @@ import type {
   MattersList,
   SourcesList,
   AuthLoginOk,
+  InviteAccept,
   AuthLogoutOk,
   SourcesSearch,
   WebResearch,
@@ -54,6 +55,8 @@ export interface GatewayProvider {
    * result is a credential: it goes straight into an httpOnly cookie and is never logged.
    */
   authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>>;
+  /** Pre-session too: accept an invite. Reached only through `loginGateway()`. */
+  invitesAccept(input: { token: string; password: string }): Promise<EngineResult<InviteAccept>>;
   /** Revoke the signed-in person's own backend session (accounts mode sign-out). */
   authLogout(): Promise<EngineResult<AuthLogoutOk>>;
   ask(question: string): Promise<EngineResult<AskResponse>>;
@@ -270,8 +273,8 @@ export async function getGateway(): Promise<GatewayProvider> {
     sessionKind() === "account" ? { onUnauthorized: () => redirect("/session-ended") } : undefined);
 }
 
-/** Only `auth.login` — the verb reached before a session exists. */
-export type LoginGateway = Pick<GatewayProvider, "authLogin">;
+/** Only the two verbs reached before a session exists: sign-in and invite acceptance. */
+export type LoginGateway = Pick<GatewayProvider, "authLogin" | "invitesAccept">;
 
 /**
  * A gateway for the pre-session sign-in verb ONLY.

@@ -25,6 +25,7 @@ import type {
   ConversationSend,
   AskResponse,
   AuthLoginOk,
+  InviteAccept,
   AuthLogoutOk,
   Calendar,
   CancelAck,
@@ -374,6 +375,15 @@ export class MockGateway implements GatewayProvider {
   async authLogout(): Promise<EngineResult<AuthLogoutOk>> {
     // The fixture demo has no backend session to revoke.
     return engineOk({ status: "ok", revoked: false });
+  }
+
+  async invitesAccept(): Promise<EngineResult<InviteAccept>> {
+    // Fail closed: the fixture demo has no account table and creates no accounts.
+    return engineFail({
+      kind: "transport_error",
+      route: GATEWAY_ROUTES.invitesAccept,
+      message: "Invites are not available in demo mode; they require a live gateway.",
+    });
   }
 
   async authLogin(): Promise<EngineResult<AuthLoginOk>> {
