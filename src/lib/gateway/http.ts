@@ -118,7 +118,7 @@ export class HttpGateway implements GatewayProvider {
     route: GatewayRoute,
     path: string,
     schema: S,
-    init?: { method?: "GET" | "POST"; body?: unknown },
+    init?: { method?: "GET" | "POST"; body?: unknown; clientAddress?: string | null },
   ): Promise<EngineResult<z.infer<S>>> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -130,6 +130,9 @@ export class HttpGateway implements GatewayProvider {
         headers: {
           Authorization: `Bearer ${this.key}`,
           ...(init?.body ? { "content-type": "application/json" } : {}),
+          // The end user's address, for the gateway's per-client sign-in lockout and rate
+          // limit. The gateway believes it only because this request carries our key.
+          ...(init?.clientAddress ? { "X-Placedon-Client-Address": init.clientAddress } : {}),
         },
         body: init?.body ? JSON.stringify(init.body) : undefined,
         signal: controller.signal,
@@ -222,7 +225,7 @@ export class HttpGateway implements GatewayProvider {
     });
   }
 
-  authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>> {
+  authLogin(input: { email: string; password: string; clientAddress?: string | null }): Promise<EngineResult<AuthLoginOk>> {
     // Public, pre-session verb. The deployment-key header `call` adds is ignored by the
     // backend for this verb; the credential is the email+password in the POST body, sent
     // over the same https/loopback-enforced origin as every other call. The password is
@@ -230,6 +233,7 @@ export class HttpGateway implements GatewayProvider {
     return this.call(GATEWAY_ROUTES.authLogin, GATEWAY_ROUTES.authLogin, authLoginOkSchema, {
       method: "POST",
       body: { email: input.email, password: input.password },
+      clientAddress: input.clientAddress,
     });
   }
 
