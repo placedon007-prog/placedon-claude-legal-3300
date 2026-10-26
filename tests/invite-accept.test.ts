@@ -30,7 +30,11 @@ test("a password the backend refuses shows the backend's rule; a transport failu
   for (const kind of ["transport_error", "timeout", "server_error"] as const) {
     const out = inviteAcceptOutcome(fail(kind));
     assert.equal(out.kind, "error");
-    if (out.kind === "error") assert.match(out.message, /could not reach|try again/i);
+    // A lost response may follow a successful accept: never claim nothing was created.
+    if (out.kind === "error") {
+      assert.match(out.message, /could not confirm/i);
+      assert.doesNotMatch(out.message, /nothing was created/i);
+    }
   }
 });
 

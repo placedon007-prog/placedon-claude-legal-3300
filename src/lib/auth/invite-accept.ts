@@ -11,7 +11,7 @@ import type { InviteAccept } from "../gateway/types";
 export const MIN_PASSWORD_LENGTH = 12; // gateway/passwords.py MIN_LENGTH
 export const INVALID_INVITE_MESSAGE =
   "This invite link is not valid, has expired, or was already used. Ask your workspace admin for a new one.";
-export const TRANSPORT_MESSAGE = "We could not reach the workspace. Nothing was created; try again shortly.";
+export const TRANSPORT_MESSAGE = "We could not confirm whether the invite was accepted. Try signing in first; if that fails, try the invitation again.";
 
 export type InviteAcceptOutcome = { readonly kind: "accepted" } | { readonly kind: "error"; readonly message: string };
 

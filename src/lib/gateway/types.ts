@@ -71,6 +71,14 @@ export const inviteAcceptSchema = z.union([inviteAcceptOkSchema, z.object({
   status: z.literal("REFUSED"), code: z.string(), detail: z.string(),
 })]);
 export type InviteAccept = z.infer<typeof inviteAcceptSchema>;
+/** auth.login answers HTTP 200 for its refusals too (INVALID_CREDENTIALS, LOCKED_OUT with
+ *  retry_after seconds) -- gateway/accounts.py. Only the rate limiter answers 429. */
+export const authLoginSchema = z.union([
+  authLoginOkSchema,
+  z.object({ status: z.literal("REFUSED"), code: z.string(), detail: z.string().optional(),
+    retry_after: z.number().optional() }),
+]);
+export type AuthLogin = z.infer<typeof authLoginSchema>;
 /** auth.logout: the caller's own session, revoked at the gateway. */
 export const authLogoutOkSchema = z.object({ status: z.string(), revoked: z.boolean().optional() });
 export type AuthLogoutOk = z.infer<typeof authLogoutOkSchema>;
@@ -952,6 +960,12 @@ export const documentSummarySchema = z.object({
   limitations: z.array(z.string()).default([]),
 });
 export type DocumentSummary = z.infer<typeof documentSummarySchema>;
+/** A summary that cannot run until an operator acts (no permitted provider, or the provider
+ *  refused access) -- backend `_summary_unavailable`. Rides the turn's metadata, so a
+ *  reopened conversation shows the same state. */
+export const documentSummaryUnavailableSchema = z.object({ reason: z.string(), retryable: z.boolean() });
+export type DocumentSummaryUnavailable = z.infer<typeof documentSummaryUnavailableSchema>;
+
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
@@ -959,6 +973,7 @@ export const turnMetadataSchema = z.object({
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
   document_evidence: documentEvidenceSchema.optional(),
   document_summary: documentSummarySchema.optional(),
+  document_summary_unavailable: documentSummaryUnavailableSchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 

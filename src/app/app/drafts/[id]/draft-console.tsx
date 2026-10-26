@@ -106,7 +106,7 @@ function Slots({ version }: { version: DraftVersion }) {
   );
 }
 
-export function DraftConsole({ draft }: { draft: DraftVersions }) {
+export function DraftConsole({ draft, account = false }: { draft: DraftVersions; account?: boolean }) {
   const [saved, reviseAction, saving] = useActionState(draftReviseAction, draftInitial);
   const [diff, diffAction, diffing] = useActionState(draftDiffAction, diffInitial);
   const [exported, exportAction, exporting] = useActionState(
@@ -130,7 +130,9 @@ export function DraftConsole({ draft }: { draft: DraftVersions }) {
           </p>
           <p className="meta">
             Text written by a model remains marked as a suggestion until a lawyer reviews it.
-            This prototype cannot verify a person&rsquo;s identity or record formal sign-off.
+            {account
+              ? "Formal sign-off is not recorded in this workspace."
+              : "This prototype cannot verify a person\u2019s identity or record formal sign-off."}
           </p>
         </div>
       )}

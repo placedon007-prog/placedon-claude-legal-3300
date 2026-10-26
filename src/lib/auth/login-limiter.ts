@@ -10,13 +10,18 @@ export interface LoginLimit {
  * Trust no forwarding header by default. Configure a header only behind an ingress that
  * strips the incoming value, sets one client IP, and prevents direct access to this app.
  */
-export function trustedLoginClientKey(requestHeaders: Pick<Headers, "get">, configuredHeader?: string): string | null {
+export function trustedClientAddress(requestHeaders: Pick<Headers, "get">, configuredHeader?: string): string | null {
   const header = configuredHeader?.trim().toLowerCase();
   if (!header || !/^[a-z0-9-]+$/.test(header)) return null;
   const value = requestHeaders.get(header)?.trim();
   // Lists, ports, opaque strings and missing headers do not create attacker-chosen buckets.
   if (!value || !isIP(value)) return null;
-  return createHash("sha256").update(value.toLowerCase()).digest("hex");
+  return value.toLowerCase();
+}
+
+export function trustedLoginClientKey(requestHeaders: Pick<Headers, "get">, configuredHeader?: string): string | null {
+  const address = trustedClientAddress(requestHeaders, configuredHeader);
+  return address === null ? null : createHash("sha256").update(address).digest("hex");
 }
 
 /** Per-process pilot defense. Replicas still require one distributed ingress limiter. */

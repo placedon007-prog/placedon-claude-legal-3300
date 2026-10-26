@@ -40,6 +40,16 @@ export function statusLabel(kind: StatusKind): string {
   }
 }
 
+/** A FAILED turn's register: a known, non-retryable summary block gets its own title and no
+ *  retry; everything else stays the transport register, which a retry may fix. */
+export function failedRegister(unavailable?: { readonly reason: string; readonly retryable: boolean }): {
+  title: string | null;
+  retryable: boolean;
+} {
+  if (unavailable && unavailable.retryable === false) return { title: "Document summarization unavailable", retryable: false };
+  return { title: null, retryable: true };
+}
+
 /** `answer_envelope.v1` status → the screen's register. FAILED is transport-only by schema. */
 export function envelopeKind(status: EnvelopeStatus): StatusKind {
   switch (status) {

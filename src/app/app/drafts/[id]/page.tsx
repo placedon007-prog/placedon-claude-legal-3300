@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { readVersions } from "../actions";
+import { sessionKind } from "@/lib/auth/config";
 import { DraftConsole } from "./draft-console";
 
 export const metadata: Metadata = { title: "Draft", robots: { index: false } };
@@ -50,7 +51,7 @@ export default async function DraftPage({
         rather than overwriting a colleague&rsquo;s work.
       </p>
       <p className="meta">{read.data.draft_id}</p>
-      <DraftConsole draft={read.data} />
+      <DraftConsole draft={read.data} account={sessionKind() === "account"} />
     </>
   );
 }
