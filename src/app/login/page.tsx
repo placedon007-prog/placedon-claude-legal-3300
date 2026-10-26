@@ -20,9 +20,9 @@ const PROOFS = [
   { key: "Trace", text: "Every run is recorded step by step, and can be opened later." },
 ] as const;
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[]; ended?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[]; ended?: string; invited?: string }> }) {
   if (await hasSession()) redirect("/app");
-  const { next, ended } = await searchParams;
+  const { next, ended, invited } = await searchParams;
   // Where sign-in returns to. Validated here so the form only ever carries a safe path.
   const nextPath = safeNextPath(typeof next === "string" ? next : undefined);
   const configurationIssue = sessionConfigurationIssue();
@@ -62,6 +62,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
           <h1 className="auth-title">Sign in</h1>
           {ended ? <p className="auth-status" role="status">Your session ended. Sign in again to continue.</p> : null}
+          {invited ? <p className="auth-status" role="status">Your account is ready. Sign in with the email your invite was sent to.</p> : null}
           <p className="auth-lede">
             {mode === "accounts"
               ? "Use the email address your workspace invited."

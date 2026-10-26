@@ -6,6 +6,8 @@ import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
   authLoginSchema,
+  inviteAcceptSchema,
+  type InviteAccept,
   authLogoutOkSchema,
   type AuthLogoutOk,
   calendarSchema,
@@ -241,6 +243,15 @@ export class HttpGateway implements GatewayProvider {
   authLogout(): Promise<EngineResult<AuthLogoutOk>> {
     return this.call(GATEWAY_ROUTES.authLogout, GATEWAY_ROUTES.authLogout, authLogoutOkSchema,
       { method: "POST", body: {} });
+  }
+
+  /** Public, pre-session: spend an invite token and set the new account's password. */
+  invitesAccept(input: { token: string; password: string; clientAddress?: string | null }): Promise<EngineResult<InviteAccept>> {
+    return this.call(GATEWAY_ROUTES.invitesAccept, GATEWAY_ROUTES.invitesAccept, inviteAcceptSchema, {
+      method: "POST",
+      body: { token: input.token, password: input.password },
+      clientAddress: input.clientAddress,
+    });
   }
 
   reviewContract(input: {

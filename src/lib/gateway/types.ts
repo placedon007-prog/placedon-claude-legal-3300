@@ -61,6 +61,16 @@ export const authLoginOkSchema = z.object({
   email: z.string().optional(),
 });
 export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+/** invites.accept (public): the account the invite creates. Role and email come from the
+ *  invite, never from this request. Refusals arrive as HTTP 200 with status REFUSED. */
+export const inviteAcceptOkSchema = z.object({
+  status: z.literal("accepted"), actor_id: z.string().min(1), tenant_id: z.string().min(1),
+  role: z.string().min(1),
+});
+export const inviteAcceptSchema = z.union([inviteAcceptOkSchema, z.object({
+  status: z.literal("REFUSED"), code: z.string(), detail: z.string(),
+})]);
+export type InviteAccept = z.infer<typeof inviteAcceptSchema>;
 /** auth.login answers HTTP 200 for its refusals too (INVALID_CREDENTIALS, LOCKED_OUT with
  *  retry_after seconds) -- gateway/accounts.py. Only the rate limiter answers 429. */
 export const authLoginSchema = z.union([

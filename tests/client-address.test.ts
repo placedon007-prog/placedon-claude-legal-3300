@@ -50,3 +50,20 @@ test("a wrong password and a lockout arrive as HTTP 200 refusals and are shown a
     assert.deepEqual(out[2], { kind: "error", message: CREDENTIALS_MESSAGE }, "an unknown refusal reveals nothing");
   } finally { globalThis.fetch = original; }
 });
+
+test("invite acceptance forwards the trusted address only as a header", async () => {
+  const original = globalThis.fetch;
+  const seen: { address: string | null; body: unknown }[] = [];
+  globalThis.fetch = async (_url, options) => {
+    seen.push({ address: new Headers(options?.headers).get("x-placedon-client-address"),
+      body: JSON.parse(String(options?.body)) });
+    return new Response(JSON.stringify({ status: "REFUSED", code: "INVALID_INVITE", detail: "Invalid invite" }));
+  };
+  try {
+    const gateway = new HttpGateway("http://localhost:8021", "test-key");
+    await gateway.invitesAccept({ token: "synthetic", password: "synthetic password", clientAddress: "198.51.100.8" });
+    await gateway.invitesAccept({ token: "synthetic", password: "synthetic password" });
+    assert.deepEqual(seen.map(x => x.address), ["198.51.100.8", null]);
+    for (const call of seen) assert.deepEqual(call.body, { token: "synthetic", password: "synthetic password" });
+  } finally { globalThis.fetch = original; }
+});
