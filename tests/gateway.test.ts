@@ -83,16 +83,9 @@ test("a missing run is an engine FAILURE, never an abstention", async () => {
   }
 });
 
-test("review refuses a document not marked as test data", async () => {
-  const r = await new MockGateway().reviewContract({ text: "x", testData: false });
-  assert.ok(r.ok);
-  assert.equal(r.data.findings.length, 0);
-});
-
 test("review of a five-year NDA DEVIATES on the term rule", async () => {
   const r = await new MockGateway().reviewContract({
     text: "This Agreement continues for five years from the date above.",
-    testData: true,
   });
   assert.ok(r.ok);
   const term = r.data.findings.find((f) => f.rule_id === "NDA-01");
@@ -109,7 +102,6 @@ test("review of a five-year NDA DEVIATES on the term rule", async () => {
 test("every finding carries the standard it was judged against", async () => {
   const r = await new MockGateway().reviewContract({
     text: "This Agreement continues for five years from the date above.",
-    testData: true,
   });
   assert.ok(r.ok);
   // The column was blank on every live run until the gateway started sending these:
@@ -135,7 +127,7 @@ test("a finding with no standard still parses, so an older gateway is not a cras
 });
 
 test("law this corpus does not hold travels WITH the findings", async () => {
-  const r = await new MockGateway().reviewContract({ text: "x".repeat(50), testData: true });
+  const r = await new MockGateway().reviewContract({ text: "x".repeat(50) });
   assert.ok(r.ok);
   const bodies = r.data.law_not_held.map((l) => l.body);
   assert.deepEqual(bodies.sort(), ["ARBITRATION1996", "CONTRACT1872", "STAMP"]);

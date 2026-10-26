@@ -562,21 +562,8 @@ export class MockGateway implements GatewayProvider {
 
   async reviewContract(input: {
     text: string;
-    testData: boolean;
   }): Promise<EngineResult<ReviewResponse>> {
-    if (!input.testData) {
-      // PLAN_22 D3, reproduced faithfully: the backend refuses a document that is not
-      // marked test data while the deployment region is unconfirmed.
-      return engineOk({
-        playbook_status: "DRAFT",
-        requires_review: true,
-        findings: [],
-        unverified: [],
-        law_not_held: [],
-        run_id: null,
-        model: null,
-      } as ReviewResponse);
-    }
+    // Demo data only: nothing leaves the process, so there is no residency question here.
     const fiveYears = /five years|5 years/i.test(input.text);
     return engineOk({
       playbook_status: "DRAFT",

@@ -13,6 +13,7 @@ import type {
   DraftStatus,
   DraftVersions,
   ReviewResponse,
+  VerbRefusal,
   Run,
   RunTrace,
   TableCancel,
@@ -63,9 +64,7 @@ export interface GatewayProvider {
   reviewContract(input: {
     text: string;
     name?: string;
-    /** Required while the deployment region is unconfirmed — PLAN_22 D3. */
-    testData: boolean;
-  }): Promise<EngineResult<ReviewResponse>>;
+  }): Promise<EngineResult<ReviewResponse | VerbRefusal>>;
   run(runId: string): Promise<EngineResult<Run>>;
   trace(runId: string): Promise<EngineResult<RunTrace>>;
   upload(input: { text: string; name?: string }): Promise<EngineResult<UploadResponse>>;

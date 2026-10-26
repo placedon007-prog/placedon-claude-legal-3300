@@ -336,6 +336,7 @@ export type ReviewState =
       readonly data: ReviewResponse;
       readonly source: SourceDoc;
     }
+  | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
@@ -379,16 +380,6 @@ export async function reviewAction(
   if (!text.success) {
     return { phase: "invalid", message: text.error.issues[0].message };
   }
-  // The checkbox is the operator ASSERTING this is test data. PLAN_22 D3 forbids a real
-  // client contract while the deployment region is unconfirmed, and the backend refuses
-  // one — this is the same statement made where a person can read it.
-  if (formData.get("test_data") !== "on") {
-    return {
-      phase: "invalid",
-      message:
-        "Confirm this is a test document. The model is hosted in UAE North and no client contract may be sent there (PLAN_22 D3).",
-    };
-  }
   const name =
     (String(formData.get("name") ?? "").trim() || source?.name || "contract").slice(0, 80);
 
@@ -403,8 +394,12 @@ export async function reviewAction(
     if (stored.ok) source = { ...source, sha256: stored.data.sha256 };
   }
 
-  const result = await gateway.reviewContract({ text: text.data, name, testData: true });
+  const result = await gateway.reviewContract({ text: text.data, name });
   if (!result.ok) return { phase: "failed", error: result.error };
+  // The gateway decides whether the text may be sent (PLAN_22 D3); a tick box here cannot.
+  if (isRefusal(result.data)) {
+    return { phase: "refused", code: result.data.code, detail: result.data.detail };
+  }
   if (result.data.run_id) {
     await rememberRun({
       id: result.data.run_id,

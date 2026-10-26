@@ -137,8 +137,9 @@ Three screens, linked across the top.
   the provision and the character span they were read from. A question the corpus cannot
   answer comes back as a named abstention, not a guess — try a SEBI question and see.
 - **Contracts** — attach a `.docx` or a `.pdf` **that has a real text layer**, or paste the
-  text. Tick *"This is a test document"*, then Review. A scan has no text layer and is
-  refused rather than half-read.
+  text, then Review. While UAE North has not been accepted for client data the gateway
+  answers *Not sent* and no model is called. A scan has no text layer and is refused rather
+  than half-read.
 - **Runs** — every question and review leaves a run. Open one to see each step, which model
   served it, which region it ran in, and what it cost in rupees.
 
@@ -187,8 +188,8 @@ database.
 ## The rules this setup does not relax
 
 - **Test documents only.** The model is in UAE North and that region has not been confirmed
-  acceptable for client data (PLAN_22 D3). The tick box on Contracts is you stating the
-  document is a fixture.
+  acceptable for client data (PLAN_22 D3). Nothing on screen can mark a document as a
+  fixture; Contracts is refused until an operator sets `PLACEDON_ACCEPT_REGION`.
 - **The playbook is `DRAFT`.** No lawyer has approved those rules. A finding is a potential
   issue against a commercial standard, never a statement that a clause is valid or void.
 - **The generated passcode is local-only** (in `.env.local`) and is not a real login — one

@@ -48,6 +48,7 @@ import {
   documentResponseSchema,
   refusalSchema,
   reviewResponseSchema,
+  verbRefusalSchema,
   runSchema,
   runTraceSchema,
   uploadResponseSchema,
@@ -57,6 +58,7 @@ import {
   type Decision,
   type DocumentResponse,
   type ReviewResponse,
+  type VerbRefusal,
   type Run,
   type RunTrace,
   type Calendar,
@@ -257,22 +259,14 @@ export class HttpGateway implements GatewayProvider {
   reviewContract(input: {
     text: string;
     name?: string;
-    testData: boolean;
-  }): Promise<EngineResult<ReviewResponse>> {
+  }): Promise<EngineResult<ReviewResponse | VerbRefusal>> {
+    // No `test_data`: a request's own word no longer marks a document as a fixture
+    // (PLAN_22 D3), so a client contract on an unaccepted region is REFUSED, with HTTP 200.
     return this.call(
       GATEWAY_ROUTES.reviewContract,
       GATEWAY_ROUTES.reviewContract,
-      reviewResponseSchema,
-      {
-        method: "POST",
-        // `test_data` is a STRING input on the verb table, and only its truthiness is
-        // read. Sent as "yes" so the intent is legible in a request log.
-        body: {
-          text: input.text,
-          name: input.name ?? "contract",
-          ...(input.testData ? { test_data: "yes" } : {}),
-        },
-      },
+      reviewResponseSchema.or(verbRefusalSchema),
+      { method: "POST", body: { text: input.text, name: input.name ?? "contract" } },
     );
   }
 

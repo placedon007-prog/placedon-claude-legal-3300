@@ -163,8 +163,9 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
     record 0.0 for a billed provider at all — in Python and again as a database CHECK — so
     a zero would mean a free provider, not a free call. Show `UNPRICED` and its reason.
   - Every review carries **`playbook_status: DRAFT`** until a lawyer approves the rules, and
-    the model is hosted in **UAE North**: a client contract may not be sent there, and the
-    `test_data` input is the caller stating this document is a fixture. Both facts belong on
+    the model is hosted in **UAE North**: a client contract may not be sent there, and no
+    request can mark a document as a fixture: the gateway refuses ("Not sent") until an
+    operator accepts the region. Both facts belong on
     screen, on every result.
   - A finding is a **POTENTIAL_ISSUE against a company standard, never a statement of law**.
     Statuses `MATCHES · DEVIATES · MISSING · NEEDS_LAWYER` must be distinguishable without
