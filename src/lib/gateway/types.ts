@@ -61,6 +61,14 @@ export const authLoginOkSchema = z.object({
   email: z.string().optional(),
 });
 export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+/** auth.login answers HTTP 200 for its refusals too (INVALID_CREDENTIALS, LOCKED_OUT with
+ *  retry_after seconds) -- gateway/accounts.py. Only the rate limiter answers 429. */
+export const authLoginSchema = z.union([
+  authLoginOkSchema,
+  z.object({ status: z.literal("REFUSED"), code: z.string(), detail: z.string().optional(),
+    retry_after: z.number().optional() }),
+]);
+export type AuthLogin = z.infer<typeof authLoginSchema>;
 /** auth.logout: the caller's own session, revoked at the gateway. */
 export const authLogoutOkSchema = z.object({ status: z.string(), revoked: z.boolean().optional() });
 export type AuthLogoutOk = z.infer<typeof authLogoutOkSchema>;

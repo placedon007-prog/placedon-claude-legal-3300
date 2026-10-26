@@ -28,3 +28,25 @@ test("sign-in forwards the client address to the gateway, and sends no header wi
     assert.deepEqual(seen, ["198.51.100.7", null]);
   } finally { globalThis.fetch = original; }
 });
+
+// Recorded from the live gateway (HTTP 200 both): gateway/accounts.py generic_failure and
+// check_lockout. The app expected 401/429 and showed "Couldn't reach sign-in" for both.
+test("a wrong password and a lockout arrive as HTTP 200 refusals and are shown as such", async () => {
+  const { accountLoginOutcome, CREDENTIALS_MESSAGE } = await import("../src/lib/auth/account-login");
+  const original = globalThis.fetch;
+  const bodies = [
+    { status: "REFUSED", code: "INVALID_CREDENTIALS", detail: "incorrect email or password." },
+    { status: "REFUSED", code: "LOCKED_OUT", detail: "too many failed sign-in attempts. Try again shortly.", retry_after: 900 },
+    { status: "REFUSED", code: "SOMETHING_ELSE", detail: "internal detail that must not be shown" },
+  ];
+  let i = 0;
+  globalThis.fetch = async () => new Response(JSON.stringify(bodies[i++]));
+  try {
+    const gateway = new HttpGateway("http://localhost:8021", "test-key");
+    const out = [];
+    for (let n = 0; n < bodies.length; n++) out.push(accountLoginOutcome(await gateway.authLogin({ email: "a@example.test", password: "p" })));
+    assert.deepEqual(out[0], { kind: "error", message: CREDENTIALS_MESSAGE });
+    assert.deepEqual(out[1], { kind: "error", message: "Too many failed sign-in attempts. Try again in about 15 minutes." });
+    assert.deepEqual(out[2], { kind: "error", message: CREDENTIALS_MESSAGE }, "an unknown refusal reveals nothing");
+  } finally { globalThis.fetch = original; }
+});
