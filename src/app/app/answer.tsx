@@ -14,6 +14,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
+import { DocumentEvidenceAnswer } from "./document-evidence-answer";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
@@ -461,7 +462,7 @@ function Answered({
       ) : null}
 
       {documentSummary ? <DocumentSummaryView summary={documentSummary} /> : null}
-      {documentEvidence ? <DocumentExcerpts evidence={documentEvidence} /> : null}
+      {documentEvidence ? <DocumentEvidenceAnswer evidence={documentEvidence} /> : null}
       {sources ? <Searched report={sources} /> : null}
       {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
         {envelope.files.map((file) => <li key={file.file_id}>{file.name} — {file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}{file.reason ? ` · ${file.reason}` : ""}</li>)}
@@ -784,26 +785,6 @@ function DocumentSummaryView({ summary }: { summary: DocumentSummary }) {
       ) : null}
       {summary.limitations.length ? <ul className="flex flex-col gap-1 text-caption text-fg-3">
         {summary.limitations.map((l) => <li key={l}>{l}</li>)}
-      </ul> : null}
-    </section>
-  );
-}
-
-function DocumentExcerpts({ evidence }: { evidence: DocumentEvidence }) {
-  if (!evidence.passages.length && !evidence.limitations.length) return null;
-  return (
-    <section aria-label="Excerpts from your documents" className="flex flex-col gap-3 border-t border-line pt-3">
-      <h3 className="text-ui font-medium text-fg">Excerpts from your documents</h3>
-      {evidence.passages.length ? <ol className="flex flex-col gap-3">
-        {evidence.passages.map((p) => (
-          <li key={p.id} className="flex flex-col gap-1">
-            <p className="font-mono text-caption text-fg-3">{p.name} · <span className="whitespace-nowrap">{passageLocation(p)}</span></p>
-            <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{p.text}</blockquote>
-          </li>
-        ))}
-      </ol> : null}
-      {evidence.limitations.length ? <ul className="flex flex-col gap-1 text-caption text-fg-3">
-        {evidence.limitations.map((l) => <li key={l}>{l}</li>)}
       </ul> : null}
     </section>
   );

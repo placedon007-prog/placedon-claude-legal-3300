@@ -926,7 +926,7 @@ export class MockGateway implements GatewayProvider {
     const query = (input.query ?? "").toLowerCase();
     const rows = [...this.vault.entries()]
       .filter(([, d]) => (d.matterId ?? null) === input.matterId && d.name.toLowerCase().includes(query))
-      .map(([id, d]) => ({ document_id: id, name: d.name, state: d.state,
+      .map(([id, d]) => ({ document_id: id, sha256: d.sha256, name: d.name, state: d.state,
         matter_id: d.matterId ?? null, byte_count: new TextEncoder().encode(d.text).length, doc_class: null }))
       .sort((a, b) => a.name.localeCompare(b.name) || a.document_id.localeCompare(b.document_id));
     const start = input.offset ?? 0, limit = input.limit ?? 30;

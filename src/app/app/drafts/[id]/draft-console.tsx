@@ -15,14 +15,12 @@ const draftInitial: DraftState = { phase: "idle" };
 const diffInitial: DiffState = { phase: "idle" };
 const exportInitial: ExportState = { phase: "idle" };
 
-/**
- * A slot's provenance, with a word for each. `MODEL_SUGGESTION` is the one that matters:
- * it is the backend's own term for text a person has not accepted, it BLOCKS approval, and
- * this screen never renders it as settled prose. A draft that showed a model's sentence in
- * the same register as a verified one would be asking a lawyer to sign something no one
- * has read.
- */
+// Backend slot types are retained; legacy mock origins remain supported.
 const ORIGIN: Record<string, { glyph: string; word: string; meaning: string }> = {
+  SOURCE_QUOTE: { glyph: "“", word: "Source quotation", meaning: "quoted text; inspect the cited source" },
+  USER_FACT: { glyph: "•", word: "Supplied fact", meaning: "provided by a person; check accuracy" },
+  DERIVED_FACT: { glyph: "=", word: "Calculated value", meaning: "check the inputs and calculation" },
+  TEMPLATE_TEXT: { glyph: "–", word: "Template wording", meaning: "fixed wording; check suitability" },
   VERIFIED: { glyph: "✓", word: "VERIFIED", meaning: "from a cited provision" },
   SUPPLIED: { glyph: "•", word: "SUPPLIED", meaning: "given by a person" },
   MODEL_SUGGESTION: {
@@ -32,6 +30,15 @@ const ORIGIN: Record<string, { glyph: string; word: string; meaning: string }> =
   },
   UNKNOWN: { glyph: "?", word: "UNKNOWN", meaning: "no provenance recorded" },
 };
+
+function reviewField(field: string) {
+  const names: Record<string, string> = {
+    _draft_body: "Draft text",
+    _draft_provenance: "Supporting facts and sources",
+    _body_revision_review: "Edited text",
+  };
+  return names[field] ?? field.replaceAll("_", " ");
+}
 
 function originOf(key: string | undefined) {
   return ORIGIN[key ?? "UNKNOWN"] ?? ORIGIN.UNKNOWN;
@@ -73,8 +80,9 @@ function Slots({ version }: { version: DraftVersion }) {
       </thead>
       <tbody>
         {version.slots.map((sl) => {
-          const o = originOf(sl.origin);
-          const suggestion = sl.origin === "MODEL_SUGGESTION";
+          const type = sl.type ?? sl.origin;
+          const o = originOf(type);
+          const suggestion = type === "MODEL_SUGGESTION";
           return (
             <tr key={sl.name} className={suggestion ? "slot-suggestion" : undefined}>
               <th scope="row">{sl.name}</th>
@@ -97,6 +105,8 @@ function Slots({ version }: { version: DraftVersion }) {
               <td>
                 <span aria-hidden="true">{o.glyph}</span> {o.word}
                 <span className="meta origin-meaning"> — {o.meaning}</span>
+                {sl.source && <p className="meta">Source: {sl.source}</p>}
+                {sl.working && <p className="meta">Calculation: {sl.working}</p>}
               </td>
             </tr>
           );
@@ -123,11 +133,18 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
     <>
       <p className="meta">Version {latest.version} · {latest.ready ? "Ready for lawyer review · not approved" : "Review required"}</p>
 
+      {latest.historical_approval && !latest.approved && (
+        <p role="status">An earlier approval is recorded. This version needs review under the current checks.</p>
+      )}
+
       {!latest.ready && latest.blocking.length > 0 && (
         <div role="status" className="blocking-note">
-          <p>
-            Review items: {latest.blocking.join(", ")}.
-          </p>
+          <h3>Before this draft can be signed off</h3>
+          {latest.review_items?.length ? (
+            <ul>{latest.review_items.map((item, index) => (
+              <li key={`${item.field}-${index}`}><strong>{reviewField(item.field)}:</strong> {item.message}</li>
+            ))}</ul>
+          ) : <p>Review items: {latest.blocking.join(", ")}.</p>}
           <p className="meta">
             Text written by a model remains marked as a suggestion until a lawyer reviews it.
             {account
@@ -200,7 +217,9 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
             <p className="meta">{saved.data.note}</p>
             {saved.data.blocking.length > 0 && (
               <p className="meta">
-                Still blocking: {saved.data.blocking.join(", ")}
+                {saved.data.review_items?.length
+                  ? saved.data.review_items.map((item) => `${reviewField(item.field)}: ${item.message}`).join(" ")
+                  : `Still blocking: ${saved.data.blocking.join(", ")}`}
               </p>
             )}
           </div>

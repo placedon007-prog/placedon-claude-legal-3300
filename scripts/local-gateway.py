@@ -10,7 +10,6 @@ and `ps` — so this writes it straight into `.env.local` and never prints it.
 Reads `PLACEDON_DATABASE_URL` and the Azure credentials from the BACKEND's own `.env`.
 Nothing here reads or writes a secret anywhere else.
 """
-import io
 import os
 import pathlib
 import secrets
@@ -61,15 +60,20 @@ with psycopg.connect(db_url, autocommit=True) as conn:
         "ON CONFLICT DO NOTHING",
         (TENANT,),
     )
-    # role = 'lawyer' to match the key minted below. The column defaults to 'viewer', and the
-    # worker re-reads the actor row before every queued job (backend b3997d9): a viewer actor
-    # behind a lawyer key had every queued answer FAILED with "lacks queued-work permission".
     conn.execute(
-        "INSERT INTO actors (actor_id, tenant_id, label, role) "
-        "VALUES (%s, %s, 'local-console', 'lawyer') "
-        "ON CONFLICT (actor_id) DO UPDATE SET role = 'lawyer', disabled_at = NULL",
+        "INSERT INTO actors (actor_id, tenant_id, label, role) VALUES (%s, %s, 'local-console', 'lawyer') "
+        "ON CONFLICT DO NOTHING",
         (ACTOR, TENANT),
     )
+
+    actor = conn.execute(
+        "SELECT role, disabled_at FROM actors WHERE actor_id = %s AND tenant_id = %s",
+        (ACTOR, TENANT),
+    ).fetchone()
+    if not actor or actor[0] not in ("lawyer", "admin") or actor[1] is not None:
+        sys.exit("Local actor is missing, disabled, or cannot run queued work. "
+                 "Have an administrator review the local account; startup will not change "
+                 "an existing actor's permissions.")
 
 keys = KeyStore()
 # `lawyer`, not the `viewer` default. Measured 04-10-2026: with a viewer key every WRITE
@@ -90,9 +94,9 @@ passcode = secrets.token_urlsafe(12)
 # twice does not leave a stale key above a live one.
 env_path = WEB / ".env.local"
 managed = ("GATEWAY_URL=", "PLACEDON_GATEWAY_KEY=", "APP_SESSION_SECRET=", "APP_PASSCODE=")
-existing = io.open(env_path, encoding="utf-8").read() if env_path.exists() else ""
+existing = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
 kept = "\n".join(l for l in existing.splitlines() if not l.startswith(managed))
-io.open(env_path, "w", encoding="utf-8").write(
+env_path.write_text(
     (kept.rstrip("\n") + "\n" if kept.strip() else "")
     + f"GATEWAY_URL=http://127.0.0.1:{PORT}\n"
     + f"PLACEDON_GATEWAY_KEY={raw}\n"

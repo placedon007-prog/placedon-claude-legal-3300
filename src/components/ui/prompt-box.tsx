@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Textarea } from "@/components/ui/textarea";
 import { AsOfChip, MatterChip, MentionMenu, SourcesChip, chip } from "@/components/ui/composer-parts";
 import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
+import { requiresDocumentSource } from "@/lib/document-evidence";
 import { mentionMatches, type MentionItem } from "@/lib/sources";
 import { suggestsCurrentPublicResearch } from "@/lib/public-web-intent";
 import { cn } from "@/lib/utils";
@@ -123,7 +124,7 @@ export function PromptBox(props: PromptBoxProps) {
   const [webConsent, setWebConsent] = React.useState(false);
   const [toolsOpen, setToolsOpen] = React.useState(false);
   const [files, setFiles] = React.useState<Attached[]>([]);
-  const [docs, setDocs] = React.useState<{ id: string; name: string }[]>([]);
+  const [docs, setDocs] = React.useState<SelectedVaultFile[]>([]);
   const [mention, setMention] = React.useState<{ query: string; start: number } | null>(null);
   const [active, setActive] = React.useState(0);
   const [found, setFound] = React.useState<{ query: string; result: DocumentLookup } | null>(null);
@@ -173,12 +174,14 @@ export function PromptBox(props: PromptBoxProps) {
           ? lookup.note
           : null;
 
+  const needsDocumentSource = requiresDocumentSource(tool, files.length + docs.length, chosen);
+  const vaultAvailable = sources.bodies.some((body) => body.id === "vault" && body.selectable);
   const waitingForFiles = files.some((f) => f.state !== "stored" || !isReadableVaultState(f.readiness));
   const overAttachmentLimit = files.length + docs.length > 20;
   const webReady = tool === "web" && value.trim().length >= 3 && value.trim().length <= 800
     && webConsent && files.length === 0 && docs.length === 0;
   const canSend = hydrated && !pending && (tool === "web" ? webReady
-    : value.trim().length >= 8 && !waitingForFiles && !sources.failed && !overAttachmentLimit);
+    : value.trim().length >= 8 && !waitingForFiles && !sources.failed && !overAttachmentLimit && !needsDocumentSource);
   const processingIds = files.filter((f) => f.state === "stored" && ["PENDING", "UNKNOWN"].includes(f.readiness)).map((f) => f.state === "stored" ? f.id : "").join(",");
   React.useEffect(() => {
     if (!processingIds || !checkDocument) return;
@@ -298,6 +301,10 @@ export function PromptBox(props: PromptBoxProps) {
         />
       ) : null}
 
+      {needsDocumentSource ? <div role="status" className="mx-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-fg-2">
+        <p>{vaultAvailable ? "Turn on Your documents to search these attachments." : "Document search is unavailable. Retry sources or remove the attachments to continue."}</p>
+        {vaultAvailable ? <button type="button" onClick={() => onToggleSource("vault")} className="min-h-11 rounded-chip px-2 font-medium text-fg underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">Turn on Your documents</button> : null}
+      </div> : null}
       {tool === "draft" || files.length || docs.length ? (
         <div className="flex flex-wrap gap-1.5 px-2 pt-1">
           {tool === "draft" ? (
@@ -309,7 +316,7 @@ export function PromptBox(props: PromptBoxProps) {
           {docs.map((d) => (
             <Tip
               key={d.id}
-              label="Selected for this request. The gateway checks document readiness and matter access before reading; a law research answer does not claim document grounding."
+              label="Selected for this request. With Your documents enabled, Ask can find exact excerpts in readable document text. It does not verify the document as legal authority."
             >
               <span className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-chip border border-line-2 bg-wash pr-1 pl-2.5 text-ui text-fg">
                 <FileText className="size-3.5 flex-none" aria-hidden />
@@ -395,7 +402,7 @@ export function PromptBox(props: PromptBoxProps) {
 
       {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">A document is not ready to read. Wait for processing, or remove it to send without it.</p> : null}
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
-      {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Choose one readable file to ask for a document review. Legal research does not read attachments yet.</p> : null}
+      {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Ask a specific question for matching excerpts, or request a summary when document summarization is available. Review either against the original.</p> : null}
       {tool === "web" && (files.length > 0 || docs.length > 0) ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}
       <div className="flex flex-wrap items-center gap-0.5 px-1">
         {tool !== "web" ? <>

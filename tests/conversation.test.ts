@@ -137,9 +137,9 @@ test("matter history calls the scoped server verb and parses saved thread identi
 test("reload keeps the excerpts from attached documents that the backend served", () => {
   const document_evidence = {
     schema: "document_evidence.v1", mode: "question", status: "EXCERPTS_FOUND", query: "resolutions",
-    searched_document_ids: ["doc"], documents: [],
+    searched_document_ids: ["doc"], documents: [{ document_id: "doc", name: "route_agm_2025.pdf", sha256: "a".repeat(64), status: "SEARCHED", reason: null, total_chars: 100 }],
     passages: [{ id: "doc-1-10-40", document_id: "doc", name: "route_agm_2025.pdf", sha256: "a".repeat(64),
-      start: 10, end: 40, text: "Resolution(s) passed by Members" }],
+      start: 10, end: 10 + Array.from("Resolution(s) passed by Members").length, text: "Resolution(s) passed by Members" }],
     limitations: ["These excerpts have not been checked against law."],
   };
   const payload = conversationGetOkSchema.parse({ conversation: { conversation_id: "thread", title: "Q" }, messages: [

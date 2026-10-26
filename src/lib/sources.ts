@@ -52,7 +52,7 @@ export function toggleSource(chosen: readonly string[], id: string, bodies: read
 /** What choosing a source means, in words. Status is never carried by colour. */
 export function statusLine(b: SourceBody): string {
   if (!b.available) return b.reason ?? b.note;
-  if (b.id === "vault") return "Selected documents can support a review; they are not legal authority.";
+  if (b.id === "vault") return "Find excerpts in selected documents; they are not legal authority.";
   if (b.id === "held") return "Held law · exact passages and coverage limits";
   if (b.status === "available") return b.reason ?? b.note;
   switch (b.status) {
@@ -61,7 +61,7 @@ export function statusLine(b: SourceBody): string {
     case "CURRENT_ONLY":
       return "Current text only";
     case "CLIENT":
-      return "Your documents — not read by a research question";
+      return "Your documents — select files to search their text";
     default:
       return "Not held — will be refused, with the reason";
   }
