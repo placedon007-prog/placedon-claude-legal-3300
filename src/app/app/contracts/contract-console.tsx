@@ -48,16 +48,6 @@ export function ContractConsole() {
           aria-describedby={state.phase === "invalid" ? "text-error" : undefined}
         />
         <div className="row">
-          <label className="checkline" htmlFor="test_data">
-            <input id="test_data" name="test_data" type="checkbox" />
-            <span>
-              This is a <strong>test document</strong>, not a client contract. The model is
-              hosted in <span className="mono">UAE North</span>, which has not been confirmed
-              acceptable for client data.
-            </span>
-          </label>
-        </div>
-        <div className="row">
           <button type="submit" disabled={pending}>
             {pending ? "Reading…" : "Review"}
           </button>
@@ -71,6 +61,18 @@ export function ContractConsole() {
 
       {state.phase === "reviewed" ? (
         <Findings phase="reviewed" data={state.data} source={state.source} />
+      ) : null}
+      {state.phase === "refused" ? (
+        <section className="panel" role="status" aria-label="Review not sent">
+          <div className="panel-head">
+            <span className="register-label">Not sent · {state.code}</span>
+          </div>
+          <p>
+            <strong>This is not a finding.</strong> The contract was not sent to a model, so
+            nothing is known about it.
+          </p>
+          <p className="quoted" style={{ marginTop: "0.9rem" }}>{state.detail}</p>
+        </section>
       ) : null}
       {state.phase === "failed" ? (
         <section className="panel register-failure" role="alert" aria-label="Engine failure">

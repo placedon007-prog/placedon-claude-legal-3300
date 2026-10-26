@@ -140,3 +140,18 @@ test("signing out revokes the session at the gateway, with the person's own toke
     assert.deepEqual(seen, [{ url: "http://localhost:8021/v2/auth/logout", auth: "Bearer session-token" }]);
   } finally { globalThis.fetch = original; }
 });
+
+test("contract review sends no test_data, and a region refusal is data, not a schema failure", async () => {
+  const original = globalThis.fetch;
+  let sent: Record<string, unknown> = {};
+  globalThis.fetch = async (_url, init) => {
+    sent = JSON.parse(String(init?.body));
+    return Response.json({ status: "REFUSED", code: "NOT_PERMITTED", detail: "Nothing was sent." });
+  };
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key").reviewContract({ text: "A client contract." });
+    assert.equal("test_data" in sent, false, "the browser cannot attest that a document is a fixture");
+    assert.ok(result.ok);
+    assert.deepEqual(result.data, { status: "REFUSED", code: "NOT_PERMITTED", detail: "Nothing was sent." });
+  } finally { globalThis.fetch = original; }
+});
