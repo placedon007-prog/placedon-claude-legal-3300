@@ -942,6 +942,12 @@ export const documentSummarySchema = z.object({
   limitations: z.array(z.string()).default([]),
 });
 export type DocumentSummary = z.infer<typeof documentSummarySchema>;
+/** A summary that cannot run until an operator acts (no permitted provider, or the provider
+ *  refused access) -- backend `_summary_unavailable`. Rides the turn's metadata, so a
+ *  reopened conversation shows the same state. */
+export const documentSummaryUnavailableSchema = z.object({ reason: z.string(), retryable: z.boolean() });
+export type DocumentSummaryUnavailable = z.infer<typeof documentSummaryUnavailableSchema>;
+
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
@@ -949,6 +955,7 @@ export const turnMetadataSchema = z.object({
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
   document_evidence: documentEvidenceSchema.optional(),
   document_summary: documentSummarySchema.optional(),
+  document_summary_unavailable: documentSummaryUnavailableSchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 

@@ -17,8 +17,8 @@ import Link from "next/link";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
-import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { envelopeKind, failedRegister, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
@@ -142,7 +142,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} documentSummaryUnavailable={s.documentSummaryUnavailable} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -326,6 +326,7 @@ function Answered({
   sources,
   documentEvidence,
   documentSummary,
+  documentSummaryUnavailable,
   artifacts,
   onRetry,
   retryDisabled,
@@ -339,6 +340,7 @@ function Answered({
   sources?: SourceReport;
   documentEvidence?: DocumentEvidence;
   documentSummary?: DocumentSummary;
+  documentSummaryUnavailable?: DocumentSummaryUnavailable;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
@@ -395,6 +397,21 @@ function Answered({
         // Unparsed: verbatim. A reconstruction would be this app writing law.
         <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
       ) : null;
+
+  const failure = failedRegister(documentSummaryUnavailable);
+  if (kind === "failed" && !failure.retryable) {
+    // A known configuration/access block: a solid box, its own title, and no retry --
+    // retrying cannot help until an operator acts. Excerpts need no model, so say so.
+    return (
+      <div role="status" className="flex flex-col gap-2 rounded-card border border-fg p-4">
+        <p className="flex items-center gap-2 text-ui font-medium text-fg">{failure.title}</p>
+        {envelope.text_blocks.map((b, i) => (
+          <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
+        ))}
+        <p className="max-w-[68ch] text-body text-fg-2">You can still ask a specific question about the document: excerpts are found without a model and linked to their pages.</p>
+      </div>
+    );
+  }
 
   if (kind === "failed") {
     // FAILED is transport-only by the envelope's own schema: the dashed register.

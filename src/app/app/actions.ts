@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, DocumentSummaryUnavailable } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
@@ -42,6 +42,8 @@ export type TurnState =
       readonly documentEvidence?: DocumentEvidence;
       /** A review-draft summary of the attached document, beside the envelope. */
       readonly documentSummary?: DocumentSummary;
+      /** The summary cannot run until an operator acts: shown without a retry. */
+      readonly documentSummaryUnavailable?: DocumentSummaryUnavailable;
       readonly artifacts?: readonly ConversationArtifact[];
       /** The refusal/failure code the gateway returned beside the envelope (NO_MODEL,
        *  NOTHING_TRACED, NO_EVIDENCE…), so the screen can tell a model shortfall from an
@@ -140,6 +142,7 @@ export async function sendAction(input: {
     sources: data.metadata?.sources ?? data.sources,
     documentEvidence: data.metadata?.document_evidence ?? data.document_evidence,
     documentSummary: data.metadata?.document_summary,
+    documentSummaryUnavailable: data.metadata?.document_summary_unavailable,
     artifacts: data.metadata?.artifacts ?? [
       ...(data.draft_id ? [{ type: "draft" as const, id: data.draft_id, version: data.version }] : []),
       ...(data.grid_id ? [{ type: "review_table" as const, id: data.grid_id }] : []),
