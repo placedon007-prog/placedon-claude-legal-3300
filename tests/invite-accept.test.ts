@@ -44,3 +44,14 @@ test("a new password is checked before anything is sent", () => {
   assert.match(validateNewPassword("x".repeat(4097), "x".repeat(4097)) ?? "", /too long/);
   assert.equal(validateNewPassword("a long enough secret", "a long enough secret"), null);
 });
+
+test("a rate-limited attempt says so (nothing was sent on); a 400 shows the backend's rule", () => {
+  const limited = inviteAcceptOutcome({ ok: false, error: { kind: "bad_request", route: GATEWAY_ROUTES.invitesAccept,
+    message: "The gateway answered 429.", status: 429, retryAfterSeconds: 7 } });
+  assert.deepEqual(limited, { kind: "error",
+    message: "Too many attempts from your network. Wait about 7 seconds and try again. This attempt was not submitted." });
+  // Recorded: the public route answers BAD_REQUEST refusals with HTTP 400 (gateway/app.py).
+  const rule = inviteAcceptOutcome({ ok: false, error: { kind: "bad_request", route: GATEWAY_ROUTES.invitesAccept,
+    message: "The gateway answered 400.", status: 400, detail: "a password must be at least 12 characters" } });
+  assert.deepEqual(rule, { kind: "error", message: "a password must be at least 12 characters" });
+});
