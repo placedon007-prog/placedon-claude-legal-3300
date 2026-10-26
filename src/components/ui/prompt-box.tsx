@@ -14,6 +14,7 @@
  *  - Tools: Research (default), Draft (a removable chip), and two that open their screens.
  *  - Unavailable voice input is omitted; no browser speech API handles legal questions.
  */
+import { isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Globe2, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
@@ -175,7 +176,7 @@ export function PromptBox(props: PromptBoxProps) {
 
   const needsDocumentSource = requiresDocumentSource(tool, files.length + docs.length, chosen);
   const vaultAvailable = sources.bodies.some((body) => body.id === "vault" && body.selectable);
-  const waitingForFiles = files.some((f) => f.state !== "stored" || f.readiness !== "INGESTED");
+  const waitingForFiles = files.some((f) => f.state !== "stored" || !isReadableVaultState(f.readiness));
   const overAttachmentLimit = files.length + docs.length > 20;
   const webReady = tool === "web" && value.trim().length >= 3 && value.trim().length <= 800
     && webConsent && files.length === 0 && docs.length === 0;
@@ -208,7 +209,7 @@ export function PromptBox(props: PromptBoxProps) {
   function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!canSend) return;
-    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && f.readiness === "INGESTED" ? [f.id] : [])])], webMode, webConsent);
+    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && isReadableVaultState(f.readiness) ? [f.id] : [])])], webMode, webConsent);
     setDocs([]);
     setFiles([]);
     setValue("");
@@ -401,7 +402,7 @@ export function PromptBox(props: PromptBoxProps) {
 
       {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">A document is not ready to read. Wait for processing, or remove it to send without it.</p> : null}
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
-      {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Ask about wording in these files to find matching excerpts. Excerpts are not a complete summary or a legal review.</p> : null}
+      {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Ask a specific question for matching excerpts, or request a summary when document summarization is available. Review either against the original.</p> : null}
       {tool === "web" && (files.length > 0 || docs.length > 0) ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}
       <div className="flex flex-wrap items-center gap-0.5 px-1">
         {tool !== "web" ? <>
@@ -455,7 +456,7 @@ export function PromptBox(props: PromptBoxProps) {
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("research"); setToolsOpen(false); }} />
               <ToolRow icon={Globe2} name="Research the public web" note={tool === "web" ? "selected" : "Only your question is sent"}
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("web"); setWebConsent(false); setToolsOpen(false); ref.current?.focus(); }} />
-              <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "ask something first"} disabled={!canDraft}
+              <ToolRow icon={PenLine} name="Draft from this thread" note={canDraft ? undefined : "needs a fully answered, cited reply as the latest answer"} disabled={!canDraft}
                 onPick={() => { manuallyChosenTool.current = true; setSuggestedWeb(false); setTool("draft"); setToolsOpen(false); ref.current?.focus(); }} />
               <ToolRow icon={FileCheck2} name="Check a document" href="/app/document-check" note="opens its screen" />
               <ToolRow icon={FileSearch} name="Review a contract" href="/app/contracts" note="opens its screen" />
@@ -577,11 +578,13 @@ function ToolRow({
   onPick?: () => void;
 }) {
   const cls =
-    "flex min-h-11 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-body text-fg transition-colors duration-150 hover:bg-wash-2 disabled:cursor-not-allowed disabled:text-fg-3 disabled:hover:bg-transparent";
+    "flex min-h-11 w-full flex-wrap items-center gap-x-2.5 gap-y-0.5 rounded-md px-2.5 py-1.5 text-left text-body text-fg transition-colors duration-150 hover:bg-wash-2 disabled:cursor-not-allowed disabled:text-fg-3 disabled:hover:bg-transparent";
+  // The row wraps: a note too long to sit beside the name drops to its own line instead of
+  // squeezing the name onto two lines in the narrow tools menu.
   const inner = (
     <>
       <Icon className="size-4 flex-none" aria-hidden />
-      <span>{name}</span>
+      <span className="whitespace-nowrap">{name}</span>
       {note ? <span className="ml-auto text-caption text-fg-3">{note}</span> : null}
     </>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { readDraftList } from "./actions";
+import { sessionKind } from "@/lib/auth/config";
 
 export const metadata: Metadata = { title: "Drafts", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ function updatedAt(value: string) {
     : new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-/** Tenant-scoped metadata inbox. Draft bodies are fetched only after opening an item. */
+/** The author's own metadata inbox (028). Draft bodies are fetched only after opening an item. */
 export default async function DraftsPage({
   searchParams,
 }: {
@@ -26,7 +27,7 @@ export default async function DraftsPage({
       <div className="drafts-heading">
         <div>
           <h2>Drafts</h2>
-          <p className="meta">Shared with this workspace. Open a draft to read and revise its text.</p>
+          <p className="meta">Your drafts. Open a draft to read and revise its text.</p>
         </div>
         <Link className="primary drafts-new-link" href="/app">Research then draft</Link>
       </div>
@@ -52,8 +53,8 @@ export default async function DraftsPage({
         </div>
       ) : (
         <>
-          <p className="meta">Showing drafts for this tenant. A shared passcode does not identify an individual author.</p>
-          <ul className="drafts-list" aria-label="Drafts in this workspace">
+          {sessionKind() === "passcode" ? <p className="meta">A shared passcode does not identify an individual author.</p> : null}
+          <ul className="drafts-list" aria-label="Your drafts">
             {result.data.drafts.map((draft) => (
               <li key={draft.draft_id}>
                 <Link href={`/app/drafts/${encodeURIComponent(draft.draft_id)}`}>
@@ -80,7 +81,7 @@ export default async function DraftsPage({
           )}
         </>
       )}
-      <p className="meta hosting-note">Draft templates remain DRAFT until approved by a lawyer. This shared-passcode prototype cannot verify individual reviewer identity.</p>
+      <p className="meta hosting-note">Draft templates remain DRAFT until approved by a lawyer.{sessionKind() === "passcode" ? " This shared-passcode prototype cannot verify individual reviewer identity." : ""}</p>
     </>
   );
 }

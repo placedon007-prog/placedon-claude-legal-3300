@@ -25,6 +25,7 @@ import type {
   ConversationSend,
   AskResponse,
   AuthLoginOk,
+  AuthLogoutOk,
   Calendar,
   CancelAck,
   Decision,
@@ -369,6 +370,11 @@ export class MockGateway implements GatewayProvider {
   readonly name = "mock" as const;
   /** One decision per item per run, as the gateway's UNIQUE constraint enforces. */
   private readonly decided = new Set<string>();
+
+  async authLogout(): Promise<EngineResult<AuthLogoutOk>> {
+    // The fixture demo has no backend session to revoke.
+    return engineOk({ status: "ok", revoked: false });
+  }
 
   async authLogin(): Promise<EngineResult<AuthLoginOk>> {
     // Fail closed, never a silent success: the fixture demo has no account table and must
@@ -993,8 +999,8 @@ export class MockGateway implements GatewayProvider {
           ? `${hits.length} passage(s) across ${searchable.length} searchable document(s).`
           : `no passage matched. ${unsearchable} document(s) could not be looked at, so ` +
             "this is not 'no document matches'.",
-      scope: "tenant",
-      scope_note: "searched the whole firm's vault, not one matter.",
+      scope: "accessible",
+      scope_note: "searched every document you can read: the matters you are a member of, your own unfiled files, and files shared with the firm.",
     });
   }
 
@@ -1446,7 +1452,7 @@ export class MockGateway implements GatewayProvider {
     return engineOk({
       drafts: [],
       next_cursor: null,
-      scope: "tenant",
+      scope: "author",
       note: "Demo mode does not retain drafts between requests.",
     });
   }

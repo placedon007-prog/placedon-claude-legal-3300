@@ -5,7 +5,9 @@ import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
   askResponseSchema,
-  authLoginOkSchema,
+  authLoginSchema,
+  authLogoutOkSchema,
+  type AuthLogoutOk,
   calendarSchema,
   draftDiffSchema,
   draftExportSchema,
@@ -48,7 +50,7 @@ import {
   runTraceSchema,
   uploadResponseSchema,
   type AskResponse,
-  type AuthLoginOk,
+  type AuthLogin,
   type CancelAck,
   type Decision,
   type DocumentResponse,
@@ -88,10 +90,14 @@ export class HttpGateway implements GatewayProvider {
 
   private readonly origin: string;
   private readonly key: string;
+  /** Set when `key` is a person's session (accounts mode): a 401 then means the session
+   *  ended -- revoked, expired, or signed out elsewhere -- and the caller ends it here too. */
+  private readonly onUnauthorized?: () => void;
 
-  constructor(origin: string, key: string) {
+  constructor(origin: string, key: string, options?: { onUnauthorized?: () => void }) {
     this.origin = origin;
     this.key = key;
+    this.onUnauthorized = options?.onUnauthorized;
     let parsed: URL;
     try {
       parsed = new URL(origin);
@@ -112,7 +118,7 @@ export class HttpGateway implements GatewayProvider {
     route: GatewayRoute,
     path: string,
     schema: S,
-    init?: { method?: "GET" | "POST"; body?: unknown },
+    init?: { method?: "GET" | "POST"; body?: unknown; clientAddress?: string | null },
   ): Promise<EngineResult<z.infer<S>>> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -124,6 +130,9 @@ export class HttpGateway implements GatewayProvider {
         headers: {
           Authorization: `Bearer ${this.key}`,
           ...(init?.body ? { "content-type": "application/json" } : {}),
+          // The end user's address, for the gateway's per-client sign-in lockout and rate
+          // limit. The gateway believes it only because this request carries our key.
+          ...(init?.clientAddress ? { "X-Placedon-Client-Address": init.clientAddress } : {}),
         },
         body: init?.body ? JSON.stringify(init.body) : undefined,
         signal: controller.signal,
@@ -160,14 +169,18 @@ export class HttpGateway implements GatewayProvider {
     if (!response.ok) {
       // A 4xx REFUSAL from a verb is a product state, not a transport failure: the
       // pipeline decided, and the decision has a code. It is parsed, not discarded.
+      // 409 is the vault's CONFLICT ("these bytes are already in this workspace's vault"):
+      // read as a transport failure it showed "Upload interrupted, try again", and trying
+      // again could never succeed.
       const refusal = refusalSchema.safeParse(body);
-      if (refusal.success && (response.status === 404 || response.status === 503)) {
+      if (refusal.success && [404, 409, 503].includes(response.status)) {
         return engineOk(refusal.data as z.infer<S>);
       }
       const detail =
         typeof body === "object" && body && "detail" in body
           ? String((body as { detail: unknown }).detail)
           : undefined;
+      if (response.status === 401) this.onUnauthorized?.();
       return engineFail({
         kind:
           response.status === 401
@@ -182,7 +195,9 @@ export class HttpGateway implements GatewayProvider {
         retryAfterSeconds: Math.min(60, Math.max(1, Number(response.headers.get("retry-after")) || 5)),
         message:
           response.status === 401
-            ? "The gateway rejected this deployment's API key."
+            ? this.onUnauthorized
+              ? "Your session has ended. Sign in again."
+              : "The gateway rejected this deployment's API key."
             : `The gateway answered ${response.status}.`,
         detail,
       });
@@ -210,15 +225,22 @@ export class HttpGateway implements GatewayProvider {
     });
   }
 
-  authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>> {
+  authLogin(input: { email: string; password: string; clientAddress?: string | null }): Promise<EngineResult<AuthLogin>> {
     // Public, pre-session verb. The deployment-key header `call` adds is ignored by the
     // backend for this verb; the credential is the email+password in the POST body, sent
     // over the same https/loopback-enforced origin as every other call. The password is
     // never placed in the URL, and the returned token is never logged by this module.
-    return this.call(GATEWAY_ROUTES.authLogin, GATEWAY_ROUTES.authLogin, authLoginOkSchema, {
+    return this.call(GATEWAY_ROUTES.authLogin, GATEWAY_ROUTES.authLogin, authLoginSchema, {
       method: "POST",
       body: { email: input.email, password: input.password },
+      clientAddress: input.clientAddress,
     });
+  }
+
+  /** Revoke the caller's own backend session (auth.logout). Only meaningful with a session. */
+  authLogout(): Promise<EngineResult<AuthLogoutOk>> {
+    return this.call(GATEWAY_ROUTES.authLogout, GATEWAY_ROUTES.authLogout, authLogoutOkSchema,
+      { method: "POST", body: {} });
   }
 
   reviewContract(input: {

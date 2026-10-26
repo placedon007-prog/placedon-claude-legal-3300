@@ -50,3 +50,27 @@ export function gatewayConfiguration(env: Readonly<Record<string, string | undef
   }
   return { mode: "live", origin, key };
 }
+
+/**
+ * The bearer the gateway sees, and so WHO the backend believes is calling.
+ *
+ * Accounts mode: the signed-in person's own backend session token. The deployment key
+ * maps to one actor, and every per-matter grant, owner check and job identity on the
+ * backend is decided by that actor, so sending the key for everyone would make every
+ * lawyer the same person. No session means no credential, never a fallback to the key.
+ *
+ * Passcode mode has no per-person identity at all (see session.ts) and keeps the key.
+ */
+export function gatewayCredential(
+  env: Readonly<Record<string, string | undefined>>,
+  accountSessionToken: string | undefined,
+): string | null {
+  if (authMode(env) === "accounts") return accountSessionToken?.trim() || null;
+  return env.PLACEDON_GATEWAY_KEY?.trim() || null;
+}
+
+/** What kind of session the console is serving, so it never describes one as another. */
+export function sessionKind(env: Readonly<Record<string, string | undefined>> = process.env): "demo" | "passcode" | "account" {
+  if (demoModeEnabled(env)) return "demo";
+  return authMode(env) === "accounts" ? "account" : "passcode";
+}

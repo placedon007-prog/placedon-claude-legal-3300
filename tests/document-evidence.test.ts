@@ -116,3 +116,12 @@ test("coverage labels describe displayed excerpts without implying complete revi
   assert.match(documentCoverageLabel(covered)!, /do not establish a complete review or verification/);
   assert.equal(documentCoverageLabel({ ...covered, status: "UNAVAILABLE" }), null);
 });
+
+
+test("page anchors and limitations for twenty partial files survive parsing", () => {
+  const payload = { ...evidence, limitations: Array.from({ length: 26 }, (_, i) => `Scope limitation ${i}`),
+    passages: [{ ...evidence.passages[0], page: 2 }] };
+  assert.equal(documentEvidenceSchema.parse(payload).passages[0].page, 2);
+  assert.equal(documentEvidenceSchema.parse(payload).limitations.length, 26);
+  assert.equal(documentEvidenceSchema.safeParse({ ...payload, limitations: Array(27).fill("x") }).success, false);
+});

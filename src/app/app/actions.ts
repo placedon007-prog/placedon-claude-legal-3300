@@ -1,17 +1,19 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, DocumentSummaryUnavailable } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { loginGateway } from "@/lib/gateway/provider";
 import { accountLoginOutcome } from "@/lib/auth/account-login";
+import { trustedClientAddress } from "@/lib/auth/login-limiter";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
@@ -38,8 +40,12 @@ export type TurnState =
   | { readonly phase: "answered"; readonly conversationId: string; readonly envelope: Envelope;
       readonly draftId: string | null;
       readonly sources?: SourceReport;
+      /** Excerpts from the user's attached documents, beside the envelope (never inside it). */
       readonly documentEvidence?: DocumentEvidence;
+      /** A review-draft summary of the attached document, beside the envelope. */
       readonly documentSummary?: DocumentSummary;
+      /** The summary cannot run until an operator acts: shown without a retry. */
+      readonly documentSummaryUnavailable?: DocumentSummaryUnavailable;
       readonly artifacts?: readonly ConversationArtifact[];
       /** The refusal/failure code the gateway returned beside the envelope (NO_MODEL,
        *  NOTHING_TRACED, NO_EVIDENCE…), so the screen can tell a model shortfall from an
@@ -137,7 +143,8 @@ export async function sendAction(input: {
     region: null,
     sources: data.metadata?.sources ?? data.sources,
     documentEvidence: data.metadata?.document_evidence ?? data.document_evidence,
-    documentSummary: data.metadata?.document_summary ?? data.document_summary,
+    documentSummary: data.metadata?.document_summary,
+    documentSummaryUnavailable: data.metadata?.document_summary_unavailable,
     artifacts: data.metadata?.artifacts ?? [
       ...(data.draft_id ? [{ type: "draft" as const, id: data.draft_id, version: data.version }] : []),
       ...(data.grid_id ? [{ type: "review_table" as const, id: data.grid_id }] : []),
@@ -357,7 +364,7 @@ export async function reviewAction(
         message: `That file is larger than ${MAX_UPLOAD_BYTES / 1_048_576} MB.`,
       };
     }
-    const extracted = extractText(file.name, new Uint8Array(await file.arrayBuffer()));
+    const extracted = await extractText(file.name, new Uint8Array(await file.arrayBuffer()));
     if (!extracted.ok) return { phase: "invalid", message: extracted.reason };
     raw = extracted.text;
     source = {
@@ -458,7 +465,7 @@ export async function reviewDocumentAction(
         message: `That file is larger than ${MAX_UPLOAD_BYTES / 1_048_576} MB.`,
       };
     }
-    const extracted = extractText(file.name, new Uint8Array(await file.arrayBuffer()));
+    const extracted = await extractText(file.name, new Uint8Array(await file.arrayBuffer()));
     if (!extracted.ok) return { phase: "invalid", message: extracted.reason };
     raw = extracted.text;
     source = { name: file.name, kind: extracted.kind, bytes: file.size, sha256: null };
@@ -685,7 +692,8 @@ export async function accountLoginAction(
     return { error: "Sign-in is not available right now. Try again shortly.", notice: null };
   }
 
-  const outcome = accountLoginOutcome(await gateway.authLogin({ email, password }));
+  const clientAddress = trustedClientAddress(await headers(), process.env.APP_TRUSTED_CLIENT_IP_HEADER);
+  const outcome = accountLoginOutcome(await gateway.authLogin({ email, password, clientAddress }));
   if (outcome.kind === "error") {
     return { error: outcome.message, notice: null };
   }
@@ -694,6 +702,12 @@ export async function accountLoginAction(
 }
 
 export async function logoutAction(): Promise<void> {
+  // Accounts mode: revoke the session at the gateway first, so a copied token stops
+  // working now rather than at its expiry. A failed revoke still signs this browser out.
+  const { sessionKind } = await import("@/lib/auth/config");
+  if (sessionKind() === "account" && (await hasSession())) {
+    try { await (await getGateway()).authLogout(); } catch { /* signing out locally anyway */ }
+  }
   await endSession();
   redirect("/login");
 }

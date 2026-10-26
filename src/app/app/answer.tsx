@@ -14,10 +14,12 @@
  */
 import * as React from "react";
 import Link from "next/link";
+import { DocumentEvidenceAnswer } from "./document-evidence-answer";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { documentTypeLabel, passageLocation } from "@/lib/document-location";
+import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { envelopeKind, failedRegister, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
@@ -25,10 +27,6 @@ import { executionCostLabel, modelCalls } from "@/lib/conversation";
 import { loadExecutionDetails, type ExecutionDetails, type TurnState, type WebResearchState } from "./actions";
 import { ResearchState } from "./web-research-result";
 import { ResearchActivity } from "./research-activity";
-import { DocumentEvidenceAnswer } from "./document-evidence-answer";
-import { DocumentSummaryAnswer } from "./document-summary-answer";
-import { shouldRenderDocumentSummary } from "@/lib/document-summary";
-import { documentEvidenceLabel } from "@/lib/document-evidence";
 
 export interface Turn {
   readonly key: string;
@@ -145,7 +143,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} sources={s.sources} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} documentSummaryUnavailable={s.documentSummaryUnavailable} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -158,8 +156,6 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
   const executionRequest = React.useRef(false);
   const state = turn.state;
   const envelope = state?.phase === "answered" ? state.envelope : null;
-  const documentEvidence = state?.phase === "answered" ? state.documentEvidence : undefined;
-  const documentSummary = state?.phase === "answered" ? state.documentSummary : undefined;
   const report = state?.phase === "answered" ? state.sources : undefined;
   const citationGroups = envelope
     ? linkCitations(parseAnswer(envelope.text_blocks[0]?.text ?? "").sentences, envelope.citations).groups
@@ -185,12 +181,12 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
 
   const questionStatus = state === null ? "Sending" : state.phase === "invalid" || state.phase === "signed_out" ? "Not sent" : "Recorded";
   const scopeStatus = turn.request ? "Recorded" : report ? "Partly recorded" : "Not recorded";
-  const searchStatus = documentEvidence || report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
-  const evidenceStatus = documentSummary ? `${documentSummary.coverage.length} summarized document${documentSummary.coverage.length === 1 ? "" : "s"}` : documentEvidence ? `${documentEvidence.passages.length} document excerpts` : envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
+  const searchStatus = report || envelope?.searched ? "Reported" : state?.phase === "queued" ? "Waiting" : state?.phase === "failed" ? "Unknown" : "Not recorded";
+  const evidenceStatus = envelope ? `${envelope.citations.length} citations` : state?.phase === "queued" ? "Waiting" : "Not available";
   const answerStatus = state === null
     ? "Sending"
     : state.phase === "answered"
-      ? state.documentEvidence ? documentEvidenceLabel(state.documentEvidence) : statusLabel(envelopeKind(state.envelope.status))
+      ? statusLabel(envelopeKind(state.envelope.status))
       : state.phase === "queued"
         ? statusLabel("queued")
         : state.phase === "failed"
@@ -201,9 +197,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
               ? "Not sent · session ended"
               : state.message;
 
-  const searchDetails = documentEvidence
-    ? `${documentEvidence.searched_document_ids.length} attached documents searched. ${documentEvidenceLabel(documentEvidence)}.`
-    : report
+  const searchDetails = report
     ? report.report.map((item) => {
         const name = traceSourceName(item.id);
         if (item.outcome === "SEARCHED_EMPTY") return `${name}: searched; no matches`;
@@ -234,9 +228,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
       ? `${fileCount} file${fileCount === 1 ? " was" : "s were"} selected; per-file processing results are not available yet.`
       : "No file processing result is recorded for this turn.";
 
-  const citationDetails = documentEvidence
-    ? `${documentEvidence.passages.length} exact document excerpts are shown above. They are saved extraction snapshots, not statutory citations or official verification.`
-    : envelope
+  const citationDetails = envelope
     ? envelope.citations.length
       ? Array.from(new Set(envelope.citations.map((citation) => `${citation.instrument}${citation.provision ? `, ${citation.provision}` : ""}`))).join(" · ")
       : "The answer returned no citations. A source search alone does not show that evidence supported the answer."
@@ -335,6 +327,7 @@ function Answered({
   sources,
   documentEvidence,
   documentSummary,
+  documentSummaryUnavailable,
   artifacts,
   onRetry,
   retryDisabled,
@@ -348,16 +341,13 @@ function Answered({
   sources?: SourceReport;
   documentEvidence?: DocumentEvidence;
   documentSummary?: DocumentSummary;
+  documentSummaryUnavailable?: DocumentSummaryUnavailable;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
   onOpenSource: (group: CitationGroup, activeId: string | null, conversationId: string) => void;
   onDraft?: () => void;
 }) {
-  if (shouldRenderDocumentSummary(documentSummary, envelope)) {
-    return <DocumentSummaryAnswer summary={documentSummary} />;
-  }
-  if (documentEvidence) return <DocumentEvidenceAnswer evidence={documentEvidence} />;
   // A case-routed turn is never a statute answer and never an abstention: it gets its own
   // render path so the two registers can never bleed into each other on screen.
   if (envelope.resource === "case") {
@@ -409,6 +399,21 @@ function Answered({
         <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
       ) : null;
 
+  const failure = failedRegister(documentSummaryUnavailable);
+  if (kind === "failed" && !failure.retryable) {
+    // A known configuration/access block: a solid box, its own title, and no retry --
+    // retrying cannot help until an operator acts. Excerpts need no model, so say so.
+    return (
+      <div role="status" className="flex flex-col gap-2 rounded-card border border-fg p-4">
+        <p className="flex items-center gap-2 text-ui font-medium text-fg">{failure.title}</p>
+        {envelope.text_blocks.map((b, i) => (
+          <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
+        ))}
+        <p className="max-w-[68ch] text-body text-fg-2">You can still ask a specific question about the document: excerpts are found without a model and linked to their pages.</p>
+      </div>
+    );
+  }
+
   if (kind === "failed") {
     // FAILED is transport-only by the envelope's own schema: the dashed register.
     return (
@@ -456,6 +461,8 @@ function Answered({
         </section>
       ) : null}
 
+      {documentSummary ? <DocumentSummaryView summary={documentSummary} /> : null}
+      {documentEvidence ? <DocumentEvidenceAnswer evidence={documentEvidence} /> : null}
       {sources ? <Searched report={sources} /> : null}
       {envelope.files.length ? <ul aria-label="Documents considered" className="space-y-1 border-t border-line pt-3 text-ui text-fg-2">
         {envelope.files.map((file) => <li key={file.file_id}>{file.name} — {file.state === "READ" ? "read" : file.state === "READING" ? "still processing" : "not read"}{file.reason ? ` · ${file.reason}` : ""}</li>)}
@@ -623,7 +630,7 @@ function ResultLine({ envelope }: { envelope: Envelope }) {
       {envelope.task === "RESEARCH_QUESTION" ? "Research" : "Result"} as at <span className="font-mono">{envelope.as_of}</span>
       {envelope.task === "REVIEW_CONTRACT" ? <> · Playbook DRAFT — not approved by a lawyer</> : null}
       {envelope.run_id ? <> · Recorded model and region details are in the answer trace</> : null}
-      · Not legal advice
+      {" · Not legal advice"}
     </p>
   );
 }
@@ -723,4 +730,62 @@ function StatusIcon({ kind }: { kind: StatusKind }) {
     case "pending":
       return <span className="pulse-dot mr-0! flex-none" aria-hidden />;
   }
+}
+
+/**
+ * Excerpts from the user's own attached documents, quoted verbatim with their character
+ * range. They are the user's text, not law and not an answer: the envelope's own words say
+ * so above them, and nothing here re-labels or summarises them.
+ */
+/**
+ * A review-draft summary of the user's own document. Each point shows the exact quote it
+ * rests on and where (page when the PDF carried one); an open question shows that the
+ * document does NOT answer it. The document type is the backend's rules classifier.
+ */
+function DocumentSummaryView({ summary }: { summary: DocumentSummary }) {
+  return (
+    <section aria-label="Summary of your document" className="flex flex-col gap-4 border-t border-line pt-3">
+      <h3 className="text-ui font-medium text-fg">Summary draft — for lawyer review</h3>
+      {summary.coverage.map((c) => (
+        <p key={c.document_id} className="text-body text-fg-2">
+          {c.name} · Document type: {documentTypeLabel(c.doc_class)}
+          <span className="block font-mono text-caption text-fg-3">classified by rules, not by the model</span>
+        </p>
+      ))}
+      {summary.sections.length === 0 ? (
+        <p className="text-body text-fg-2">No summary point passed the quotation checks, so none is shown.</p>
+      ) : summary.sections.map((section) => (
+        <div key={section.heading} className="flex flex-col gap-2">
+          <h4 className="text-body font-medium text-fg">{section.heading}</h4>
+          <ul className="flex flex-col gap-3">
+            {section.items.map((item, i) => (
+              <li key={i} className="flex flex-col gap-1">
+                <p className="text-read text-fg">{item.text}</p>
+                {item.basis === "NOT_STATED_IN_DOCUMENT" ? (
+                  <p className="font-mono text-caption text-fg-3">not stated in the document — no quote</p>
+                ) : item.quotes.length === 0 ? (
+                  // The backend never sends a quoted point without a quote; if one arrives,
+                  // it must not read as supported.
+                  <p className="font-mono text-caption text-fg-3">no supporting quote was returned — treat as unverified</p>
+                ) : item.quotes.map((q, j) => (
+                  <figure key={j} className="flex flex-col gap-1">
+                    <blockquote className="whitespace-pre-line rounded-chip bg-wash px-3 py-2 text-body text-fg-2">{q.quote}</blockquote>
+                    <figcaption className="font-mono text-caption text-fg-3">{q.document_name} · <span className="whitespace-nowrap">{passageLocation(q)}</span></figcaption>
+                  </figure>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {summary.withheld_items > 0 ? (
+        <p className="text-caption text-fg-3">
+          {summary.withheld_items} point{summary.withheld_items === 1 ? " was" : "s were"} withheld: no exact quote supported {summary.withheld_items === 1 ? "it" : "them"}.
+        </p>
+      ) : null}
+      {summary.limitations.length ? <ul className="flex flex-col gap-1 text-caption text-fg-3">
+        {summary.limitations.map((l) => <li key={l}>{l}</li>)}
+      </ul> : null}
+    </section>
+  );
 }

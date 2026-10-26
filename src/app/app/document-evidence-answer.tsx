@@ -11,7 +11,7 @@ export function DocumentEvidenceAnswer({ evidence }: { evidence: DocumentEvidenc
       {found ? <ol aria-label="Document excerpts" className="space-y-6">
         {evidence.passages.map((passage, index) => (
           <li key={passage.id} className="min-w-0 space-y-2">
-            <h4 className="text-body font-medium break-words text-fg">{index + 1}. {passage.name}</h4>
+            <h4 className="text-body font-medium break-words text-fg">{index + 1}. {passage.name}{passage.page ? ` · Page ${passage.page}` : ""}</h4>
             <blockquote className="max-w-[68ch] text-read whitespace-pre-wrap break-words text-fg">{passage.text}</blockquote>
             <details className="text-ui text-fg-2">
               <summary className="flex min-h-11 cursor-pointer items-center rounded-chip underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">Excerpt details</summary>

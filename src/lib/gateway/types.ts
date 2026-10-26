@@ -53,11 +53,25 @@ export const authLoginOkSchema = z.object({
   token: z.string().min(1),
   /** ISO-8601, the backend's session expiry. Drives the cookie's lifetime verbatim. */
   expires_at: z.string().min(1),
-  actor: z.string().min(1),
+  /** The backend's field is `actor_id` (gateway/verbs.py `_auth_login`). This schema said
+   *  `actor`, so every correct password failed validation as "Couldn't reach sign-in". */
+  actor_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional(),
   role: accountRoleSchema,
   email: z.string().optional(),
 });
 export type AuthLoginOk = z.infer<typeof authLoginOkSchema>;
+/** auth.login answers HTTP 200 for its refusals too (INVALID_CREDENTIALS, LOCKED_OUT with
+ *  retry_after seconds) -- gateway/accounts.py. Only the rate limiter answers 429. */
+export const authLoginSchema = z.union([
+  authLoginOkSchema,
+  z.object({ status: z.literal("REFUSED"), code: z.string(), detail: z.string().optional(),
+    retry_after: z.number().optional() }),
+]);
+export type AuthLogin = z.infer<typeof authLoginSchema>;
+/** auth.logout: the caller's own session, revoked at the gateway. */
+export const authLogoutOkSchema = z.object({ status: z.string(), revoked: z.boolean().optional() });
+export type AuthLogoutOk = z.infer<typeof authLogoutOkSchema>;
 
 /* ── review_contract ──────────────────────────────────────────────────────── */
 
@@ -656,7 +670,9 @@ export type DraftSummary = z.infer<typeof draftSummarySchema>;
 export const draftListSchema = z.object({
   drafts: z.array(draftSummarySchema),
   next_cursor: z.string().nullable(),
-  scope: z.literal("tenant"),
+  /** 028 (backend PR #117): drafts are their author's, so the inbox lists the caller's own.
+   *  This said "tenant", and the page failed with schema_mismatch from that merge on. */
+  scope: z.literal("author"),
   note: z.string(),
 });
 export type DraftList = z.infer<typeof draftListSchema>;
@@ -922,8 +938,9 @@ export const documentEvidenceSchema = z.object({
     id: evidenceId, document_id: evidenceId, name: evidenceText(512), sha256: z.string().regex(/^[a-f0-9]{64}$/),
     start: z.number().int().nonnegative().max(200000), end: z.number().int().positive().max(200000),
     text: evidenceText(1200).refine((text) => text.length > 0),
+    page: z.number().int().positive().nullable().optional(),
   })).max(8),
-  limitations: z.array(evidenceText(2000)).max(20),
+  limitations: z.array(evidenceText(2000)).max(26),
 }).superRefine((value, ctx) => {
   const documents = new Map(value.documents.map((document) => [document.document_id, document]));
   const searched = new Set(value.searched_document_ids);
@@ -950,78 +967,50 @@ export const documentEvidenceSchema = z.object({
 });
 export type DocumentEvidence = z.infer<typeof documentEvidenceSchema>;
 
-/** Model-written document summary; quote locators are checked by the backend and remain review material. */
+
+/**
+ * A review-draft summary of the user's own document (backend `gateway/document_summary.py`,
+ * `document_summary.v1`). Every point but an open question carries an exact quote; the
+ * document TYPE is the backend's rules classifier, never the model. It rides the turn's
+ * metadata like the excerpts above.
+ */
 export const documentSummarySchema = z.object({
   schema: z.literal("document_summary.v1"),
-  status: z.enum(["SUMMARY_DRAFT_READY", "NO_VALID_ITEMS"]),
+  status: z.string(),
   sections: z.array(z.object({
-    heading: z.enum(["Purpose", "Key facts", "Obligations", "Dates", "Issues to review"]),
+    heading: z.string(),
     items: z.array(z.object({
-      text: evidenceText(1000).refine((text) => text.trim().length > 0),
-      passage_ids: z.array(evidenceId).min(1).max(3),
+      text: z.string(),
+      basis: z.string().optional(),
       quotes: z.array(z.object({
-        passage_id: evidenceId, document_id: evidenceId, document_name: evidenceText(512),
-        sha256: z.string().regex(/^[a-f0-9]{64}$/),
-        start: z.number().int().nonnegative().max(200000),
-        end: z.number().int().positive().max(200000),
-        quote: evidenceText(1200).refine((text) => text.trim().length > 0),
-      })).min(1).max(3),
-    })).max(20),
-  })).max(5),
+        quote: z.string(), document_name: z.string(),
+        start: z.number().int(), end: z.number().int(),
+        page: z.number().int().nullable().optional(),
+      })).default([]),
+    })).default([]),
+  })).default([]),
   coverage: z.array(z.object({
-    document_id: evidenceId, name: evidenceText(512), sha256: z.string().regex(/^[a-f0-9]{64}$/),
-    total_chars: z.number().int().positive().max(24000),
-    total_passages: z.number().int().positive().max(64),
-    shown_passages: z.number().int().nonnegative().max(64),
-    excerpt_chars: z.number().int().nonnegative().max(24000),
-    excerpt_coverage_ratio: z.number().min(0).max(1),
-  })).min(1).max(3),
-  withheld_items: z.number().int().nonnegative().max(20),
-  limitations: z.array(evidenceText(2000)).max(20),
-}).superRefine((value, ctx) => {
-  const docs = new Map(value.coverage.map((doc) => [doc.document_id, doc]));
-  if (docs.size !== value.coverage.length) {
-    ctx.addIssue({ code: "custom", message: "Summary coverage contains duplicate documents" });
-  }
-  let items = 0;
-  const headings = new Set<string>();
-  for (const section of value.sections) {
-    if (headings.has(section.heading)) {
-      ctx.addIssue({ code: "custom", message: "Summary contains duplicate sections" });
-    }
-    headings.add(section.heading);
-  }
-  for (const section of value.sections) for (const item of section.items) {
-    items += 1;
-    const quotedPassages = new Set(item.quotes.map((quote) => quote.passage_id));
-    if (item.passage_ids.length !== new Set(item.passage_ids).size
-      || item.passage_ids.length !== quotedPassages.size
-      || item.passage_ids.some((id) => !quotedPassages.has(id))) {
-      ctx.addIssue({ code: "custom", message: "Summary quote references do not match item passage IDs" });
-    }
-    for (const quote of item.quotes) {
-      const doc = docs.get(quote.document_id);
-      if (!doc || doc.name !== quote.document_name || doc.sha256 !== quote.sha256
-        || quote.end > (doc?.total_chars ?? 0) || quote.end - quote.start < Array.from(quote.quote).length) {
-        ctx.addIssue({ code: "custom", message: "Summary quote locator does not match its document" });
-      }
-    }
-  }
-  if (items > 20) ctx.addIssue({ code: "custom", message: "Summary contains too many items" });
-  if ((value.status === "SUMMARY_DRAFT_READY") !== items > 0) ctx.addIssue({ code: "custom", message: "Summary status does not match its items" });
-  for (const doc of value.coverage) {
-    if (doc.shown_passages > doc.total_passages || doc.excerpt_chars > doc.total_chars
-      || Math.abs(doc.excerpt_coverage_ratio - doc.excerpt_chars / doc.total_chars) > 0.000001) {
-      ctx.addIssue({ code: "custom", message: "Summary coverage is inconsistent" });
-    }
-  }
+    document_id: z.string(), name: z.string(),
+    doc_class: z.string().nullable().optional(), class_reason: z.string().nullable().optional(),
+  })).default([]),
+  withheld_items: z.number().int().default(0),
+  limitations: z.array(z.string()).default([]),
 });
 export type DocumentSummary = z.infer<typeof documentSummarySchema>;
+/** A summary that cannot run until an operator acts (no permitted provider, or the provider
+ *  refused access) -- backend `_summary_unavailable`. Rides the turn's metadata, so a
+ *  reopened conversation shows the same state. */
+export const documentSummaryUnavailableSchema = z.object({ reason: z.string(), retryable: z.boolean() });
+export type DocumentSummaryUnavailable = z.infer<typeof documentSummaryUnavailableSchema>;
+
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
-  sources: sourceReportSchema.optional(), document_evidence: documentEvidenceSchema.optional(), document_summary: documentSummarySchema.optional(), document_summary_pending: z.boolean().optional(), artifacts: z.array(artifactSchema).default([]),
+  sources: sourceReportSchema.optional(), artifacts: z.array(artifactSchema).default([]),
   files: envelopeSchema.shape.files.optional(), as_of: z.string().optional(),
+  document_evidence: documentEvidenceSchema.optional(),
+  document_summary: documentSummarySchema.optional(),
+  document_summary_unavailable: documentSummaryUnavailableSchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 
@@ -1037,7 +1026,6 @@ export const conversationSendOkSchema = z.object({
   sources: sourceReportSchema.optional(),
   metadata: turnMetadataSchema.optional(),
   document_evidence: documentEvidenceSchema.optional(),
-  document_summary: documentSummarySchema.optional(),
   note: z.string().optional(),
   /**
    * The refusal code, as a sibling of the envelope — NOT inside it (answer_envelope.v1 is

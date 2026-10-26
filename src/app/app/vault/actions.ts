@@ -66,7 +66,7 @@ export async function vaultUploadAction(
   }
   // `extractText` returns a named refusal rather than throwing, and never returns empty
   // text as success — an empty contract reviews as a contract with no clauses in it.
-  const extracted = extractText(
+  const extracted = await extractText(
     parsedName.data,
     new Uint8Array(await file.arrayBuffer()),
   );
