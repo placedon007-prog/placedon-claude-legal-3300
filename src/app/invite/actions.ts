@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+import { trustedClientAddress } from "@/lib/auth/login-limiter";
 import { redirect } from "next/navigation";
 import { loginGateway } from "@/lib/gateway/provider";
 import { inviteAcceptOutcome, validateNewPassword } from "@/lib/auth/invite-accept";
@@ -22,7 +24,8 @@ export async function acceptInviteAction(_prev: InviteState, formData: FormData)
   } catch {
     return { error: "Invites are not available right now. Try again shortly." };
   }
-  const outcome = inviteAcceptOutcome(await gateway.invitesAccept({ token, password }));
+  const clientAddress = trustedClientAddress(await headers(), process.env.APP_TRUSTED_CLIENT_IP_HEADER);
+  const outcome = inviteAcceptOutcome(await gateway.invitesAccept({ token, password, clientAddress }));
   if (outcome.kind === "error") return { error: outcome.message };
   redirect("/login?invited=1");
 }
