@@ -30,7 +30,7 @@ import type {
   CitationGet,
   MattersList,
   SourcesList,
-  AuthLoginOk,
+  AuthLogin,
   AuthLogoutOk,
   SourcesSearch,
   WebResearch,
@@ -53,7 +53,7 @@ export interface GatewayProvider {
    * it is reached through `loginGateway()`, never `getGateway()`. The token in the success
    * result is a credential: it goes straight into an httpOnly cookie and is never logged.
    */
-  authLogin(input: { email: string; password: string }): Promise<EngineResult<AuthLoginOk>>;
+  authLogin(input: { email: string; password: string; clientAddress?: string | null }): Promise<EngineResult<AuthLogin>>;
   /** Revoke the signed-in person's own backend session (accounts mode sign-out). */
   authLogout(): Promise<EngineResult<AuthLogoutOk>>;
   ask(question: string): Promise<EngineResult<AskResponse>>;

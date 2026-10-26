@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
@@ -12,6 +13,7 @@ import { authenticatePasscode, endSession, hasSession, startAccountSession, star
 import { safeNextPath } from "@/lib/auth/next-path";
 import { loginGateway } from "@/lib/gateway/provider";
 import { accountLoginOutcome } from "@/lib/auth/account-login";
+import { trustedClientAddress } from "@/lib/auth/login-limiter";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
@@ -690,7 +692,8 @@ export async function accountLoginAction(
     return { error: "Sign-in is not available right now. Try again shortly.", notice: null };
   }
 
-  const outcome = accountLoginOutcome(await gateway.authLogin({ email, password }));
+  const clientAddress = trustedClientAddress(await headers(), process.env.APP_TRUSTED_CLIENT_IP_HEADER);
+  const outcome = accountLoginOutcome(await gateway.authLogin({ email, password, clientAddress }));
   if (outcome.kind === "error") {
     return { error: outcome.message, notice: null };
   }
