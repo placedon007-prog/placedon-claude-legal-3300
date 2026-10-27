@@ -155,3 +155,23 @@ test("contract review sends no test_data, and a region refusal is data, not a sc
     assert.deepEqual(result.data, { status: "REFUSED", code: "NOT_PERMITTED", detail: "Nothing was sent." });
   } finally { globalThis.fetch = original; }
 });
+
+test("a draft CONFLICT (409) keeps its typed versions, so it is recognised as a conflict", async () => {
+  const { isConflict } = await import("../src/lib/gateway/types");
+  const original = globalThis.fetch;
+  // The exact shape gateway/verbs.py `_draft_revise` returns when base_version is stale.
+  globalThis.fetch = async () => Response.json({
+    status: "REFUSED", code: "CONFLICT",
+    detail: "this revision was based on version 1, but the draft is now at version 2.",
+    draft_id: "11111111-1111-4111-8111-111111111111", base_version: 1, latest_version: 2,
+  }, { status: 409 });
+  try {
+    const result = await new HttpGateway("http://localhost:8021", "fixture-key").draftRevise({
+      draftId: "11111111-1111-4111-8111-111111111111", baseVersion: 1, body: "my edit",
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) throw new Error("a 409 refusal is a product state, not a transport failure");
+    assert.ok(isConflict(result.data), "the typed conflict survives the HTTP layer");
+    assert.equal((result.data as { latest_version: number }).latest_version, 2);
+  } finally { globalThis.fetch = original; }
+});

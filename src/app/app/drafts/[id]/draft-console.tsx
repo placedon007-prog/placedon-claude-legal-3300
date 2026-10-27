@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   draftDiffAction,
   draftExportAction,
@@ -131,8 +132,25 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
     if (saved.phase === "saved") {
       setSavedVersion(saved.data.version);
       setUnsaved(false);
+    } else if (saved.phase === "conflict") {
+      // Whatever is in the editor was NOT saved, even if it was never edited: loading the
+      // newer version must keep it, as the button promises.
+      setUnsaved(true);
     }
   }
+  const latestNow = draft.versions[draft.versions.length - 1];
+  // The editor's text is STATE, not the textarea's default: React resets an uncontrolled
+  // form after its action runs, and a refused or conflicting save then wiped the person's
+  // edit back to the saved text. It follows a newly loaded version only when nothing here
+  // is unsaved.
+  const [text, setText] = useState(latestNow.body);
+  const [seenVersion, setSeenVersion] = useState(latestNow.version);
+  if (seenVersion !== latestNow.version) {
+    setSeenVersion(latestNow.version);
+    if (!unsaved) setText(latestNow.body);
+  }
+  const router = useRouter();
+  const [loading, startLoading] = useTransition();
   const [diff, diffAction, diffing] = useActionState(draftDiffAction, diffInitial);
   const [exported, exportAction, exporting] = useActionState(
     draftExportAction,
@@ -179,8 +197,8 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
           <input type="hidden" name="base_version" value={currentVersion} />
 
           <label htmlFor="body">Text</label>
-          <textarea id="body" name="body" rows={12} defaultValue={latest.body}
-                    onInput={() => setUnsaved(true)} />
+          <textarea id="body" name="body" rows={12} value={text}
+                    onChange={(event) => { setText(event.target.value); setUnsaved(true); }} />
 
           <button type="submit" disabled={saving} className="primary">
             {saving ? "Saving…" : `Save as version ${currentVersion + 1}`}
@@ -221,11 +239,28 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
                 </tr>
               </tbody>
             </table>
-            <p>{saved.data.detail}</p>
-            <p className="meta">
-              Nothing has been overwritten and nothing has been merged. Reload to read
-              version {saved.data.latest_version}, then revise from it.
+            <p>
+              Your text is still in the editor. Nothing has been overwritten and nothing has
+              been merged.
             </p>
+            {latest.version < saved.data.latest_version ? (
+              <button type="button" disabled={loading}
+                      onClick={() => startLoading(() => router.refresh())}>
+                {loading ? "Loading…" : `Load version ${saved.data.latest_version} and keep my text`}
+              </button>
+            ) : (
+              <>
+                <p>
+                  You are now revising from version {latest.version}. Saving creates
+                  version {latest.version + 1} with the text in the editor, replacing the
+                  wording below. Compare before you save.
+                </p>
+                <details open>
+                  <summary>Version {latest.version}, saved by someone else</summary>
+                  <pre className="csv-preview">{latest.body}</pre>
+                </details>
+              </>
+            )}
           </div>
         )}
         {saved.phase === "saved" && (
