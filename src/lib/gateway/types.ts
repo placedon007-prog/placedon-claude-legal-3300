@@ -766,8 +766,8 @@ export const draftExportSchema = z.object({
   approved: z.boolean(),
   note: z.string().optional(),
   text: z.string().optional(),
-  /** base64, for .docx. */
-  content_base64: z.string().optional(),
+  /** base64, for .docx. The backend names it `docx_base64` (gateway/verbs.py `_draft_export`). */
+  docx_base64: z.string().optional(),
 });
 export type DraftExport = z.infer<typeof draftExportSchema>;
 
