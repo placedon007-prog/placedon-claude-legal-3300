@@ -178,7 +178,14 @@ export class HttpGateway implements GatewayProvider {
       // again could never succeed.
       const refusal = refusalSchema.safeParse(body);
       if (refusal.success && [404, 409, 503].includes(response.status)) {
-        return engineOk(refusal.data as z.infer<S>);
+        // The route's own schema first: a typed refusal (draft.revise's CONFLICT carries
+        // base_version and latest_version) must keep its fields. Parsed with the generic
+        // refusal schema alone they were stripped, the conflict was no longer
+        // recognisable, and the console showed a bare "Refused: CONFLICT".
+        // Merged onto the refusal, so a route schema that happens to accept a refusal body
+        // (all-optional fields) adds what it knows without dropping `detail` or `code`.
+        const typed = schema.safeParse(body);
+        return engineOk((typed.success ? { ...refusal.data, ...(typed.data as object) } : refusal.data) as z.infer<S>);
       }
       const detail =
         typeof body === "object" && body && "detail" in body

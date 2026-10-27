@@ -91,7 +91,7 @@ try {
   await otherTab.close();
   await page.getByLabel('Text', { exact: true }).fill(`Synthetic note. ${marker}. Stale tab.`);
   await page.getByRole('button', { name: 'Save as version 3', exact: true }).click();
-  await page.getByText('Refused: CONFLICT', { exact: false }).waitFor();
+  await page.getByText('CONFLICT — someone else saved first', { exact: false }).waitFor();
   await page.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
   check(await button.isVisible(), 'after a conflicting save the button still offers version 2, the version this tab saved');
   await button.click();
