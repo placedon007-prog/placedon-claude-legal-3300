@@ -55,6 +55,8 @@ export const GATEWAY_ROUTES = {
   vaultStatus: "/v2/vault/status",
   vaultFind: "/v2/vault/find",
   vaultVerify: "/v2/vault/verify",
+  // `vault.retry` (backend #130): a FAILED document back to PENDING, its job requeued once.
+  vaultRetry: "/v2/vault/retry",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",

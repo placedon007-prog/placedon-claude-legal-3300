@@ -27,6 +27,7 @@ import {
   vaultListSchema,
   vaultUploadSchema,
   vaultVerifySchema,
+  vaultRetrySchema,
   documentCheckSchema,
   conversationSendSchema,
   sourcesListSchema,
@@ -77,6 +78,7 @@ import {
   type VaultStatus,
   type VaultUpload,
   type VaultVerify,
+  type VaultRetry,
   type DocumentCheck,
 } from "./types";
 
@@ -415,6 +417,11 @@ export class HttpGateway implements GatewayProvider {
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>> {
     return this.call(GATEWAY_ROUTES.vaultVerify, GATEWAY_ROUTES.vaultVerify,
       vaultVerifySchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  vaultRetry(input: { documentId: string }): Promise<EngineResult<VaultRetry>> {
+    return this.call(GATEWAY_ROUTES.vaultRetry, GATEWAY_ROUTES.vaultRetry,
+      vaultRetrySchema, { method: "POST", body: { document_id: input.documentId } });
   }
 
   conversationSend(input: {

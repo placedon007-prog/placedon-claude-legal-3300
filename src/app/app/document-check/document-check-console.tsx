@@ -111,7 +111,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         <p className="meta">Readable text is stored in Wall System before checking. The original file and its digital signature are not preserved by this upload. Do not upload client-confidential files to this shared-passcode prototype.</p>
         {uploading ? <p role="status">Storing and reading the document…</p> : null}
         {uploadProblem ? <p role="alert" className="form-error">{uploadProblem}</p> : null}
-        {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
+        {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "FAILED" ? "processing failed; retry it in Wall System" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
         {documentId && !selectedName ? <p role="status">Stored document selected: {documentId}</p> : null}
         {selectedName && readiness !== "INGESTED" && readiness !== "CANNOT_READ" ? <button type="button" disabled={refreshing || pending || uploading} onClick={async () => {
           setRefreshing(true);
@@ -179,7 +179,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         </div>
 
         <div className="row">
-          <button type="submit" disabled={pending || uploading || !documentId || readiness === "CANNOT_READ" || readiness === "PENDING" || readiness === "UNKNOWN"}>
+          <button type="submit" disabled={pending || uploading || !documentId || readiness === "CANNOT_READ" || readiness === "FAILED" || readiness === "PENDING" || readiness === "UNKNOWN"}>
             {pending ? "Checking…" : "Check document"}
           </button>
         </div>

@@ -4,15 +4,41 @@ import { isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
 import { Check, FileText, FolderOpen, RefreshCw, Search } from "lucide-react";
-import { browseVaultAction, type VaultBrowseResult } from "@/app/app/vault/actions";
+import { browseVaultAction, retryVaultDocumentAction, type VaultBrowseResult } from "@/app/app/vault/actions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type SelectedVaultFile = { id: string; sha256?: string; name: string };
 const PAGE_SIZE = 30;
+const NOTICE_MS = 15_000;
 const stateLabel: Record<string, string> = {
   INGESTED: "Ready to read", PENDING: "Processing", CANNOT_READ: "Needs a text layer",
-  PARTIAL: "Partly read", DELETED: "Deleted",
+  PARTIAL: "Partly read", DELETED: "Deleted", FAILED: "Processing failed",
 };
+
+/** FAILED (backend 030): reading stopped after its retries. One click queues it once more. */
+function RetryButton({ documentId, name, onDone }: { documentId: string; name: string; onDone: (message: string) => void }) {
+  const [busy, setBusy] = React.useState(false);
+  const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null);
+  async function retry() {
+    setBusy(true);
+    setMessage(null);
+    let result: { ok: boolean; message: string };
+    try { result = await retryVaultDocumentAction({ documentId }); }
+    catch { result = { ok: false, message: "The retry could not be sent. Nothing was changed; try again." }; }
+    // Success is announced by the LIST: the refresh replaces this FAILED row, and a message
+    // kept here would vanish with it before anyone could read it. The button stays disabled
+    // until then, so a second click cannot send a retry that is bound to be refused.
+    if (result.ok) { onDone(`${name}: ${result.message}`); return; }
+    setBusy(false);
+    setMessage({ ok: false, text: result.message });
+  }
+  return <span className="vault-retry">
+    <button type="button" className="vault-text-button" disabled={busy} aria-label={`Retry ${name}`} onClick={retry}>
+      {busy ? "Retrying…" : "Retry"}
+    </button>
+    {message && <span role={message.ok ? "status" : "alert"} className="text-caption text-fg-3">{message.text}</span>}
+  </span>;
+}
 
 /** Metadata only. Search is bounded on the server and stale responses never become rows. */
 export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity = 20, refreshKey = "" }: {
@@ -25,6 +51,15 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
   const [query, setQuery] = React.useState("");
   const [offset, setOffset] = React.useState(0);
   const [revision, refresh] = React.useReducer((n: number) => n + 1, 0);
+  // A retry's notice belongs to the list it was given in: another search, page or matter
+  // hides it, and it clears itself after NOTICE_MS so it cannot outlive what it describes.
+  const scope = JSON.stringify([matterId, query, offset]);
+  const [notice, setNotice] = React.useState<{ scope: string; text: string } | null>(null);
+  React.useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const key = JSON.stringify([matterId, query, offset, revision, refreshKey]);
   const [response, setResponse] = React.useState<{ key: string; result: VaultBrowseResult } | null>(null);
   React.useEffect(() => {
@@ -48,6 +83,8 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
         value={query} onChange={(e) => { setQuery(e.target.value); setOffset(0); }} />
       <button type="button" className="vault-icon-button" aria-label="Refresh stored files" onClick={refresh}><RefreshCw className="size-4" aria-hidden /></button>
     </div>
+    {/* Always present, so screen readers announce the text when it arrives. */}
+    <p role="status" className="text-caption text-fg-2">{notice?.scope === scope ? notice.text : ""}</p>
     <div className="vault-browser-list" aria-busy={!result}>
       {!result ? <p role="status" className="vault-browser-empty">Loading stored files…</p> : !result.ok ?
         <div role="alert" className="vault-browser-empty"><p>{result.message}</p><button type="button" className="vault-text-button" onClick={refresh}>Retry</button></div> :
@@ -64,7 +101,8 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
               aria-label={`${file.name} — ${label}`} className="vault-file-row" data-selected={checked}
               onClick={() => onToggle({ id: file.document_id, sha256: file.sha256, name: file.name })}>
               {content}<span className="vault-file-check" aria-hidden>{checked ? <Check className="size-3.5" /> : null}</span>
-            </button> : <div className="vault-file-row">{content}<Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link></div>}
+            </button> : <div className="vault-file-row">{content}{file.state === "FAILED" && <RetryButton documentId={file.document_id} name={file.name} onDone={(message) => { setNotice({ scope, text: message }); refresh(); }} />}
+              <Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link></div>}
           </li>;
         })}</ul>}
     </div>

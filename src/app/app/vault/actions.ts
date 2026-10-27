@@ -154,3 +154,29 @@ export async function browseVaultAction(input: { matterId: string | null; query?
   if (isRefusal(result.data)) return { ok: false, message: result.data.detail };
   return { ok: true, data: result.data };
 }
+
+export type VaultRetryResult = { ok: true; message: string } | { ok: false; message: string };
+
+/** What a person can do about each refusal, in words; the backend's codes are #130's. */
+const RETRY_REFUSALS: Record<string, string> = {
+  BYTES_MISSING: "The stored file is missing, so a retry would fail the same way. Upload the file again; that retries it.",
+  BUSY: "The work queue is full. Nothing was changed; try again in a minute.",
+  NOT_FOUND: "This document is not available to you.",
+  FORBIDDEN: "You can read this document but not retry it.",
+  NO_QUEUE: "Document processing is not running in this workspace, so nothing could read it again.",
+  CONFLICT: "This document is no longer marked as failed; it may already have been retried. Refresh the list.",
+};
+
+/** Read a FAILED document again (`vault.retry`). The backend refuses any other state. */
+export async function retryVaultDocumentAction(input: { documentId: string }): Promise<VaultRetryResult> {
+  if (!(await hasSession())) return { ok: false, message: "Your session has ended. Sign in to retry this document." };
+  const parsed = z.uuid().safeParse(input?.documentId);
+  if (!parsed.success) return { ok: false, message: "That is not a document id." };
+  const result = await (await getGateway()).vaultRetry({ documentId: parsed.data });
+  if (!result.ok) return { ok: false, message: "The retry could not be sent. Nothing was changed; try again." };
+  if (isRefusal(result.data)) {
+    // A fixed sentence for any code not mapped above: backend wording is for operators.
+    return { ok: false, message: RETRY_REFUSALS[result.data.code] ?? "This document could not be retried. Nothing was changed." };
+  }
+  return { ok: true, message: "Queued to be read again. It is not searchable until it has been read." };
+}
