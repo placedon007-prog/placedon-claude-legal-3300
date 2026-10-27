@@ -126,6 +126,8 @@ export interface GatewayProvider {
    * individually; the screen renders one line each and never a single real/fake badge.
    */
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>>;
+  /** Read a FAILED document again. Refused for any other state, so it never runs twice. */
+  vaultRetry(input: { documentId: string }): Promise<EngineResult<import("./types").VaultRetry>>;
   /**
    * The Document Check, end to end: verify a stored document, decide whether it is
    * still in force at `as_of`, and record the action a lawyer should take. A WRITE

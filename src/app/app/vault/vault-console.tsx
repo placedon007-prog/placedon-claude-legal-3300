@@ -28,6 +28,11 @@ const UPLOAD_STATE: Record<string, { glyph: string; word: string; meaning: strin
   },
   CANNOT_READ: { glyph: "✗", word: "CANNOT READ", meaning: "no text layer; OCR is blocked" },
   DELETED: { glyph: "–", word: "DELETED", meaning: "bytes destroyed; the record remains" },
+  FAILED: {
+    glyph: "!",
+    word: "FAILED",
+    meaning: "reading stopped after its retries; retry it from the file list, or upload it again",
+  },
 };
 
 function stateOf(key: string) {

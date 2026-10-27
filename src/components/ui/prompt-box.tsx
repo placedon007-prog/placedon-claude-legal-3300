@@ -536,7 +536,7 @@ function FileChip({ file, onRemove }: { file: Attached; onRemove: () => void }) 
           "· storing in Wall System…"
         ) : file.state === "stored" ? (
           <>
-            · {file.readiness === "INGESTED" ? "ready to read" : file.readiness === "PARTIAL" ? "partly read — open to inspect" : file.readiness === "CANNOT_READ" ? "cannot be read" : "processing"} ·{" "}
+            · {file.readiness === "INGESTED" ? "ready to read" : file.readiness === "PARTIAL" ? "partly read — open to inspect" : file.readiness === "CANNOT_READ" ? "cannot be read" : file.readiness === "FAILED" ? "processing failed — retry it in Wall System, then attach it again" : "processing"} ·{" "}
             <Link href={file.href} className="inline-flex min-h-11 items-center underline underline-offset-2">
               Open in Document Check
             </Link>

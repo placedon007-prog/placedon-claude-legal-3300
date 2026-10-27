@@ -51,6 +51,7 @@ import type {
   VaultStatus,
   VaultUpload,
   VaultVerify,
+  VaultRetry,
   DocumentCheck,
 } from "./types";
 
@@ -999,6 +1000,21 @@ export class MockGateway implements GatewayProvider {
       scope: "accessible",
       scope_note: "searched every document you can read: the matters you are a member of, your own unfiled files, and files shared with the firm.",
     });
+  }
+
+  async vaultRetry(input: { documentId: string }): Promise<EngineResult<VaultRetry>> {
+    const one = this.vault.get(input.documentId);
+    if (!one) {
+      return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: "no such document in this firm's vault" });
+    }
+    // The backend's guard: only FAILED moves, so a second retry changes nothing.
+    if (one.state !== "FAILED") {
+      return engineOk({ status: "REFUSED" as const, code: "CONFLICT",
+        detail: `Only a FAILED document can be retried; this one is ${one.state}. Nothing was changed.` });
+    }
+    one.state = "PENDING";
+    return engineOk({ document_id: input.documentId, name: one.name, state: "PENDING" as const, retried: true as const,
+      note: "Queued to be read again. PENDING is not INGESTED: nothing is searchable until a worker has read it." });
   }
 
   async vaultVerify(input: {

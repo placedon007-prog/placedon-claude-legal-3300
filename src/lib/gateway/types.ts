@@ -456,6 +456,17 @@ export const vaultVerifyOkSchema = z.object({
 export const vaultVerifySchema = z.union([vaultVerifyOkSchema, verbRefusalSchema]);
 export type VaultVerify = z.infer<typeof vaultVerifySchema>;
 
+/** `vault.retry`: a FAILED document queued to be read again (backend 030, #130). */
+export const vaultRetryOkSchema = z.object({
+  document_id: z.string(),
+  name: z.string().nullish(),
+  state: z.literal("PENDING"),
+  retried: z.literal(true),
+  note: z.string().optional(),
+});
+export const vaultRetrySchema = z.union([vaultRetryOkSchema, verbRefusalSchema]);
+export type VaultRetry = z.infer<typeof vaultRetrySchema>;
+
 /* ── document.check (T3: verify → validity → action, recorded) ─────────────── */
 
 /**
