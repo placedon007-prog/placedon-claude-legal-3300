@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   draftDiffAction,
   draftExportAction,
@@ -10,6 +10,7 @@ import {
   type ExportState,
 } from "../actions";
 import type { DraftVersion, DraftVersions } from "@/lib/gateway/types";
+import { DocxDownload } from "./docx-download";
 
 const draftInitial: DraftState = { phase: "idle" };
 const diffInitial: DiffState = { phase: "idle" };
@@ -118,6 +119,20 @@ function Slots({ version }: { version: DraftVersion }) {
 
 export function DraftConsole({ draft, account = false }: { draft: DraftVersions; account?: boolean }) {
   const [saved, reviseAction, saving] = useActionState(draftReviseAction, draftInitial);
+  // What the Word download needs: the last version THIS tab saved, and whether the text has
+  // changed since. Updated while rendering when `saved` changes (React's "adjust state on a
+  // prop change" pattern), so a later refused or conflicting save neither rolls the download
+  // back to an older version nor invents an unsaved edit.
+  const [seenSave, setSeenSave] = useState(saved);
+  const [savedVersion, setSavedVersion] = useState<number | null>(null);
+  const [unsaved, setUnsaved] = useState(false);
+  if (seenSave !== saved) {
+    setSeenSave(saved);
+    if (saved.phase === "saved") {
+      setSavedVersion(saved.data.version);
+      setUnsaved(false);
+    }
+  }
   const [diff, diffAction, diffing] = useActionState(draftDiffAction, diffInitial);
   const [exported, exportAction, exporting] = useActionState(
     draftExportAction,
@@ -128,6 +143,7 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
   // After a successful save the latest version is the one just written. The base sent with
   // the NEXT edit follows it, so a second save from this tab is not a stale one.
   const currentVersion = saved.phase === "saved" ? saved.data.version : latest.version;
+  const downloadVersion = savedVersion ?? latest.version;
 
   return (
     <>
@@ -163,7 +179,8 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
           <input type="hidden" name="base_version" value={currentVersion} />
 
           <label htmlFor="body">Text</label>
-          <textarea id="body" name="body" rows={12} defaultValue={latest.body} />
+          <textarea id="body" name="body" rows={12} defaultValue={latest.body}
+                    onInput={() => setUnsaved(true)} />
 
           <button type="submit" disabled={saving} className="primary">
             {saving ? "Saving…" : `Save as version ${currentVersion + 1}`}
@@ -295,6 +312,7 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
             {exporting ? "Building…" : "Export text"}
           </button>
         </form>
+        <DocxDownload draftId={draft.draft_id} version={downloadVersion} unsaved={unsaved} />
         {exported.phase === "failed" && <Failure error={exported.error} />}
         {exported.phase === "exported" && (
           <div role="status">
