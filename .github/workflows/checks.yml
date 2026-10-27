@@ -1,0 +1,42 @@
+# Lint, types, unit tests and a production build on every pull request and push to main.
+# Needs no secrets: the build runs in demo mode with a throwaway session secret, so no
+# gateway is contacted and no key exists. The browser tests in tests/*-browser.mjs need a
+# real gateway and PostgreSQL and are run against a disposable workspace, not here.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - name: Route types (RouteContext) for the type check
+        run: npx next typegen
+      - run: npm run typecheck
+      - run: npm test
+      - name: Production build
+        run: npm run build
+        env:
+          PLACEDON_DEMO_MODE: "true"
+          APP_PASSCODE: ci-only-not-a-secret
+          APP_SESSION_SECRET: ci-only-session-secret-not-a-secret-0123456789
