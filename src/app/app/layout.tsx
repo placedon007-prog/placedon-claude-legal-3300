@@ -6,6 +6,7 @@ import { sessionKind } from "@/lib/auth/config";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConsoleSidebar } from "./console-sidebar";
 import { ConsoleNotice } from "./console-notice";
+import { FileDropGuard } from "@/components/file-drop-guard";
 import "./app.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <TooltipProvider delayDuration={300}>
+      <FileDropGuard />
       <div className="console md:flex">
         <Suspense fallback={null}>
           <ConsoleSidebar passcode={passcode} account={account} />

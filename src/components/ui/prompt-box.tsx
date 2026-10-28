@@ -14,7 +14,7 @@
  *  - Tools: Research (default), Draft (a removable chip), and two that open their screens.
  *  - Unavailable voice input is omitted; no browser speech API handles legal questions.
  */
-import { isReadableVaultState } from "@/lib/vault-state";
+import { attachmentNotice, isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Globe2, Paperclip, Upload, PenLine, Scale, SlidersHorizontal, X } from "lucide-react";
@@ -26,6 +26,7 @@ import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { requiresDocumentSource } from "@/lib/document-evidence";
 import { mentionMatches, type MentionItem } from "@/lib/sources";
 import { suggestsCurrentPublicResearch } from "@/lib/public-web-intent";
+import { isFileDrag } from "@/lib/file-drop";
 import { cn } from "@/lib/utils";
 import { VaultPicker, type SelectedVaultFile } from "@/components/ui/vault-browser";
 
@@ -43,7 +44,10 @@ export type DocumentLookup =
   | { readonly ok: false; readonly message: string };
 
 export interface PromptBoxProps {
-  onSubmit: (text: string, tool: ComposerTool, fileIds: readonly string[], webMode: WebMode, webConsent: boolean) => void;
+  onSubmit: (text: string, tool: ComposerTool, fileIds: readonly string[], webMode: WebMode, webConsent: boolean,
+    documents: readonly SelectedVaultFile[]) => void;
+  /** Documents the previous question used, shown attached and removable for the next one. */
+  carried?: readonly SelectedVaultFile[];
   checkDocument?: (id: string) => Promise<{ state: string; note: string }>;
   matterLocked?: boolean;
   onAttach?: (file: File) => Promise<AttachOutcome>;
@@ -96,6 +100,16 @@ type Attached = { key: string; name: string } & (
   | { state: "error"; message: string }
 );
 
+type CarriedFile = SelectedVaultFile & { carried?: boolean };
+
+/** Every document a send includes, once each, with its name: vault picks, then ready uploads. */
+function sentDocuments(docs: readonly CarriedFile[], files: readonly Attached[]): SelectedVaultFile[] {
+  const out = new Map<string, SelectedVaultFile>();
+  for (const d of docs) out.set(d.id, { id: d.id, name: d.name, ...(d.sha256 ? { sha256: d.sha256 } : {}) });
+  for (const f of files) if (f.state === "stored" && isReadableVaultState(f.readiness) && !out.has(f.id)) out.set(f.id, { id: f.id, name: f.name });
+  return [...out.values()];
+}
+
 /** The "@query" being typed just before the caret, or null. */
 function mentionAt(text: string, caret: number): { query: string; start: number } | null {
   const m = /(^|\s)@([^\s@]{0,40})$/.exec(text.slice(0, caret));
@@ -106,6 +120,7 @@ export function PromptBox(props: PromptBoxProps) {
   const {
     onSubmit, onAttach, pending = false, canDraft = false, tool, onToolChange: setTool,
     sources, chosen, onToggleSource, onRetrySources, matters, matterId, onMatter, findDocuments, checkDocument, matterLocked, composerRef, className,
+    carried,
   } = props;
   const hydrated = React.useSyncExternalStore(subscribeReady, readyInBrowser, readyOnServer);
   const ref = React.useRef<HTMLTextAreaElement>(null);
@@ -124,7 +139,8 @@ export function PromptBox(props: PromptBoxProps) {
   const [webConsent, setWebConsent] = React.useState(false);
   const [toolsOpen, setToolsOpen] = React.useState(false);
   const [files, setFiles] = React.useState<Attached[]>([]);
-  const [docs, setDocs] = React.useState<SelectedVaultFile[]>([]);
+  const [dropping, setDropping] = React.useState(false);
+  const [docs, setDocs] = React.useState<CarriedFile[]>(() => (carried ?? []).map((d) => ({ ...d, carried: true })));
   const [mention, setMention] = React.useState<{ query: string; start: number } | null>(null);
   const [active, setActive] = React.useState(0);
   const [found, setFound] = React.useState<{ query: string; result: DocumentLookup } | null>(null);
@@ -209,8 +225,10 @@ export function PromptBox(props: PromptBoxProps) {
   function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!canSend) return;
-    onSubmit(value.trim(), tool, [...new Set([...docs.map((d) => d.id), ...files.flatMap((f) => f.state === "stored" && isReadableVaultState(f.readiness) ? [f.id] : [])])], webMode, webConsent);
-    setDocs([]);
+    const sent = sentDocuments(docs, files);
+    onSubmit(value.trim(), tool, sent.map((d) => d.id), webMode, webConsent, sent);
+    // Kept for the follow-up: the gateway answers only from the files sent with each message.
+    setDocs(tool === "web" ? [] : sent.map((d) => ({ ...d, carried: true })));
     setFiles([]);
     setValue("");
     setWebConsent(false);
@@ -284,8 +302,18 @@ export function PromptBox(props: PromptBoxProps) {
   return (
     <form
       onSubmit={submit}
+      onDragOver={(event) => { if (isFileDrag(event)) { event.preventDefault(); if (onAttach && !dropping) setDropping(true); } }}
+      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropping(false); }}
+      onDrop={(event) => {
+        if (!isFileDrag(event)) return;
+        event.preventDefault();
+        setDropping(false);
+        void attach(event.dataTransfer.files);
+      }}
+      data-dropping={dropping || undefined}
       className={cn(
         "relative flex flex-col rounded-composer border border-line-2 bg-ground p-2 shadow-float transition-colors duration-150 focus-within:border-fg",
+        dropping && "border-fg border-dashed",
         className,
       )}
     >
@@ -316,11 +344,14 @@ export function PromptBox(props: PromptBoxProps) {
           {docs.map((d) => (
             <Tip
               key={d.id}
-              label="Selected for this request. With Your documents enabled, Ask can find exact excerpts in readable document text. It does not verify the document as legal authority."
+              label={d.carried
+                ? "Kept from your last question, so a follow-up is answered from this document. Remove it to ask about the law alone."
+                : "Selected for this request. With Your documents enabled, Ask can find exact excerpts in readable document text. It does not verify the document as legal authority."}
             >
               <span className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-chip border border-line-2 bg-wash pr-1 pl-2.5 text-ui text-fg">
                 <FileText className="size-3.5 flex-none" aria-hidden />
                 <span className="truncate">{d.name}</span>
+                {d.carried ? <span className="flex-none text-caption text-fg-3">kept</span> : null}
                 <Link href={`/app/document-check?doc=${encodeURIComponent(d.id)}`} className="text-fg-2 underline underline-offset-2">
                   Check
                 </Link>
@@ -328,7 +359,7 @@ export function PromptBox(props: PromptBoxProps) {
                   type="button"
                   onClick={() => setDocs((all) => all.filter((x) => x.id !== d.id))}
                   className="grid size-11 place-items-center rounded-chip text-fg-2 hover:bg-wash-2 hover:text-fg"
-                  aria-label={`Remove ${d.name}`}
+                  aria-label={d.carried ? `Remove ${d.name}, kept from your last question` : `Remove ${d.name}`}
                 >
                   <X className="size-3.5" aria-hidden />
                 </button>
@@ -400,7 +431,8 @@ export function PromptBox(props: PromptBoxProps) {
         className="pb-input min-h-12 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-fg shadow-none placeholder:text-fg-3 focus-visible:ring-0"
       />
 
-      {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">A document is not ready to read. Wait for processing, or remove it to send without it.</p> : null}
+      {docs.some((d) => d.carried) && tool !== "web" ? <p className="px-3 pb-2 text-caption text-fg-3">Documents from your last question stay attached for this one. Remove them to ask about the law alone.</p> : null}
+      {waitingForFiles ? <p role="status" className="px-3 pb-2 text-caption text-fg-2">{attachmentNotice(files)}</p> : null}
       {overAttachmentLimit ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Attach at most 20 files. Remove a file before sending.</p> : null}
       {tool === "research" && (docs.length > 0 || files.length > 0) ? <p className="px-3 pb-2 text-caption text-fg-3">Ask a specific question for matching excerpts, or request a summary when document summarization is available. Review either against the original.</p> : null}
       {tool === "web" && (files.length > 0 || docs.length > 0) ? <p role="alert" className="px-3 pb-2 text-caption text-fg-2">Remove attached files before searching the public web.</p> : null}

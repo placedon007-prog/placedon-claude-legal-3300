@@ -1,4 +1,10 @@
+"use client";
+
+import * as React from "react";
+import { waitedLabel } from "@/lib/conversation";
+
 type ActivityKind = "sending" | "queued" | "web";
+const TICK_MS = 1000;
 
 const COPY: Record<ActivityKind, { title: string; detail: string }> = {
   sending: {
@@ -16,8 +22,14 @@ const COPY: Record<ActivityKind, { title: string; detail: string }> = {
 };
 
 /** Motion is decorative; the text remains meaningful when animation is reduced or disabled. */
-export function ResearchActivity({ kind, note }: { kind: ActivityKind; note?: string }) {
+export function ResearchActivity({ kind, note, since }: { kind: ActivityKind; note?: string; since?: number }) {
   const copy = COPY[kind];
+  const [now, setNow] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    if (since === undefined) return;
+    const timer = window.setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [since]);
   return (
     <div className="research-activity" role="status" aria-live="polite" aria-atomic="true">
       <div className="research-book" aria-hidden="true">
@@ -30,6 +42,10 @@ export function ResearchActivity({ kind, note }: { kind: ActivityKind; note?: st
       <div className="min-w-0">
         <p className="text-body font-medium text-fg">{copy.title}</p>
         <p className="mt-0.5 text-ui text-fg-2">{copy.detail}{note ? ` ${note}` : ""}</p>
+        {since !== undefined && now !== null ? (
+          // Outside the live region's text on purpose: a per-second change would be read aloud every second.
+          <p className="mt-0.5 font-mono text-caption text-fg-3" aria-hidden="true">{waitedLabel(now - since)}</p>
+        ) : null}
       </div>
     </div>
   );
