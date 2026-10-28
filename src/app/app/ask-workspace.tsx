@@ -43,9 +43,35 @@ async function lookupDocuments(query: string): Promise<DocumentLookup> {
   return { ok: false, message: result.phase === "refused" ? result.detail : "Document search is temporarily unavailable. Try again." };
 }
 
-export function AskWorkspace({ initialConversationId, initialTurns, initialMatterId = null,
+type AskWorkspaceProps = React.ComponentProps<typeof AskWorkspaceInner>;
+
+/**
+ * Owns WHEN the workspace starts fresh. The page used to key the workspace by `?c=`, so the
+ * workspace's own address change after a first answer (`/app` -> `/app?c=<id>`) re-rendered the
+ * page under a new key and remounted it: the just-sent turn lost its task, files and matter,
+ * and Retry re-ran a draft as research with no files. The inner workspace now ADOPTS its new
+ * conversation before changing the address, so that render matches and nothing remounts;
+ * opening a different conversation, or a new one, still starts fresh.
+ */
+export function AskWorkspace(props: Omit<AskWorkspaceProps, "onAdopt">) {
+  // `seen` is the last conversation the PAGE asked for; `adopted` is the one the workspace is
+  // showing. Only a change in what the page asks for can start fresh, and only when it is not
+  // the conversation the workspace already adopted.
+  const [state, setState] = React.useState({ generation: 0, seen: props.initialConversationId, adopted: props.initialConversationId });
+  if (props.initialConversationId !== state.seen) {
+    const fresh = props.initialConversationId !== state.adopted;
+    setState({ generation: state.generation + (fresh ? 1 : 0), seen: props.initialConversationId, adopted: props.initialConversationId });
+  }
+  const onAdopt = React.useCallback((id: string) => setState((current) => ({ ...current, adopted: id })), []);
+  return <AskWorkspaceInner key={state.generation} {...props} onAdopt={onAdopt} />;
+}
+
+function AskWorkspaceInner({ initialConversationId, initialTurns, initialMatterId = null,
   title = "New conversation", demo = false, sharedPasscode = false, initialHistory = null, loadProblem, composer: initialContext,
+  onAdopt,
 }: {
+  /** Called with a new conversation's id before the address changes to it. */
+  onAdopt: (conversationId: string) => void;
   initialHistory?: MatterHistory | null;
   demo?: boolean;
   sharedPasscode?: boolean;
@@ -187,6 +213,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         setMatterId(request.matterId);
         rememberThread(state.conversationId, text);
         rememberThreadSources(state.conversationId, request.sources);
+        onAdopt(state.conversationId);
         window.history.replaceState(null, "", `/app?c=${encodeURIComponent(state.conversationId)}`);
       }
     } catch {

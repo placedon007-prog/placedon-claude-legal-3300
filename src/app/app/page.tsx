@@ -16,13 +16,12 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   // matter membership is enforced, so the shared-passcode warning would be untrue there.
   const sharedPasscode = !demo && gateEnabled() && sessionKind() === "passcode";
   if (!c) {
-    return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
+    return <AskWorkspace demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
   }
   const loaded = await loadThread(c);
   if (loaded.phase === "loaded") {
     return (
       <AskWorkspace
-        key={c}
         initialHistory={loaded.matterId ? await loadMatterHistory(loaded.matterId) : null}
         demo={demo}
         sharedPasscode={sharedPasscode}
@@ -42,5 +41,5 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         ? "That thread is not on this gateway — it may have been started against a different deployment. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
-  return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
+  return <AskWorkspace demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
 }
