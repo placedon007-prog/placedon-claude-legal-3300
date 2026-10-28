@@ -1,7 +1,7 @@
 import { docxToText, DocxError } from "./docx";
 import { pdfToText, PdfError } from "./pdf";
 
-export { looksLikeProse, indicTextLayerGarbled, PAGE_BREAK } from "./pdf";
+export { looksLikeProse, looksLikeShortProse, indicTextLayerGarbled, PAGE_BREAK } from "./pdf";
 export { docxToText, pdfToText, DocxError, PdfError };
 
 /** 10 MB. A contract is words; anything larger is a scan, which has no text layer. */

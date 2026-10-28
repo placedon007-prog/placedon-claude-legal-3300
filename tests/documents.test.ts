@@ -103,10 +103,15 @@ test("a .pdf that is not a PDF is refused on its magic bytes", async () => {
   if (!r.ok) assert.match(r.reason, /%PDF-/);
 });
 
-test("a PDF with no readable stream refuses and names OCR", async () => {
-  const r = await extractText("scan.pdf", new TextEncoder().encode("%PDF-1.7\nno streams here\n"));
+test("a file that starts like a PDF but cannot be opened is called damaged, not a scan", async () => {
+  // This test used to expect "needs OCR": a damaged file was told to get OCR it does not need.
+  const r = await extractText("broken.pdf", new TextEncoder().encode("%PDF-1.7\nno streams here\n"));
   assert.equal(r.ok, false);
-  if (!r.ok) assert.match(r.reason, /needs OCR/);
+  if (!r.ok) {
+    assert.match(r.reason, /could not be opened/);
+    assert.match(r.reason, /damaged/);
+    assert.doesNotMatch(r.reason, /OCR|scan/);
+  }
 });
 
 test("the prose gate accepts a contract and rejects a font dump", () => {
