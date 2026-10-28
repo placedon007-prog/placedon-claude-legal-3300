@@ -125,3 +125,11 @@ test("page anchors and limitations for twenty partial files survive parsing", ()
   assert.equal(documentEvidenceSchema.parse(payload).limitations.length, 26);
   assert.equal(documentEvidenceSchema.safeParse({ ...payload, limitations: Array(27).fill("x") }).success, false);
 });
+
+test("a follow-up's history query survives parsing so the reader can be shown it", () => {
+  // Regression: an unknown key was stripped, leaving the disclosure only in a collapsed list.
+  const parsed = documentEvidenceSchema.parse({ ...evidence, history_query: "What does the termination clause say?" });
+  assert.equal(parsed.history_query, "What does the termination clause say?");
+  assert.equal(documentEvidenceSchema.parse(evidence).history_query, undefined, "absent on a first question");
+  assert.equal(documentEvidenceSchema.safeParse({ ...evidence, history_query: "x".repeat(501) }).success, false, "bounded like the backend's 500");
+});

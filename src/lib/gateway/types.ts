@@ -962,6 +962,8 @@ export const documentEvidenceSchema = z.object({
     page: z.number().int().positive().nullable().optional(),
   })).max(8),
   limitations: z.array(evidenceText(2000)).max(26),
+  /** Present when the backend read this follow-up together with the previous user question. */
+  history_query: evidenceText(500).optional(),
 }).superRefine((value, ctx) => {
   const documents = new Map(value.documents.map((document) => [document.document_id, document]));
   const searched = new Set(value.searched_document_ids);
