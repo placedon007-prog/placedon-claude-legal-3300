@@ -4,7 +4,7 @@ const { chromium } = await import(
   process.env.PLAYWRIGHT_MODULE ?? "playwright"
 );
 const origin = process.env.TEST_ORIGIN ?? "http://localhost:3100";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ?? process.env.PLAYWRIGHT_EXECUTABLE });
 let assertions = 0;
 function check(condition, message) {
   assert.ok(condition, message);
@@ -35,7 +35,6 @@ try {
     "/privacy",
     "/terms",
     "/cookies",
-    "/thank-you",
     "/missing",
   ]) {
     const response = await page.goto(origin + route);

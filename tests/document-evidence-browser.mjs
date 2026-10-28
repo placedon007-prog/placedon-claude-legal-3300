@@ -7,7 +7,7 @@ const passcode = process.env.TEST_PASSCODE;
 assert.ok(passcode, 'TEST_PASSCODE required; use an isolated synthetic-data workspace');
 const out = process.env.TEST_ARTIFACTS ?? 'verification-artifacts/document-evidence';
 await mkdir(out, { recursive: true });
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true, executablePath: process.env.CHROMIUM_PATH ?? process.env.PLAYWRIGHT_EXECUTABLE});
 let n=0; const check=(ok,why)=>{assert.ok(ok,why);console.log(`PASS ${++n}: ${why}`)};
 const errors=[];
 try {

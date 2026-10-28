@@ -4,7 +4,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? "playwright")
 const origin = process.env.TEST_ORIGIN ?? "http://localhost:3311";
 const artifacts = process.env.TEST_ARTIFACTS ?? "verification-artifacts/conversation";
 await mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_EXECUTABLE });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ?? process.env.PLAYWRIGHT_EXECUTABLE });
 const errors = [];
 let checks = 0;
 const check = (ok, message) => { assert.ok(ok, message); checks++; console.log(`PASS ${checks}: ${message}`); };
@@ -37,9 +37,9 @@ try {
   await law.click();
   check(await page.locator(".source-picker").getAttribute("data-motion") === "pointer" && await page.locator(".source-picker").evaluate((el) => getComputedStyle(el.querySelector(".source-picker-switch > span")).transitionDuration) === "0s", "system reduced motion disables switch movement after pointer selection");
   await page.screenshot({ path: `${artifacts}/source-picker-desktop.png`, fullPage: true });
-  await page.getByText("Other sources", { exact: false }).click();
-  await page.getByText("BSE (Bombay Stock Exchange) announcements", { exact: true }).scrollIntoViewIfNeeded();
-  check(await page.locator(".source-picker-unavailable [role=switch]").count() === 0, "unavailable sources show reasons without selection controls");
+  // Unavailable sources are listed inline in their group (no separate "Other sources" fold since 764323f).
+  await page.locator(".source-picker-unavailable-row", { hasText: "BSE (Bombay Stock Exchange) announcements" }).scrollIntoViewIfNeeded();
+  check(await page.locator(".source-picker-unavailable-row").count() > 0 && await page.locator(".source-picker-unavailable-row [role=switch]").count() === 0, "unavailable sources show reasons without selection controls");
   check(await page.getByText("robots: https://www.bseindia.com BLOCKED HTTP 403", { exact: false }).isVisible(), "unavailable source reason remains inspectable");
   await page.keyboard.press("Escape");
   check(await page.getByRole("button", { name: "2 sources — choose what is searched" }).evaluate((el) => el === document.activeElement), "closing the picker restores focus to the source chip");

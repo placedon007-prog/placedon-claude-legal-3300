@@ -4,7 +4,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const origin = process.env.TEST_ORIGIN ?? 'http://127.0.0.1:3311';
 const out = process.env.TEST_ARTIFACTS ?? 'verification-artifacts/vault';
 await mkdir(out, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ?? process.env.PLAYWRIGHT_EXECUTABLE });
 let checks = 0;
 const check = (ok, message) => { assert.ok(ok, message); console.log(`PASS ${++checks}: ${message}`); };
 try {
@@ -34,17 +34,17 @@ try {
  check(await files.evaluate(el => el === document.activeElement), 'closing Vault restores focus to Files');
  await page.getByRole('button', {name: /sources — choose what is searched/}).click();
  check(await page.getByRole('switch', {name: /Wall System/}).getAttribute('aria-checked') === 'true', 'adding stored files selects the Vault source');
- await page.waitForFunction(() => [...document.querySelectorAll('.source-picker-group .source-provider-logo')].length === 4 && [...document.querySelectorAll('.source-picker-group .source-provider-logo')].every(el => el.complete && el.naturalWidth > 0));
+ // Unavailable sources (BSE) are listed inline in their group since 764323f, so their marks are in the same set.
+ await page.waitForFunction(() => [...document.querySelectorAll('.source-picker-group .source-provider-logo')].length === 5 && [...document.querySelectorAll('.source-picker-group .source-provider-logo')].every(el => el.complete && el.naturalWidth > 0));
  check(await page.locator('.source-picker-group .source-provider-logo').evaluateAll(els => {
   const names = els.map(el => new URL(el.src).pathname.split('/').pop()).sort();
-  return JSON.stringify(names) === JSON.stringify(['ecourts.png', 'india-code.png', 'sebi.png', 'supreme-court.png']) && els.every(el => el.complete && el.naturalWidth > 0 && new URL(el.src).origin === location.origin);
+  return JSON.stringify(names) === JSON.stringify(['bse.png', 'ecourts.png', 'india-code.png', 'sebi.png', 'supreme-court.png']) && els.every(el => el.complete && el.naturalWidth > 0 && new URL(el.src).origin === location.origin);
  }), 'court, statute and regulator marks load locally with the expected source identities');
  await page.screenshot({ path: `${out}/official-sources-desktop.png` });
- await page.locator('.source-picker-unavailable > summary').click();
- const bseLogo = page.locator('.source-picker-unavailable img.source-provider-logo[src$="/source-logos/bse.png"]');
+ const bseLogo = page.locator('.source-picker-unavailable-row img.source-provider-logo[src$="/source-logos/bse.png"]');
  await bseLogo.waitFor();
  await bseLogo.scrollIntoViewIfNeeded();
- await page.waitForFunction(() => { const el = document.querySelector('.source-picker-unavailable img.source-provider-logo[src$="/source-logos/bse.png"]'); return el?.complete && el.naturalWidth > 0; });
+ await page.waitForFunction(() => { const el = document.querySelector('.source-picker-unavailable-row img.source-provider-logo[src$="/source-logos/bse.png"]'); return el?.complete && el.naturalWidth > 0; });
  check(await bseLogo.isVisible() && await bseLogo.evaluate(el => el.complete && el.naturalWidth > 0), 'the BSE mark stays with its unavailable source row');
  await page.screenshot({ path: `${out}/bse-source-unavailable.png` });
  await page.getByRole('button', {name:/Choose stored files/}).click();

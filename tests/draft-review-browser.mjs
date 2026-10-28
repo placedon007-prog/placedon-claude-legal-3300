@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const origin = process.env.TEST_ORIGIN ?? 'http://127.0.0.1:3349';
 assert.ok(process.env.TEST_PASSCODE, 'TEST_PASSCODE required for the synthetic workspace');
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ?? process.env.PLAYWRIGHT_EXECUTABLE });
 let count = 0;
 const check = (value, message) => { assert.ok(value, message); console.log(`PASS ${++count}: ${message}`); };
 try {
