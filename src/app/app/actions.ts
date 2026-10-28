@@ -55,7 +55,11 @@ export type TurnState =
       readonly region: string | null }
   /** The work went on the queue: the reply has not arrived, which is not an empty answer. */
   | { readonly phase: "queued"; readonly conversationId: string; readonly runId: string | null;
-      readonly note: string; readonly messageId?: string }
+      readonly note: string; readonly messageId?: string;
+      /** The server's progress line from the send reply; `note` may temporarily show a connection problem instead. */
+      readonly progress?: string;
+      /** When this browser saw the request queued (Date.now()); absent on a reopened thread. */
+      readonly queuedAt?: number }
   /** The verb declined before answering, by name (e.g. AS_OF_UNSUPPORTED, NO_STORE). */
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   /** The answer never arrived. Never rendered as a refusal. */
@@ -132,6 +136,7 @@ export async function sendAction(input: {
       runId: data.run_id ?? null,
       messageId: data.message_id,
       note: data.note ?? "",
+      progress: data.note ?? "",
     };
   }
   return {

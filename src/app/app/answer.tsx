@@ -19,7 +19,7 @@ import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
 import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
-import { envelopeKind, failedRegister, isNothingTraced, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
+import { envelopeKind, failedRegister, isNothingTraced, summaryUnavailableLead, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
@@ -138,7 +138,7 @@ export function TurnView({
         </div>
       ) : s.phase === "queued" ? (
         <div className="flex flex-col gap-2">
-          <ResearchActivity kind="queued" note={s.note} />
+          <ResearchActivity kind="queued" note={s.note} since={s.queuedAt} />
           {s.runId ? <RunLink runId={s.runId} /> : null}
         </div>
       ) : (
@@ -406,10 +406,11 @@ function Answered({
     return (
       <div role="status" className="flex flex-col gap-2 rounded-card border border-fg p-4">
         <p className="flex items-center gap-2 text-ui font-medium text-fg">{failure.title}</p>
-        {envelope.text_blocks.map((b, i) => (
-          <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
-        ))}
+        <p className="max-w-[68ch] text-body text-fg">{summaryUnavailableLead(documentSummaryUnavailable?.reason)}</p>
         <p className="max-w-[68ch] text-body text-fg-2">You can still ask a specific question about the document: excerpts are found without a model and linked to their pages.</p>
+        {envelope.text_blocks.map((b, i) => (
+          <p key={i} className="max-w-[68ch] text-caption text-fg-3">{b.text}</p>
+        ))}
       </div>
     );
   }

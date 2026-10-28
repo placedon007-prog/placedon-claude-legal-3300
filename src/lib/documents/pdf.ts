@@ -185,6 +185,34 @@ export function looksLikeProse(text: string): boolean {
   return words.length >= 40;
 }
 
+/** Below this, a text layer is judged by looksLikeShortProse instead of looksLikeProse. */
+const MIN_SHORT_PROSE_CHARS = 20;
+const MIN_SHORT_WORDS = 3;
+const SHORT_WORD_SHARE = 0.8;
+
+/**
+ * A short notice or letter is still a document. looksLikeProse needs 200 characters and 40
+ * words, which refused every one-paragraph PDF as "custom fonts or a scan". This judges the
+ * same signals without the length floor, and is stricter on shape: nearly every token must be
+ * a word. Indian-script text is excluded, because the garble check (indicTextLayerGarbled)
+ * needs more text than a short page holds to tell a faithful layer from a broken one.
+ */
+export function looksLikeShortProse(text: string): boolean {
+  const t = text.trim();
+  if (t.length < MIN_SHORT_PROSE_CHARS || /[\u0900-\u0D7F]/.test(t)) return false;
+  const junk = [...t].filter((c) => {
+    const n = c.codePointAt(0) ?? 0;
+    return n === 0xfffd || n < 9 || (n > 13 && n < 32);
+  }).length;
+  if (junk > 0) return false;
+  const letters = (t.match(/[\p{L}\p{M}]/gu) ?? []).length;
+  const spaces = (t.match(/\s/g) ?? []).length;
+  if (letters / t.length < 0.55 || spaces / t.length < 0.08) return false;
+  const tokens = t.split(/\s+/).filter(Boolean);
+  const words = tokens.filter((w) => /^[\p{L}\p{N}(“"'‘][\p{L}\p{M}\p{N}'’“”".,;:!?()%/-]*$/u.test(w));
+  return words.length >= MIN_SHORT_WORDS && words.length / tokens.length >= SHORT_WORD_SHARE;
+}
+
 /**
  * Whether an Indian-script text layer came out garbled. pdf.js maps glyphs back to
  * characters through the font's ToUnicode table, and for Indic shaping that table often
@@ -269,10 +297,20 @@ export async function pdfToText(bytes: Uint8Array): Promise<PdfText> {
       );
     }
     // Empty pages stay in the join, so page N of the text is page N of the PDF.
-    if (looksLikeProse(readable)) return { text: read.join(PAGE_BREAK), pageCount: pages.length, pagesWithoutText };
+    if (looksLikeProse(readable) || looksLikeShortProse(readable)) {
+      return { text: read.join(PAGE_BREAK), pageCount: pages.length, pagesWithoutText };
+    }
   }
 
   const streams = inflateStreams(buf);
+  if (pages === null && streams.length === 0) {
+    // pdf.js could not open it and it holds no streams: damaged or incomplete, not a scan.
+    // A real scan opens and reaches the "no text layer" refusal above.
+    throw new PdfError(
+      "This file starts like a PDF but could not be opened — it may be damaged or only " +
+        "partly downloaded. Nothing was stored. Download or export it again, or upload the .docx.",
+    );
+  }
   if (streams.length === 0) {
     throw new PdfError(
       "No readable text stream was found in this PDF. If it is a scan, it has no text " +

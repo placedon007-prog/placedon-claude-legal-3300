@@ -50,6 +50,20 @@ export function failedRegister(unavailable?: { readonly reason: string; readonly
   return { title: null, retryable: true };
 }
 
+/** The first line a reader sees when a summary cannot run, by the backend's stated reason.
+ *  Each says what happened and that nothing was sent or changed; the backend's own text
+ *  follows it unaltered. An unknown reason gets the general line, never a guessed cause. */
+export function summaryUnavailableLead(reason: string | undefined): string {
+  switch (reason) {
+    case "NO_PERMITTED_PROVIDER":
+      return "Summaries are switched off in this workspace: no model approved for client documents is set up. Nothing was sent and your document is unchanged.";
+    case "PROVIDER_REFUSED_ACCESS":
+      return "The model approved for client documents refused this workspace's account, so no summary was made. Your document is unchanged.";
+    default:
+      return "A summary cannot be made in this workspace at the moment. Your document is unchanged.";
+  }
+}
+
 /** `answer_envelope.v1` status → the screen's register. FAILED is transport-only by schema. */
 export function envelopeKind(status: EnvelopeStatus): StatusKind {
   switch (status) {

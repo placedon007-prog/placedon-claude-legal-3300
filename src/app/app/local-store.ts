@@ -9,6 +9,8 @@
  */
 import * as React from "react";
 import type { LocalThread } from "@/lib/thread";
+import type { QueuedMemory } from "@/lib/conversation";
+import type { ThreadDocument } from "@/lib/thread-documents";
 import { activityAt, cleanName, MAX_ACTIVITY, type Activity } from "@/lib/greeting";
 
 const THREADS_KEY = "placedon.console.threads.v1";
@@ -217,4 +219,29 @@ export function takeResume(path: string): string | null {
   } catch {
     return null;
   }
+}
+
+// Queued-turn details survive a workspace remount within this page load only; a reload
+// starts without them, and the queued card then shows no timer rather than a guessed one.
+const MAX_QUEUED_MEMORY = 20;
+let queuedMemory: readonly QueuedMemory[] = [];
+
+export function rememberQueued(entry: QueuedMemory): void {
+  queuedMemory = [entry, ...queuedMemory.filter((m) => m.key !== entry.key)].slice(0, MAX_QUEUED_MEMORY);
+}
+
+export function rememberedQueued(): readonly QueuedMemory[] {
+  return queuedMemory;
+}
+
+// The documents a thread's last question used, so a remount (new thread → its id) keeps the
+// composer's carried chips. This page load only; a reopened thread reads them from its answers.
+const carriedDocuments = new Map<string, readonly ThreadDocument[]>();
+
+export function rememberCarried(conversationId: string, documents: readonly ThreadDocument[]): void {
+  carriedDocuments.set(conversationId, documents);
+}
+
+export function rememberedCarried(conversationId: string | null): readonly ThreadDocument[] | undefined {
+  return conversationId ? carriedDocuments.get(conversationId) : undefined;
 }

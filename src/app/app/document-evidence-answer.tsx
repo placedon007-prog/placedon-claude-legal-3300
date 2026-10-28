@@ -8,6 +8,10 @@ export function DocumentEvidenceAnswer({ evidence }: { evidence: DocumentEvidenc
     <article aria-label="Document research result" className="flex min-w-0 flex-col gap-4">
       <h3 className="text-title font-semibold text-fg">{documentEvidenceLabel(evidence)}</h3>
       <p className="max-w-[68ch] text-read text-fg-2">{documentEvidenceExplanation(evidence)}</p>
+      {evidence.history_query ? (
+        // Shown, not tucked into the limitations: it is why these excerpts answer a short follow-up.
+        <p className="max-w-[68ch] text-body text-fg-2">Read together with your previous question: “{evidence.history_query}”</p>
+      ) : null}
       {found ? <ol aria-label="Document excerpts" className="space-y-6">
         {evidence.passages.map((passage, index) => (
           <li key={passage.id} className="min-w-0 space-y-2">

@@ -7,13 +7,14 @@ import { ArrowUpRight, Briefcase, FileText, Plus } from "lucide-react";
 import { PromptBox, type AttachOutcome, type ComposerHandle, type ComposerTool, type DocumentLookup, type WebMode } from "@/components/ui/prompt-box";
 import type { CitationGroup } from "@/lib/thread";
 import { chosenOrDefault, toggleSource } from "@/lib/sources";
-import { conversationPollDelay, conversationTurns } from "@/lib/conversation";
+import { conversationPollDelay, conversationTurns, restoreQueued, stillQueued } from "@/lib/conversation";
 import { draftableAnswerKey } from "@/lib/draft-source";
+import { threadDocuments, type ThreadDocument } from "@/lib/thread-documents";
 import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
-import { NEW_THREAD, recordActivity, rememberThread, rememberThreadSources, stashResume, takeResume, useThreadSources } from "./local-store";
+import { NEW_THREAD, recordActivity, rememberCarried, rememberedCarried, rememberQueued, rememberedQueued, rememberThread, rememberThreadSources, stashResume, takeResume, useThreadSources } from "./local-store";
 import { MatterHistoryMenu } from "./matter-history";
 import { Welcome } from "./welcome";
 
@@ -58,7 +59,10 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
 }) {
   const [context, setContext] = React.useState(initialContext);
   const [conversationId, setConversationId] = React.useState(initialConversationId);
-  const [turns, setTurns] = React.useState<readonly Turn[]>(initialTurns);
+  const [turns, setTurns] = React.useState<readonly Turn[]>(() => restoreQueued(initialTurns, rememberedQueued()));
+  // Live, not computed once: the composer remounts when the empty-thread layout gives way to
+  // the thread layout, and it reads this value when it mounts.
+  const [carried, setCarried] = React.useState(() => rememberedCarried(initialConversationId) ?? threadDocuments(initialTurns));
   const [source, setSource] = React.useState<OpenSource | null>(null);
   const [tool, setTool] = React.useState<ComposerTool>("research");
   const [matterId, setMatterId] = React.useState(initialMatterId);
@@ -125,7 +129,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
               const oldRun = turn.state.runId;
               const match = fresh.find((next) => next.key === turn.key || oldRun && next.state?.phase === "answered" && next.state.envelope.run_id === oldRun);
               return match?.state?.phase === "answered" ? { ...turn, state: match.state }
-                : { ...turn, state: { ...turn.state, note: "" } };
+                : { ...turn, state: stillQueued(turn.state) };
             }));
           } else if (live && loaded.phase === "refused") {
             const note = loaded.code === "SESSION_EXPIRED"
@@ -153,7 +157,8 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     setSource({ conversationId: cid, group, activeId });
   }, []);
 
-  async function send(text: string, selectedTool: Exclude<ComposerTool, "web">, fileIds: readonly string[], retry?: Turn, restart = false) {
+  async function send(text: string, selectedTool: Exclude<ComposerTool, "web">, fileIds: readonly string[], retry?: Turn, restart = false,
+    documents: readonly ThreadDocument[] = []) {
     if (requestInFlight.current || queuedSignature) return;
     if (uncertain && (uncertain.key !== retry?.key || restart)) return;
     if (restart && !retry?.request) return;
@@ -164,6 +169,9 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
       ? { ...retry.request, conversationId: restart ? conversationId : retry.request.conversationId }
       : { text, tool: selectedTool, fileIds, sources: chosen, matterId, conversationId };
     if (!retry || restart) recordActivity(new Date());
+    // Before the turn is added: adding the first turn swaps the composer into the thread
+    // layout, and the new composer reads `carried` once, when it mounts.
+    if (!retry) setCarried(documents);
     setSending(true);
     setTurns((all) => retry && !restart ? all.map((turn) => turn.key === key ? { ...turn, state: null } : turn) : [...all, { key, question: text, state: null, request }]);
     requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "end", behavior: "instant" }));
@@ -181,11 +189,14 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         router.push(`/login?next=${encodeURIComponent(path)}`);
         return;
       }
-      setTurns((all) => all.map((turn) => turn.key === key ? { ...turn, state } : turn));
+      const shown = state.phase === "queued" ? { ...state, queuedAt: Date.now() } : state;
+      if (shown.phase === "queued") rememberQueued({ key, runId: shown.runId, progress: shown.progress ?? "", queuedAt: shown.queuedAt ?? Date.now() });
+      setTurns((all) => all.map((turn) => turn.key === key ? { ...turn, state: shown } : turn));
       if (state.phase === "answered" || state.phase === "queued") {
         setConversationId(state.conversationId);
         setMatterId(request.matterId);
         rememberThread(state.conversationId, text);
+        if (!retry) rememberCarried(state.conversationId, documents);
         rememberThreadSources(state.conversationId, request.sources);
         window.history.replaceState(null, "", `/app?c=${encodeURIComponent(state.conversationId)}`);
       }
@@ -256,10 +267,11 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   }
 
   const empty = turns.length === 0;
-  const input = <PromptBox onSubmit={(text, selectedTool, ids, webMode, webConsent) => {
+  const input = <PromptBox onSubmit={(text, selectedTool, ids, webMode, webConsent, documents) => {
     if (selectedTool === "web") void sendWeb(text, webMode, webConsent);
-    else void send(text, selectedTool, ids);
+    else void send(text, selectedTool, ids, undefined, false, documents);
   }}
+    carried={carried}
     composerRef={composerApi}
     onAttach={attach} checkDocument={documentReadinessAction} pending={pending || Boolean(uncertain)}
     canDraft={Boolean(latestCitedAnswer)}
