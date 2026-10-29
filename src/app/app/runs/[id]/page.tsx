@@ -35,7 +35,7 @@ export default async function RunPage({
 
   return (
     <>
-      <h2>Run</h2>
+      <h1>Run</h1>
       <p className="meta" style={{ marginBottom: "1.5rem" }}>
         <span className="mono">{id}</span> · <Link href="/app/runs">back to runs</Link>
       </p>

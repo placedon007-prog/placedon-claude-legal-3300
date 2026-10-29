@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function DocumentsPage() {
   return (
     <>
-      <h2>Documents</h2>
+      <h1>Documents</h1>
       <p className="lede">
         Minutes and notices against the Secretarial Standards. The document type is worked
         out first, and a check written for minutes never fires on a notice — a notice is

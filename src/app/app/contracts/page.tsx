@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function ContractsPage() {
   return (
     <>
-      <h2>Contracts</h2>
+      <h1>Contracts</h1>
       <p className="lede">
         An NDA read against the company playbook. Each rule reports where the document
         differs from the standard, quoting the clause it read. The playbook is a commercial

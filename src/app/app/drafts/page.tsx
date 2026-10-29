@@ -26,7 +26,7 @@ export default async function DraftsPage({
     <>
       <div className="drafts-heading">
         <div>
-          <h2>Drafts</h2>
+          <h1>Drafts</h1>
           <p className="meta">Your drafts. Open a draft to read and revise its text.</p>
         </div>
         <Link className="primary drafts-new-link" href="/app">Research then draft</Link>

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function CalendarPage() {
   return (
     <>
-      <h2>Calendar</h2>
+      <h1>Calendar</h1>
       <p className="lede">
         What falls due in the next ninety days, derived from facts you supply. An obligation
         whose fact is missing is listed as unknown and names the fact — it is never given a

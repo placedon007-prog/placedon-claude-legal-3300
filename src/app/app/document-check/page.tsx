@@ -21,7 +21,7 @@ export default async function DocumentCheckPage({
   const sharedPasscode = !demoModeEnabled() && gateEnabled() && sessionKind() === "passcode";
   return (
     <>
-      <h2>Document Check</h2>
+      <h1>Document Check</h1>
       <p className="lede">
         Upload readable document text to check its recorded facts, date-sensitive status and next action.
         Results flag what needs lawyer review; they do not certify legal validity.
