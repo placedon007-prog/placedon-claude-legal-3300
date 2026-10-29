@@ -206,6 +206,7 @@ const DECISION = {
   verdict: "APPROVED" as const,
   reason: "Inspected the book; the Chairman initialled every page.",
   quotedSpan: "physical minutes book not inspected",
+  quoteViewed: true,
 };
 
 test("a decision with a real reason is recorded as labelled data", async () => {
@@ -238,6 +239,67 @@ test("the same item cannot be decided twice", async () => {
   assert.ok((await g.decide(DECISION)).ok);
   const again = await g.decide({ ...DECISION, reason: "I have changed my mind on this." });
   assert.equal(again.ok, false, "overwriting would destroy the label");
+});
+
+test("an approval sends quote_viewed, and the gateway's HTTP 200 refusal is read as a refusal", async () => {
+  // Regression: decide() never sent quote_viewed, so every Approve came back
+  // 200 {REFUSED, QUOTE_NOT_VIEWED}, which failed decisionSchema and showed "schema_mismatch".
+  const original = globalThis.fetch;
+  let sent: Record<string, unknown> = {};
+  globalThis.fetch = async (_input, init) => {
+    sent = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ status: "REFUSED", code: "QUOTE_NOT_VIEWED", detail: "Open the quote first." }), { status: 200 });
+  };
+  try {
+    const { HttpGateway } = await import("../src/lib/gateway/http");
+    const { isRefusal } = await import("../src/lib/gateway/types");
+    const r = await new HttpGateway("http://127.0.0.1:8021", "test-key").decide({ ...DECISION, quoteViewed: false });
+    assert.equal(sent.quote_viewed, false);
+    assert.equal(r.ok, true, "a refusal is a product state, not a transport failure");
+    if (r.ok) assert.ok(isRefusal(r.data) && r.data.code === "QUOTE_NOT_VIEWED");
+    await new HttpGateway("http://127.0.0.1:8021", "test-key").decide(DECISION);
+    assert.equal(sent.quote_viewed, true);
+  } finally { globalThis.fetch = original; }
+});
+
+test("cancelling a finished run is a refusal on HTTP 200, not a schema mismatch", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ status: "REFUSED", code: "NOT_CANCELLABLE", detail: "The run has finished." }), { status: 200 });
+  try {
+    const { HttpGateway } = await import("../src/lib/gateway/http");
+    const r = await new HttpGateway("http://127.0.0.1:8021", "test-key").cancel("run-1");
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal((r.data as { code?: string }).code, "NOT_CANCELLABLE");
+  } finally { globalThis.fetch = original; }
+});
+
+test("a route that has not opted in still reports a 200 refusal as a schema mismatch", async () => {
+  // Opt-in on purpose: callers that do not check isRefusal would read a refusal as success.
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ status: "REFUSED", code: "X", detail: "no" }), { status: 200 });
+  try {
+    const { HttpGateway } = await import("../src/lib/gateway/http");
+    const r = await new HttpGateway("http://127.0.0.1:8021", "test-key").draftList();
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.error.kind, "schema_mismatch");
+  } finally { globalThis.fetch = original; }
+});
+
+test("a 200 body that is neither the route's shape nor a refusal is still a schema mismatch", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ surprise: true }), { status: 200 });
+  try {
+    const { HttpGateway } = await import("../src/lib/gateway/http");
+    const r = await new HttpGateway("http://127.0.0.1:8021", "test-key").decide(DECISION);
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.error.kind, "schema_mismatch");
+  } finally { globalThis.fetch = original; }
+});
+
+test("the mock refuses an approval whose quote was not opened, as the gateway does", async () => {
+  const { isRefusal } = await import("../src/lib/gateway/types");
+  const r = await new MockGateway().decide({ ...DECISION, quoteViewed: false });
+  assert.ok(r.ok && isRefusal(r.data));
 });
 
 test("a refused decision is a failure, never a recorded one", async () => {
