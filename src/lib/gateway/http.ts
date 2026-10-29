@@ -4,7 +4,6 @@ import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES, type GatewayRoute } from "../engine/types";
 import type { GatewayProvider } from "./provider";
 import {
-  askResponseSchema,
   authLoginSchema,
   inviteAcceptSchema,
   type InviteAccept,
@@ -53,7 +52,6 @@ import {
   runSchema,
   runTraceSchema,
   uploadResponseSchema,
-  type AskResponse,
   type AuthLogin,
   type CancelAck,
   type Decision,
@@ -237,13 +235,6 @@ export class HttpGateway implements GatewayProvider {
       });
     }
     return engineOk(parsed.data);
-  }
-
-  ask(question: string): Promise<EngineResult<AskResponse>> {
-    return this.call(GATEWAY_ROUTES.ask, GATEWAY_ROUTES.ask, askResponseSchema, {
-      method: "POST",
-      body: { question },
-    });
   }
 
   authLogin(input: { email: string; password: string; clientAddress?: string | null }): Promise<EngineResult<AuthLogin>> {

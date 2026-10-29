@@ -51,28 +51,6 @@ test("a source without a recognisable section number leaves section null", () =>
 
 /* ── the mock gateway answers in the shapes the UI narrows on ─────────────── */
 
-test("ask returns a cited answer for a held provision", async () => {
-  const r = await new MockGateway().ask("time limit for an annual general meeting");
-  assert.ok(r.ok);
-  assert.equal(r.data.status, "PARTIAL");
-  const parsed = parseAnswer(r.data.answer ?? "");
-  assert.equal(parsed.sentences.length, 3);
-  assert.equal(parsed.sentences[0].section, "96");
-});
-
-test("ask REFUSES by name where the corpus does not hold the law", async () => {
-  const r = await new MockGateway().ask("penalties for insider trading under SEBI PIT");
-  assert.ok(r.ok);
-  assert.equal(r.data.status, "REFUSED");
-  assert.equal(r.data.code, "NO_EVIDENCE");
-  assert.equal(r.data.answer, "");
-});
-
-test("a refusal is ok:true — it is a product answer, not a transport failure", async () => {
-  const r = await new MockGateway().ask("insider trading");
-  assert.ok(r.ok, "a refusal must not arrive as an engine error");
-});
-
 test("a missing run is an engine FAILURE, never an abstention", async () => {
   const r = await new MockGateway().run("missing");
   assert.equal(r.ok, false);
