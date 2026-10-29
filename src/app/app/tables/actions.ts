@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { COLUMN_KINDS, parseColumnLines } from "@/lib/table-columns";
+import { isRefusal } from "@/lib/gateway/types";
 import type {
   TableCancel,
   TableCreate,
@@ -75,6 +76,8 @@ export async function tableCreateAction(
   const gateway = await getGateway();
   const result = await gateway.tableCreate(parsed.data);
   if (!result.ok) return { phase: "failed", error: result.error };
+  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
+  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
   return { phase: "created", data: result.data };
 }
 
@@ -91,6 +94,8 @@ export async function tableStatusAction(
   const gateway = await getGateway();
   const result = await gateway.tableStatus({ gridId: parsed.data });
   if (!result.ok) return { phase: "failed", error: result.error };
+  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
+  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
   // `paused` is null here and the console says why: status cannot tell us.
   return { phase: "status", data: result.data, paused: null };
 }
@@ -106,6 +111,8 @@ export async function tableExportAction(
   const gateway = await getGateway();
   const result = await gateway.tableExport({ gridId: parsed.data });
   if (!result.ok) return { phase: "failed", error: result.error };
+  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
+  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
   return { phase: "exported", data: result.data };
 }
 
@@ -120,5 +127,7 @@ export async function tableCancelAction(
   const gateway = await getGateway();
   const result = await gateway.tableCancel({ gridId: parsed.data });
   if (!result.ok) return { phase: "failed", error: result.error };
+  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
+  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
   return { phase: "cancelled", data: result.data };
 }
