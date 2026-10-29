@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getGateway } from "@/lib/gateway";
 import type { RunStep } from "@/lib/gateway/types";
-import { isLive } from "@/lib/gateway/types";
+import { isLive, isRefusal } from "@/lib/gateway/types";
 import { RunWatch } from "../run-watch";
 
 export const metadata: Metadata = { title: "Run trace", robots: { index: false } };
@@ -16,6 +16,22 @@ export default async function RunPage({
   const { id } = await params;
   const gateway = await getGateway();
   const [run, trace] = await Promise.all([gateway.run(id), gateway.trace(id)]);
+  // An unknown id is a 404 refusal parsed as data; rendering it as a run crashed the page.
+  if ((run.ok && isRefusal(run.data)) || (trace.ok && isRefusal(trace.data))) {
+    const refusal = run.ok && isRefusal(run.data) ? run.data : trace.ok && isRefusal(trace.data) ? trace.data : null;
+    return (
+      <>
+        <h2>Run</h2>
+        <p className="meta" style={{ marginBottom: "1.5rem" }}>
+          <span className="mono">{id}</span> · <Link href="/app/runs">back to runs</Link>
+        </p>
+        <section className="panel register-abstain" role="status">
+          <span className="register-label">Not available — {refusal?.code}</span>
+          <p style={{ marginTop: "0.6rem" }}>{refusal?.detail}</p>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
