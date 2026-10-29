@@ -9,7 +9,7 @@ export default async function RunsPage() {
   const runs = await recentRuns();
   return (
     <>
-      <h2>Runs</h2>
+      <h1>Runs</h1>
       <p className="lede">
         Every question and review leaves a run: the steps it took, which model served each
         one, where that model ran, and what it cost.

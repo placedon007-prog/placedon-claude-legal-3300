@@ -16,7 +16,7 @@ export default async function TablesPage({ searchParams }: { searchParams: Promi
   if (initialGridId) { const data = new FormData(); data.set("grid_id", initialGridId); initialStatus = await tableStatusAction(initialStatus, data); }
   return (
     <>
-      <h2>Review tables</h2>
+      <h1>Review tables</h1>
       <p className="lede">
         Documents down the side, questions across the top, one run per cell. A cell that was
         read says what it found and quotes it; a cell that was not read says so. Those are

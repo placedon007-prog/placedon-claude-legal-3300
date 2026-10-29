@@ -12,7 +12,7 @@ export default async function VaultPage() {
   const matters = await (await getGateway()).mattersList();
   return (
     <>
-      <h2>Wall System</h2>
+      <h1>Wall System</h1>
       <p className="lede">
         Store searchable text copies of court orders, agreements and working documents.
         Organise them by matter and add ready files to a conversation. Keep your original files separately.

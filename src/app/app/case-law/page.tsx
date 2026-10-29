@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function CaseLawPage() {
   return (
     <>
-      <h2>Case law</h2>
+      <h1>Case law</h1>
       <p className="lede">
         Find Supreme Court and High Court judgments by party, case name, or legal topic. This
         searches available judgment collections; it does not retrieve the live court docket or

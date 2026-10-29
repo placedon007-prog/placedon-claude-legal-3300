@@ -191,7 +191,8 @@
   padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2.5rem) 4rem;
 }
 .console-main > :not(.ask-workspace) { max-width: 62rem; }
-.console-main > h2 {
+/* The page title is the page's h1 (one per screen, for screen-reader navigation). */
+.console-main > h1, .console-main > h2, .drafts-heading h1 {
   font-size: var(--text-display);
   line-height: var(--text-display--line-height);
   font-weight: 600;
@@ -238,7 +239,10 @@
 .console input.bare:focus-visible, [data-slot] input.bare:focus-visible { outline: none; }
 
 /* Sections on the form screens: a heading with air above it, so each block reads apart. */
-.console-main > h3, .console-main > section > h3, .console-main > form + h3 {
+/* Includes headings inside a form or its fieldset (Contracts step 1, Document Check step 2),
+   which no selector reached, so they rendered as body text beside bold siblings. */
+.console-main > h3, .console-main > section > h3, .console-main > form + h3,
+.console-main form > h3, .console-main fieldset > h3 {
   margin: 2.25rem 0 0.6rem;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -555,7 +559,7 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 
 /* ── Wall System, tables, drafts, calendar ───────────────────────────────────── */
 .drafts-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.drafts-heading h2 { margin-bottom: 0.25rem; }
+.drafts-heading h1, .drafts-heading h2 { margin-bottom: 0.25rem; }
 .drafts-new-link { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .drafts-empty { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--c-line); border-radius: 10px; }
 .drafts-empty h3 { margin: 0 0 0.4rem; font-size: var(--text-title); }
@@ -682,7 +686,11 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 .cal-reference { margin: 0.15rem 0 0; font-size: 0.9375rem; font-weight: 600; }
 
 .console .check-inline { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.9375rem; }
-.console .check-inline input { width: auto; margin-top: 0.15rem; }
+.console .check-inline input { width: 1.125rem; height: 1.125rem; flex: none; margin-top: 0.1rem; }
+/* A disclosure row inside a form is a control: 44px tall and a pointer. The browser's
+   disclosure marker is kept -- display:flex removed it and the row read as plain text.
+   :where() keeps this below component rules such as .gate-quote summary. */
+:where(.console-main form) details > summary { min-height: 44px; padding: 0.65rem 0; cursor: pointer; }
 .console .sub-head { margin-top: 1.2rem; padding-top: 0.6rem; border-top: 1px solid var(--c-line); }
 .console .sub-head .mono { font-size: 0.9375rem; }
 

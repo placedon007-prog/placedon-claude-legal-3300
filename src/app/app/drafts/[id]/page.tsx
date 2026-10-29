@@ -19,7 +19,7 @@ export default async function DraftPage({
   if (!read.ok) {
     return (
       <>
-        <h2>Draft</h2>
+        <h1>Draft</h1>
         {/* A draft that could not be read is a transport failure, in its own register. It
             is NOT an empty draft: an empty editor here would invite someone to type into a
             document whose current text nobody has seen. */}
@@ -44,7 +44,7 @@ export default async function DraftPage({
 
   return (
     <>
-      <h2>{read.data.title}</h2>
+      <h1>{read.data.title}</h1>
       <p className="lede">
         Every save is a new version; nothing is edited in place. An edit carries the version
         it was based on, so a save from a stale tab is refused with both version numbers
