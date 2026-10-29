@@ -1,7 +1,6 @@
 import "../engine/server-guard";
 import type { EngineResult } from "../engine/errors";
 import type {
-  AskResponse,
   Calendar,
   CancelAck,
   Decision,
@@ -60,7 +59,6 @@ export interface GatewayProvider {
   invitesAccept(input: { token: string; password: string; clientAddress?: string | null }): Promise<EngineResult<InviteAccept>>;
   /** Revoke the signed-in person's own backend session (accounts mode sign-out). */
   authLogout(): Promise<EngineResult<AuthLogoutOk>>;
-  ask(question: string): Promise<EngineResult<AskResponse>>;
   reviewContract(input: {
     text: string;
     name?: string;

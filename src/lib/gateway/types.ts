@@ -9,33 +9,6 @@ import { z } from "zod";
  * Fields the backend may omit are `.optional()` because they genuinely are.
  */
 
-/* ── ask ──────────────────────────────────────────────────────────────────── */
-
-/** Verdicts the pipeline produces. FAILED is a transport failure the BACKEND caught. */
-export const askStatusSchema = z.enum([
-  "ANSWERED",
-  "PARTIAL",
-  "REFUSED",
-  "FAILED",
-]);
-export type AskStatus = z.infer<typeof askStatusSchema>;
-
-export const askResponseSchema = z.object({
-  status: askStatusSchema,
-  question: z.string().optional(),
-  /** Present only on REFUSED. `NO_EVIDENCE`, `NOTHING_TRACED`, `NO_MODEL`, `NO_BUDGET`. */
-  code: z.string().nullable().optional(),
-  reason: z.string().nullable().optional(),
-  provisions: z.array(z.string()).optional(),
-  dropped: z.number().int().nonnegative().optional(),
-  model: z.string().nullable().optional(),
-  degraded: z.boolean().optional(),
-  /** The served prose, with citations. Empty on a refusal. */
-  answer: z.string().optional(),
-  run_id: z.string().nullable().optional(),
-  error: z.string().optional(),
-});
-export type AskResponse = z.infer<typeof askResponseSchema>;
 
 /* ── auth.login (personal accounts) ──────────────────────────────────────────── */
 

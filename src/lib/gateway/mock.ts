@@ -23,7 +23,6 @@ import type {
   WebResearch,
   ConversationMessage,
   ConversationSend,
-  AskResponse,
   AuthLoginOk,
   InviteAccept,
   AuthLogoutOk,
@@ -64,16 +63,6 @@ import type {
  * composed. A fixture that invents a statutory sentence would put a fabricated provision
  * on a screen, which is the one thing this product may never do.
  */
-const ANSWER_S96 = `[1 of 4 sentence(s) the model wrote did not trace to admitted evidence and are not part of this summary. They are preserved in full below.]
-
-1. Not more than fifteen months shall elapse between the date of one annual general meeting of a company and that of the next.
-   — Companies Act 2013, s.96 [226:348]
-2. The first annual general meeting shall be held within a period of nine months from the date of closing of the first financial year of the company.
-   — Companies Act 2013, s.96 [409:524]
-3. The Registrar may extend the time within which any annual general meeting, other than the first annual general meeting, shall be held, by a period not exceeding three months.
-   — Companies Act 2013, s.96 [845:1043]`;
-
-const RUN_ASK = "5e0bd4d5-e114-49a8-8f76-ee348d5f3dd9";
 const RUN_REVIEW = "142ca24e-6960-4a5f-a6b8-272a5e964301";
 
 
@@ -395,51 +384,6 @@ export class MockGateway implements GatewayProvider {
       kind: "transport_error",
       route: GATEWAY_ROUTES.authLogin,
       message: "Personal sign-in is not available in demo mode; it requires a live gateway.",
-    });
-  }
-
-  async ask(question: string): Promise<EngineResult<AskResponse>> {
-    const q = question.toLowerCase();
-    // A question reaching law this corpus does not hold refuses BY NAME, exactly as the
-    // engine does. The demo must be able to show a refusal, or it demos only success.
-    if (/insider|sebi|data protection|dpdp|arbitration|stamp/.test(q)) {
-      return engineOk({
-        status: "REFUSED",
-        code: "NO_EVIDENCE",
-        reason:
-          "retrieval abstained: the question reaches a body of law this corpus does not hold, so no model was called.",
-        provisions: [],
-        dropped: 0,
-        model: null,
-        degraded: false,
-        answer: "",
-        run_id: RUN_ASK,
-      });
-    }
-    if (/board meeting|173/.test(q)) {
-      return engineOk({
-        status: "REFUSED",
-        code: "NOTHING_TRACED",
-        reason:
-          "nothing traced: all 2 sentence(s) the model wrote failed to trace to admitted evidence, so there is no summary.",
-        provisions: ["Companies Act 2013, s.173"],
-        dropped: 2,
-        model: "azure/llama-3-3-70b",
-        degraded: true,
-        answer: "",
-        run_id: RUN_ASK,
-      });
-    }
-    return engineOk({
-      status: "PARTIAL",
-      question,
-      code: null,
-      provisions: ["Companies Act 2013, s.96"],
-      dropped: 1,
-      model: "azure/llama-3-3-70b",
-      degraded: true,
-      answer: ANSWER_S96,
-      run_id: RUN_ASK,
     });
   }
 

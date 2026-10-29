@@ -7,10 +7,9 @@ import { z } from "zod";
  * byte-for-byte and its own suite asserts that, so anything parsed here is what the engine
  * produced. `/v1/company/{cin}/standing` still DOES NOT EXIST — never add it.
  *
- * **`/v1/ask` now exists.** It did not when this file was written, and the warning that
- * said so has been removed rather than edited around: it is served through the gateway as
- * the `ask` verb (`GATEWAY_ROUTES.ask`), which is the surface this app calls. The six below
- * remain the unauthenticated engine contract.
+ * **`/v1/ask` exists** and is served through the gateway as the `ask` verb, but this app no
+ * longer calls it: Ask runs on `conversation.send` (GATEWAY_ROUTES.conversationSend). The
+ * six below remain the unauthenticated engine contract.
  */
 export const ENGINE_ROUTES = {
   health: "/v1/health",
@@ -30,7 +29,6 @@ export const ENGINE_ROUTES = {
  * server-only env var and never reaches a bundle.
  */
 export const GATEWAY_ROUTES = {
-  ask: "/v2/ask",
   // Personal sign-in. The ONE verb reached before a session exists, so it is called
   // through `loginGateway()` (no `requireSession`), never `getGateway()`.
   authLogin: "/v2/auth/login",
