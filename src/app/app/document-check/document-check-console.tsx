@@ -151,9 +151,11 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
           </div>
         </div>
         <p className="meta" id="asof-help">
-          A certificate valid in March is expired in October — the same bytes give a
-          different answer on a different date. Blank means today. Each check is a new row:
-          what you were told, when.
+          The date the answer is given as of. It changes the result when you enter a
+          revocation date, or when the document&rsquo;s class has a validity period taken from
+          law this system holds. A period written only in the document itself is not used, so
+          most documents come back NOT DETERMINED whatever date you choose. Blank means today.
+          Each check is a new row: what you were told, when.
         </p>
 
         <div style={{ height: "0.9rem" }} />
