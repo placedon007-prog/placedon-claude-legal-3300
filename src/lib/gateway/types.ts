@@ -794,6 +794,8 @@ export const dueEntrySchema = z.object({
   anchor: z.string().nullable().optional(),
   anchor_label: z.string().optional(),
   interval: z.string().optional(),
+  /** The interval, verbatim from the provision ("six months"). The gateway sends this, not `interval`. */
+  quote: z.string().optional(),
   days_away: z.number().int().nullable().optional(),
 });
 export type DueEntry = z.infer<typeof dueEntrySchema>;
