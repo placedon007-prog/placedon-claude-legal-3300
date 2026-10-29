@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { readVersions } from "../actions";
 import { sessionKind } from "@/lib/auth/config";
+import { isRefusal } from "@/lib/gateway/types";
 import { DraftConsole } from "./draft-console";
 
 export const metadata: Metadata = { title: "Draft", robots: { index: false } };
@@ -15,6 +16,22 @@ export default async function DraftPage({
 }) {
   const { id } = await params;
   const read = await readVersions(id);
+  // An unknown or inaccessible id is a 404 refusal, parsed as data: it has no versions, and
+  // rendering the editor from it crashed the page (HTTP 500, "reading 'length'").
+  if (read.ok && isRefusal(read.data)) {
+    return (
+      <>
+        <h2>Draft</h2>
+        <div role="status" className="panel register-abstain">
+          <span className="register-label">Not available — {read.data.code}</span>
+          <p>{read.data.detail}</p>
+        </div>
+        <p>
+          <Link href="/app/drafts">Back to drafts</Link>
+        </p>
+      </>
+    );
+  }
 
   if (!read.ok) {
     return (
