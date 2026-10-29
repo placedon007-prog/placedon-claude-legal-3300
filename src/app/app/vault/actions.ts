@@ -49,6 +49,9 @@ export async function vaultUploadAction(
     return { phase: "invalid", message: "Choose a valid matter before uploading." };
   }
   const file = formData.get("file");
+  if (file instanceof File && file.size === 0 && file.name) {
+    return { phase: "invalid", message: `${file.name} is empty (0 bytes). Choose a file with content.` };
+  }
   if (!(file instanceof File) || file.size === 0) {
     return { phase: "invalid", message: "Choose a file to upload." };
   }

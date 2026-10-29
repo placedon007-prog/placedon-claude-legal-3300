@@ -243,14 +243,14 @@ export async function webResearchAction(input: {
   }
 }
 
-export async function documentReadinessAction(documentId: string): Promise<{ state: string; note: string }> {
+export async function documentReadinessAction(documentId: string): Promise<{ state: string; note: string; name?: string }> {
   if (!(await hasSession())) return { state: "UNKNOWN", note: "Sign in to check this document." };
   const id = idSchema.safeParse(documentId);
   if (!id.success) return { state: "CANNOT_READ", note: "This document ID is not valid." };
   const result = await (await getGateway()).vaultDocument(id.data);
   if (!result.ok) return { state: "UNKNOWN", note: "Document status is temporarily unavailable." };
   if (isRefusal(result.data)) return { state: "CANNOT_READ", note: result.data.detail };
-  return { state: result.data.state, note: result.data.class_reason ?? "" };
+  return { state: result.data.state, note: result.data.class_reason ?? "", name: result.data.name };
 }
 
 export type ThreadLoad =
