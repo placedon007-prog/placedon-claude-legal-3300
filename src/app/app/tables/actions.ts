@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
+import { COLUMN_KINDS, parseColumnLines } from "@/lib/table-columns";
 import type {
   TableCancel,
   TableCreate,
@@ -29,7 +30,6 @@ export type TableState =
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
-const KINDS = ["text", "date", "amount", "yes_no"] as const;
 
 const createSchema = z.object({
   name: z.string().trim().min(1, "A table needs a name.").max(120),
@@ -40,7 +40,7 @@ const createSchema = z.object({
     .array(
       z.object({
         name: z.string().trim().min(1),
-        kind: z.enum(KINDS),
+        kind: z.enum(COLUMN_KINDS),
         question: z.string().trim().min(5, "A column needs a question."),
       }),
     )
@@ -61,10 +61,9 @@ export async function tableCreateAction(
   // One question per line, `kind|name|question`. A textarea rather than a column builder
   // because the shape of the request is the backend's, and a builder that invented its own
   // shape would be a second place for the column contract to live.
-  const columns = lines(formData.get("columns")).map((line) => {
-    const [kind, name, ...rest] = line.split("|").map((p) => p.trim());
-    return { kind, name, question: rest.join("|") };
-  });
+  const lineCheck = parseColumnLines(String(formData.get("columns") ?? ""));
+  if (!lineCheck.ok) return { phase: "invalid", message: lineCheck.message };
+  const columns = lineCheck.columns;
   const parsed = createSchema.safeParse({
     name: formData.get("name"),
     documentIds: lines(formData.get("document_ids")),

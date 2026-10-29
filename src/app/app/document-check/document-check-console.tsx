@@ -33,7 +33,9 @@ function lineGlyph(result: string): { glyph: string; cls: string } {
 }
 
 /** `initialDocumentId` arrives from the composer's attach flow (Wall System → here). */
-export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocumentId?: string }) {
+export function DocumentCheckConsole({ initialDocumentId = "", initialName = null, initialReadiness = null, sharedPasscode = false }: {
+  initialDocumentId?: string; initialName?: string | null; initialReadiness?: string | null; sharedPasscode?: boolean;
+}) {
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [check, action, pending] = useActionState(async (_previous: { version: string; result: DocumentCheckState }, data: FormData) => ({
     version: String(data.get("selection_version") ?? ""),
@@ -41,8 +43,8 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
   }), { version: "", result: initial });
   const state = check.version === String(selectionVersion) ? check.result : initial;
   const [documentId, setDocumentId] = useState(initialDocumentId);
-  const [selectedName, setSelectedName] = useState<string | null>(null);
-  const [readiness, setReadiness] = useState<string | null>(null);
+  const [selectedName, setSelectedName] = useState<string | null>(initialName);
+  const [readiness, setReadiness] = useState<string | null>(initialReadiness);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [asOf, setAsOf] = useState("");
@@ -108,7 +110,7 @@ export function DocumentCheckConsole({ initialDocumentId = "" }: { initialDocume
         <h3 id="document-check-file-title">1. Add a document</h3>
         <FileDropInput id="document-check-file" onSelected={(file) => { void upload(file); }}
           onInvalid={clearDocument} onRemoved={clearDocument} disabled={uploading || pending || refreshing} />
-        <p className="meta">Readable text is stored in Wall System before checking. The original file and its digital signature are not preserved by this upload. Do not upload client-confidential files to this shared-passcode prototype.</p>
+        <p className="meta">Readable text is stored in Wall System before checking. The original file and its digital signature are not preserved by this upload.{sharedPasscode ? " Do not upload client-confidential files to this shared-passcode prototype." : ""}</p>
         {uploading ? <p role="status">Storing and reading the document…</p> : null}
         {uploadProblem ? <p role="alert" className="form-error">{uploadProblem}</p> : null}
         {selectedName ? <p role="status">Selected: {selectedName} · {readiness === "INGESTED" ? "ready to check" : readiness === "PARTIAL" ? "partly read; review with care" : readiness === "CANNOT_READ" ? "cannot be read" : readiness === "FAILED" ? "processing failed; retry it in Wall System" : readiness === "UNKNOWN" ? "status unavailable; refresh to retry" : "processing"}</p> : null}
