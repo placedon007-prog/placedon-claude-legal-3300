@@ -30,8 +30,9 @@ function Results({ model }: { model: CaseLawRenderModel }) {
       {model.note && <p className="meta">{model.note}</p>}
       {model.hits.length === 0 ? (
         <p className="cal-empty">
-          No judgment matched &ldquo;{model.query}&rdquo;. Try the case title, a party, or a
-          short legal topic. A missing result does not mean no case exists.
+          No judgment matched &ldquo;{model.query}&rdquo;. Try the case title or a party name;
+          search by legal topic is not available yet. A missing result does not mean no case
+          exists.
         </p>
       ) : (
         <ul className="vault-hits">
@@ -76,20 +77,21 @@ export function CaseLawConsole() {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="case-law-query">Case name, party, or legal topic</label>
+        <label htmlFor="case-law-query">Case name or party</label>
         <input
           id="case-law-query"
           name="query"
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="e.g. Tata v Cyrus, or oppression and mismanagement"
+          placeholder="e.g. Tata v Cyrus"
           aria-describedby="case-law-help"
         />
         <p className="meta" id="case-law-help">
-          Searches the available Supreme Court and High Court judgment collections. Topic
-          discovery depends on the collection’s search index; results are supporting authority,
-          not live case status or a verified statutory answer. Use Ask to search held statutes.
+          Matches case titles and party names in the available Supreme Court and High Court
+          judgment collections. Search by legal topic is not available yet — for a topic, ask
+          the question in Ask. Results are supporting authority, not live case status or a
+          verified statutory answer.
         </p>
         <button type="submit" disabled={pending}>
           {pending ? "Searching…" : "Search"}
