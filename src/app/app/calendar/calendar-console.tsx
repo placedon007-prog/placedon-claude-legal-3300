@@ -4,17 +4,9 @@ import { useActionState } from "react";
 import { calendarAction, type CalendarState } from "./actions";
 import { formatProvisionReference } from "@/lib/format";
 import type { DueEntry, UnknownEntry } from "@/lib/gateway/types";
+import { STATE, countedFrom, datedState } from "@/lib/calendar-display";
 
 const initial: CalendarState = { phase: "idle" };
-
-/**
- * A glyph AND a word for every state, so the two are told apart with no colour. The
- * abstain-grey is reserved for UNKNOWN, which is the one state AGENTS.md allows it on.
- */
-const STATE = {
-  DUE: { glyph: "→", word: "DUE" },
-  UNKNOWN: { glyph: "?", word: "UNKNOWN" },
-} as const;
 
 function Provision({ entry }: { entry: DueEntry | UnknownEntry }) {
   // Claim, then evidence, carried by the type. The duty and the reader-facing reference are
@@ -117,13 +109,13 @@ export function CalendarConsole() {
               {state.data.due.map((d) => (
                 <li key={d.obligation_id} className="cal-entry">
                   <p className="cal-state">
-                    <span aria-hidden="true">{STATE.DUE.glyph}</span> {STATE.DUE.word}{" "}
+                    <span aria-hidden="true">{datedState(d.state).glyph}</span> {datedState(d.state).word}{" "}
                     <span className="cal-date">{d.due}</span>
                   </p>
                   <Provision entry={d} />
                   {d.anchor_label && (
                     <p className="meta">
-                      {d.interval} from {d.anchor_label} ({d.anchor}) — supplied by you
+                      {countedFrom(d)} — supplied by you
                     </p>
                   )}
                 </li>
