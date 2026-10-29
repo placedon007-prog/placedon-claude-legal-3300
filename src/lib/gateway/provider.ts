@@ -94,6 +94,8 @@ export interface GatewayProvider {
     verdict: "APPROVED" | "REJECTED";
     reason: string;
     quotedSpan: string;
+    /** The reviewer opened the quote; the gateway refuses an approval without it. */
+    quoteViewed: boolean;
   }): Promise<EngineResult<Decision>>;
   /**
    * Ask a run to stop at its next step boundary. A REQUEST, not a kill: the work already

@@ -524,6 +524,7 @@ export async function reviewDocumentAction(
 export type DecisionState =
   | { readonly phase: "idle" }
   | { readonly phase: "recorded"; readonly data: Decision }
+  | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
@@ -557,8 +558,11 @@ export async function decideAction(
   }
 
   const gateway = await getGateway();
-  const result = await gateway.decide({ runId, itemRef, verdict, reason, quotedSpan });
+  const quoteViewed = formData.get("quote_viewed") === "true";
+  const result = await gateway.decide({ runId, itemRef, verdict, reason, quotedSpan, quoteViewed });
   if (!result.ok) return { phase: "failed", error: result.error };
+  // A refusal is the gateway's answer, not a stored decision.
+  if (isRefusal(result.data)) return { phase: "refused", code: result.data.code, detail: result.data.detail };
   return { phase: "recorded", data: result.data };
 }
 
@@ -616,6 +620,8 @@ export async function cancelRunAction(
   if (!runId) return { phase: "refused", message: "This run cannot be identified." };
   const gateway = await getGateway();
   const r = await gateway.cancel(runId);
+  // "Already finished" arrives as HTTP 200 {REFUSED, NOT_CANCELLABLE}: never "requested".
+  if (r.ok && isRefusal(r.data)) return { phase: "refused", message: r.data.detail };
   if (r.ok) {
     return { phase: "requested", note: r.data.note ?? "Cancellation requested." };
   }

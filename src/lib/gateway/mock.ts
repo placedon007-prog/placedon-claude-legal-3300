@@ -800,7 +800,12 @@ export class MockGateway implements GatewayProvider {
     verdict: "APPROVED" | "REJECTED";
     reason: string;
     quotedSpan: string;
+    quoteViewed: boolean;
   }): Promise<EngineResult<Decision>> {
+    if (input.verdict === "APPROVED" && !input.quoteViewed) {
+      return engineOk({ status: "REFUSED", code: "QUOTE_NOT_VIEWED",
+        detail: "Open the quoted text before approving." } as unknown as Decision);
+    }
     // The gateway's refusals, reproduced. A mock that accepted a one-word reason would let
     // the anti-automation-bias gate pass its tests while the real thing refused.
     const reason = input.reason.trim();

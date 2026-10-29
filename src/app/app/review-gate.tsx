@@ -70,6 +70,7 @@ export function ReviewGate({
       <input type="hidden" name="run_id" value={runId} />
       <input type="hidden" name="item_ref" value={itemRef} />
       <input type="hidden" name="quoted_span" value={quotedSpan} />
+      <input type="hidden" name="quote_viewed" value={opened ? "true" : "false"} />
 
       <details className="gate-quote" onToggle={(e) => setOpened(e.currentTarget.open)}>
         <summary>
@@ -114,6 +115,11 @@ export function ReviewGate({
       {state.phase === "invalid" ? (
         <p className="gate-error" role="alert">
           {state.message}
+        </p>
+      ) : null}
+      {state.phase === "refused" ? (
+        <p className="gate-error" role="alert">
+          Not recorded — the gateway refused this decision ({state.code}): {state.detail}
         </p>
       ) : null}
       {state.phase === "failed" ? (

@@ -124,7 +124,10 @@ export class HttpGateway implements GatewayProvider {
     route: GatewayRoute,
     path: string,
     schema: S,
-    init?: { method?: "GET" | "POST"; body?: unknown; clientAddress?: string | null },
+    init?: { method?: "GET" | "POST"; body?: unknown; clientAddress?: string | null;
+      /** This verb refuses with HTTP 200 and its caller handles `isRefusal`. Opt-in per route:
+       *  a caller that does not check would read a refusal as its success shape. */
+      refusalOn200?: boolean },
   ): Promise<EngineResult<z.infer<S>>> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -218,6 +221,11 @@ export class HttpGateway implements GatewayProvider {
 
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
+      // Some verbs refuse with HTTP 200 (runs.approve QUOTE_NOT_VIEWED, runs.cancel
+      // NOT_CANCELLABLE). For routes that opt in, a refusal is a product state, as on
+      // 404/409/503 above: it was shown as "schema_mismatch" and the decision looked lost.
+      const refusal = init?.refusalOn200 ? refusalSchema.safeParse(body) : null;
+      if (refusal?.success) return engineOk(refusal.data as z.infer<S>);
       return engineFail({
         kind: "schema_mismatch",
         route,
@@ -336,6 +344,8 @@ export class HttpGateway implements GatewayProvider {
     verdict: "APPROVED" | "REJECTED";
     reason: string;
     quotedSpan: string;
+    /** The reviewer opened the quote. The gateway refuses an approval without it. */
+    quoteViewed: boolean;
   }): Promise<EngineResult<Decision>> {
     // `runs.approve` generates `/v2/runs/approve/{run_id}` — head first, path field after.
     // NOT `/v2/runs/{run_id}/approve`, which is the shape a REST habit reaches for.
@@ -351,7 +361,9 @@ export class HttpGateway implements GatewayProvider {
           item_ref: input.itemRef,
           reason: input.reason,
           quoted_span: input.quotedSpan,
+          quote_viewed: input.quoteViewed,
         },
+        refusalOn200: true,
       },
     );
   }
@@ -361,7 +373,7 @@ export class HttpGateway implements GatewayProvider {
       GATEWAY_ROUTES.runCancel,
       GATEWAY_ROUTES.runCancel.replace("{run_id}", encodeURIComponent(runId)),
       cancelSchema,
-      { method: "POST", body: {} },
+      { method: "POST", body: {}, refusalOn200: true },
     );
   }
 
