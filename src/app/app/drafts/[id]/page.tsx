@@ -21,7 +21,7 @@ export default async function DraftPage({
   if (read.ok && isRefusal(read.data)) {
     return (
       <>
-        <h2>Draft</h2>
+        <h1>Draft</h1>
         <div role="status" className="panel register-abstain">
           <span className="register-label">Not available — {read.data.code}</span>
           <p>{read.data.detail}</p>
