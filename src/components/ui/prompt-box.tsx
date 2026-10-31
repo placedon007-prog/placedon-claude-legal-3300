@@ -26,7 +26,7 @@ import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { requiresDocumentSource } from "@/lib/document-evidence";
 import { mentionMatches, type MentionItem } from "@/lib/sources";
 import { suggestsCurrentPublicResearch } from "@/lib/public-web-intent";
-import { isFileDrag } from "@/lib/file-drop";
+import { catchStrayFileDrops, isFileDrag } from "@/lib/file-drop";
 import { cn } from "@/lib/utils";
 import { VaultPicker, type SelectedVaultFile } from "@/components/ui/vault-browser";
 
@@ -296,6 +296,15 @@ export function PromptBox(props: PromptBoxProps) {
     setDocs([...unique]);
     if (unique.length && !chosen.includes("vault")) onToggleSource("vault");
   }
+
+  // A file dropped anywhere on the page that no drop zone took attaches here, like a drop on the box.
+  const attachRef = React.useRef(attach);
+  React.useEffect(() => { attachRef.current = attach; });
+  const canAttach = Boolean(onAttach);
+  React.useEffect(() => {
+    if (!canAttach) return;
+    return catchStrayFileDrops(document, (list) => { void attachRef.current(list); }, setDropping);
+  }, [canAttach]);
 
   const menuOpen = mention !== null;
 

@@ -25,3 +25,40 @@ export function guardFileDrops(target: EventTarget): () => void {
     target.removeEventListener("drop", cancel);
   };
 }
+
+/**
+ * Hand files dropped anywhere on `target` to `onFiles` when no drop zone handled them first
+ * (a drop zone calls preventDefault). People drop a PDF on the conversation, not only on the
+ * composer, and expect it to attach. `onHover` reports when a file drag is over the page.
+ * Returns the cleanup function.
+ */
+export function catchStrayFileDrops(
+  target: EventTarget,
+  onFiles: (files: FileList) => void,
+  onHover?: (over: boolean) => void,
+): () => void {
+  const over = (event: Event) => {
+    if (!isFileDrag(event as DragEvent)) return;
+    event.preventDefault();
+    onHover?.(true);
+  };
+  const leave = (event: Event) => {
+    if ((event as DragEvent).relatedTarget == null) onHover?.(false);
+  };
+  const drop = (event: Event) => {
+    if (!isFileDrag(event as DragEvent)) return;
+    onHover?.(false);
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    const files = (event as DragEvent).dataTransfer?.files;
+    if (files && files.length) onFiles(files);
+  };
+  target.addEventListener("dragover", over);
+  target.addEventListener("dragleave", leave);
+  target.addEventListener("drop", drop);
+  return () => {
+    target.removeEventListener("dragover", over);
+    target.removeEventListener("dragleave", leave);
+    target.removeEventListener("drop", drop);
+  };
+}
