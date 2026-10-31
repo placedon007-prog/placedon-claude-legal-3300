@@ -21,7 +21,7 @@ export default async function RunPage({
     const refusal = run.ok && isRefusal(run.data) ? run.data : trace.ok && isRefusal(trace.data) ? trace.data : null;
     return (
       <>
-        <h2>Run</h2>
+        <h1>Run</h1>
         <p className="meta" style={{ marginBottom: "1.5rem" }}>
           <span className="mono">{id}</span> · <Link href="/app/runs">back to runs</Link>
         </p>
