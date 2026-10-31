@@ -369,12 +369,14 @@ function Answered({
     kind === "refused" && !nothingTraced
     && (parsed.sentences.length > 0 || (first?.citation_ids.length ?? 0) > 0);
   const servedProse = parsed.sentences.length > 0 ? (
-        <p className="max-w-[68ch] text-read text-fg">
+        // One paragraph per cited sentence: each is a separate served claim, and run together
+        // they read as one blurred block.
+        <div className="flex max-w-[68ch] flex-col gap-3 text-read text-fg">
           {parsed.sentences.map((s, i) => {
             const n = refs[i];
             const group = n === null ? null : groups[n - 1];
             return (
-              <React.Fragment key={s.n}>
+              <p key={s.n}>
                 {/* The last word and its marker never part across a line break. */}
                 {lead(s.text)}
                 <span className="whitespace-nowrap">
@@ -384,16 +386,16 @@ function Answered({
                       type="button"
                       onClick={() => open(group, active[i])}
                       aria-label={`Source ${n}${group.section ? `, Section ${group.section}` : ""}`}
-                      className="mx-1 inline-flex h-11 min-w-11 items-center justify-center rounded-chip border border-line-control px-1 align-middle text-caption leading-none font-medium text-fg-2 transition-colors duration-150 hover:border-fg hover:bg-fg hover:text-ground"
+                      className="relative ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-chip border border-line-control px-1 align-[0.1em] font-mono text-[0.6875rem] leading-none font-medium text-fg-2 transition-colors duration-150 before:absolute before:-inset-3 before:content-[''] hover:border-fg hover:bg-fg hover:text-ground focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       {n}
                     </button>
                   ) : null}
-                </span>{" "}
-              </React.Fragment>
+                </span>
+              </p>
             );
           })}
-        </p>
+        </div>
       ) : first ? (
         // Unparsed: verbatim. A reconstruction would be this app writing law.
         <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
