@@ -13,6 +13,7 @@
  * each mark is drawn only where `text[start:end]` is exactly the quote. Otherwise it shows
  * the passages alone and says so. `in_force_from: null` hides the line, never a date.
  */
+import { formatLawDate } from "@/lib/law-as-of";
 import * as React from "react";
 import { Check, Copy, X } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -137,11 +138,15 @@ function Passages({ source }: { source: OpenSource }) {
   });
   const sameText = ranges.every((x) => x && x.text === ranges[0]?.text);
   const unified = ranges.length > 0 && ranges.every(Boolean) && sameText;
+  const law = group.citations.map((c) => reads[c.id]).find((r) => r?.phase === "read" && r.data.law_as_of);
+  const dated = law?.phase === "read" && law.data.law_as_of ? <LawAsOfNote {...law.data.law_as_of} /> : null;
 
   if (unified) {
     const first = reads[group.citations[0].id];
     const data = first?.phase === "read" ? first.data : null;
     return (
+      <>
+      {dated}
       <SectionView
         text={ranges[0]!.text}
         ranges={ranges.map((r) => ({ id: r!.id, start: r!.start, end: r!.end }))}
@@ -149,10 +154,12 @@ function Passages({ source }: { source: OpenSource }) {
         count={group.citations.length}
         citation={data?.citation ?? group.citations[0]}
       />
+      </>
     );
   }
   return (
     <>
+      {dated}
       <SheetDescriptionOrText>
         {group.citations.length === 1
           ? "The passage cited, re-read from the held corpus when this panel opened."
@@ -168,6 +175,16 @@ function Passages({ source }: { source: OpenSource }) {
         text with them.
       </p>
     </>
+  );
+}
+
+/** A past-date answer's source: the date its text stood on, and whether it was rebuilt. */
+function LawAsOfNote({ date, rebuilt }: { date: string; rebuilt: boolean }) {
+  return (
+    <p className="mb-4 rounded-card border border-line-2 bg-wash px-3 py-2 text-ui text-fg">
+      Text as it stood on <span className="font-mono">{formatLawDate(date)}</span>.
+      {rebuilt ? " Wording that has since changed was rebuilt from India Code\u2019s amendment notes and has not yet been independently checked." : null}
+    </p>
   );
 }
 

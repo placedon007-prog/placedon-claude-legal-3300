@@ -9,7 +9,7 @@
  *  - N sources: which bodies of law the question is searched against (sources.list). The
  *    choice is remembered per thread by the caller.
  *  - "@": the same sources inline, plus Wall System documents found by name as you type.
- *  - As of today: a past date is disabled, with the gateway's AS_OF_UNSUPPORTED reason.
+ *  - As of: today by default; a native date picker sends a past date (the gateway may refuse it).
  *  - Matter: optional, when the firm has matters.
  *  - Tools: Research (default), Draft (a removable chip), and two that open their screens.
  *  - Unavailable voice input is omitted; no browser speech API handles legal questions.
@@ -64,6 +64,9 @@ export interface PromptBoxProps {
   matterId: string | null;
   onMatter: (id: string | null) => void;
   findDocuments?: (query: string) => Promise<DocumentLookup>;
+  /** A past date to read the law as at (YYYY-MM-DD), or null for today. */
+  asOf?: string | null;
+  onAsOf?: (value: string | null) => void;
   /** Imperative access to the composer — used to restore a draft after a sign-in detour. */
   composerRef?: React.Ref<ComposerHandle>;
   className?: string;
@@ -120,7 +123,7 @@ export function PromptBox(props: PromptBoxProps) {
   const {
     onSubmit, onAttach, pending = false, canDraft = false, tool, onToolChange: setTool,
     sources, chosen, onToggleSource, onRetrySources, matters, matterId, onMatter, findDocuments, checkDocument, matterLocked, composerRef, className,
-    carried,
+    carried, asOf = null, onAsOf,
   } = props;
   const hydrated = React.useSyncExternalStore(subscribeReady, readyInBrowser, readyOnServer);
   const ref = React.useRef<HTMLTextAreaElement>(null);
@@ -474,7 +477,7 @@ export function PromptBox(props: PromptBoxProps) {
           matterName={matters.find((m) => m.matter_id === matterId)?.name} selected={docs} capacity={Math.max(0, 20 - files.length)}
           onAdd={useVaultFiles} returnFocus={() => (vaultOrigin.current === "sources" ? sourcesButtonRef : filesButtonRef).current?.focus()} />
         {!matterLocked && files.length === 0 && docs.length === 0 ? <MatterChip matters={matters} matterId={matterId} onChange={onMatter} /> : null}
-        <AsOfChip />
+        {onAsOf ? <AsOfChip value={asOf} onChange={onAsOf} disabled={pending} /> : null}
         </> : null}
         <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
           <PopoverTrigger asChild>

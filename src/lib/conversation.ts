@@ -16,7 +16,8 @@ export function conversationTurns(conversationId: string, messages: readonly Con
         ? { phase: "answered", conversationId, envelope: reply.envelope, draftId: draft?.id ?? null,
             code: null, region: null, sources: metadata?.sources, artifacts: metadata?.artifacts,
             documentEvidence: metadata?.document_evidence, documentSummary: metadata?.document_summary,
-            documentSummaryUnavailable: metadata?.document_summary_unavailable }
+            documentSummaryUnavailable: metadata?.document_summary_unavailable,
+            lawAsOf: metadata?.law_as_of }
         : { phase: "queued", conversationId, runId: reply?.run_id ?? null,
             messageId: reply?.message_id, note: "", ...(reply?.progress ? { steps: reply.progress } : {}) },
     }];

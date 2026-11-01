@@ -18,7 +18,8 @@ import { DocumentEvidenceAnswer } from "./document-evidence-answer";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
-import { DEMO_MISMATCH_NOTICE, parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { DEMO_MISMATCH_NOTICE, parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope, type LawAsOf } from "@/lib/gateway/types";
+import { AS_OF_OFF_MESSAGE, formatLawDate, lawAsOfDetail } from "@/lib/law-as-of";
 import { envelopeKind, failedRegister, isNothingTraced, summaryUnavailableLead, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -35,7 +36,7 @@ export interface Turn {
   readonly state: TurnState | null;
   /** Public reporting is intentionally separate from the verified-law envelope. */
   readonly web?: { readonly state: WebResearchState | null; readonly mode: "GENERAL_WEB" | "CASE_DISCOVERY" };
-  readonly request?: { text: string; tool: "research" | "draft"; fileIds: readonly string[]; sources: readonly string[]; matterId: string | null; conversationId: string | null };
+  readonly request?: { text: string; tool: "research" | "draft"; fileIds: readonly string[]; sources: readonly string[]; matterId: string | null; conversationId: string | null; asOf?: string | null };
 }
 
 const BODY_STATUS: Record<string, string> = {
@@ -131,6 +132,11 @@ export function TurnView({
             Try again
           </button>
         </div>
+      ) : s.phase === "refused" && s.code === "AS_OF_UNSUPPORTED" ? (
+        // Not a legal refusal: a past date is not switched on. The question was not saved.
+        <div role="status" className="flex flex-col gap-2">
+          <p className="text-read text-fg">{AS_OF_OFF_MESSAGE}</p>
+        </div>
       ) : s.phase === "refused" ? (
         <div className="flex flex-col gap-2">
           <StatusLine kind="refused" extra={s.code} />
@@ -143,7 +149,7 @@ export function TurnView({
         </div>
       ) : (
         <Answered envelope={s.envelope} conversationId={s.conversationId} draftId={s.draftId}
-          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} documentSummaryUnavailable={s.documentSummaryUnavailable} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
+          code={s.code} sources={s.sources} documentEvidence={s.documentEvidence} documentSummary={s.documentSummary} documentSummaryUnavailable={s.documentSummaryUnavailable} lawAsOf={s.lawAsOf} artifacts={s.artifacts} onRetry={turn.request ? onRetry : undefined} retryDisabled={retryDisabled} onOpenSource={onOpenSource} onDraft={onDraft} />
       )}
       <AnswerPath turn={turn} onOpenSource={onOpenSource} />
     </section>
@@ -328,6 +334,7 @@ function Answered({
   documentEvidence,
   documentSummary,
   documentSummaryUnavailable,
+  lawAsOf,
   artifacts,
   onRetry,
   retryDisabled,
@@ -342,6 +349,7 @@ function Answered({
   documentEvidence?: DocumentEvidence;
   documentSummary?: DocumentSummary;
   documentSummaryUnavailable?: DocumentSummaryUnavailable;
+  lawAsOf?: LawAsOf;
   artifacts?: readonly ConversationArtifact[];
   onRetry?: () => void;
   retryDisabled: boolean;
@@ -440,11 +448,18 @@ function Answered({
         extra={groups.length && !setAside && !demoMismatch ? `${groups.length} source${groups.length > 1 ? "s" : ""}` : undefined}
       />
       {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
+      {lawAsOf ? (
+        <p className="text-ui font-medium text-fg">
+          Law as it stood on <span className="font-mono">{formatLawDate(lawAsOf.date)}</span>
+        </p>
+      ) : null}
 
       {setAside ? null : servedProse}
-      {rest.map((b, i) => (
-        <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
-      ))}
+      {rest.map((b, i) => {
+        // The gateway's dated block repeats the line above; show only what it adds.
+        const text = lawAsOf ? lawAsOfDetail(b.text) ?? b.text : b.text;
+        return text ? <p key={i} className="max-w-[68ch] text-body text-fg-2">{text}</p> : null;
+      })}
 
       {groups.length > 0 && !setAside ? <Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /> : null}
       {onDraft && kind === "answered" && !demoMismatch && envelope.citations.length > 0 ? <button type="button" onClick={onDraft}

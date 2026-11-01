@@ -1077,6 +1077,18 @@ export type DocumentSummary = z.infer<typeof documentSummarySchema>;
 export const documentSummaryUnavailableSchema = z.object({ reason: z.string(), retryable: z.boolean() });
 export type DocumentSummaryUnavailable = z.infer<typeof documentSummaryUnavailableSchema>;
 
+/** A past-date answer (backend `PLACEDON_ASK_AS_OF`): the date the law was read as at, whether
+ *  any wording was rebuilt from India Code's amendment notes, and how far each section is known. */
+export const lawAsOfSchema = z.object({
+  date: z.string(),
+  rebuilt: z.boolean().default(false),
+  sections: z.array(z.object({
+    provision: z.string(), fidelity: z.string(), rebuilt: z.boolean().optional(),
+    unknown: z.array(z.string()).default([]), note: z.string().optional(),
+  })).default([]),
+});
+export type LawAsOf = z.infer<typeof lawAsOfSchema>;
+
 export const turnMetadataSchema = z.object({
   schema: z.literal("conversation_turn.v1"), request_id: z.string().nullable().optional(),
   classification: z.record(z.string(), z.unknown()).optional(),
@@ -1085,6 +1097,7 @@ export const turnMetadataSchema = z.object({
   document_evidence: documentEvidenceSchema.optional(),
   document_summary: documentSummarySchema.optional(),
   document_summary_unavailable: documentSummaryUnavailableSchema.optional(),
+  law_as_of: lawAsOfSchema.optional(),
 });
 export type TurnMetadata = z.infer<typeof turnMetadataSchema>;
 
@@ -1167,6 +1180,8 @@ export const citationGetOkSchema = z.object({
     .nullable()
     .optional(),
   note: z.string().optional(),
+  /** Present when the quote was re-read against the section as it stood on a past date. */
+  law_as_of: lawAsOfSchema.pick({ date: true, rebuilt: true }).optional(),
 });
 export const citationGetSchema = z.union([citationGetOkSchema, verbRefusalSchema]);
 export type CitationGet = z.infer<typeof citationGetSchema>;

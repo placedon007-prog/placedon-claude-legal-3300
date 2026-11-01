@@ -66,6 +66,8 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const [source, setSource] = React.useState<OpenSource | null>(null);
   const [tool, setTool] = React.useState<ComposerTool>("research");
   const [matterId, setMatterId] = React.useState(initialMatterId);
+  /** A past date picked in the composer; kept for follow-ups until changed back to today. */
+  const [asOf, setAsOf] = React.useState<string | null>(null);
   const [sending, setSending] = React.useState(false);
   const [refreshingSources, setRefreshingSources] = React.useState(false);
   const router = useRouter();
@@ -170,7 +172,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     const key = restart ? crypto.randomUUID() : retry?.key ?? crypto.randomUUID();
     const request = retry?.request
       ? { ...retry.request, conversationId: restart ? conversationId : retry.request.conversationId }
-      : { text, tool: selectedTool, fileIds, sources: chosen, matterId, conversationId };
+      : { text, tool: selectedTool, fileIds, sources: chosen, matterId, conversationId, asOf };
     if (!retry || restart) recordActivity(new Date());
     // Before the turn is added: adding the first turn swaps the composer into the thread
     // layout, and the new composer reads `carried` once, when it mounts.
@@ -181,7 +183,8 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     try {
       const state = await sendAction({ conversationId: request.conversationId, requestId: key,
         text: request.text, fileIds: request.fileIds, sources: request.sources.length ? request.sources : undefined,
-        matterId: request.matterId, taskOverride: request.tool === "draft" ? "DRAFT" : undefined });
+        matterId: request.matterId, taskOverride: request.tool === "draft" ? "DRAFT" : undefined,
+        asOf: request.asOf ?? undefined });
       if (lifetime.current !== generation) return;
       if (state.phase === "signed_out") {
         // The session ended. Do NOT print "sign in" into the thread as if it were the answer:
@@ -191,6 +194,12 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         setTurns((all) => all.filter((turn) => turn.key !== key));
         router.push(`/login?next=${encodeURIComponent(path)}`);
         return;
+      }
+      // Past dates switched off (or an older gateway): nothing was saved, so the question
+      // goes back into the composer to send again for today's law.
+      if (state.phase === "refused" && state.code === "AS_OF_UNSUPPORTED") {
+        composerApi.current?.setText(request.text);
+        setAsOf(null);
       }
       const shown = state.phase === "queued" ? { ...state, queuedAt: Date.now() } : state;
       if (shown.phase === "queued") rememberQueued({ key, runId: shown.runId, progress: shown.progress ?? "", queuedAt: shown.queuedAt ?? Date.now() });
@@ -282,7 +291,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     onRetrySources={retrySources}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
     matters={context.matters} matterId={matterId} onMatter={setMatterId} matterLocked={Boolean(conversationId) || pending || Boolean(uncertain)}
-    findDocuments={lookupDocuments} className="w-full" />;
+    findDocuments={lookupDocuments} asOf={asOf} onAsOf={setAsOf} className="w-full" />;
 
   return <div ref={workspaceRef} className="ask-workspace flex min-h-dvh min-w-0 flex-1">
     <div className="flex min-w-0 flex-1 flex-col">
