@@ -3,8 +3,8 @@ import { test } from "node:test";
 import { HttpGateway } from "../src/lib/gateway/http";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { companyFactsExtractSchema, isRefusal } from "../src/lib/gateway/types";
-import { mergeFacts, readStoredFacts, sourceLine, typedFact, type StoredFact } from "../src/lib/company-facts";
-import { extractCompanyFactsAction } from "../src/app/app/company/actions";
+import { displayValue, fromProfile, isoDate, mergeFacts, profileFactSchema, readStoredFacts, sourceLine, toProfileInput, typedFact, type StoredFact } from "../src/lib/company-facts";
+import { extractCompanyFactsAction, loadCompanyProfileAction, saveCompanyProfileAction } from "../src/app/app/company/actions";
 
 // The backend's own synthetic page (checker/sources/mca_fixture.py `master_data_text()`).
 const MASTER_DATA = [
@@ -154,4 +154,74 @@ test("the action says a refusal and a role block in words, never as facts", asyn
       assert.ok(!role.ok && /role cannot/.test(role.message));
     });
   } finally { MockGateway.prototype.companyFactsExtract = original; }
+});
+
+// ── the firm's company profile (backend 032) ────────────────────────────────
+
+const CLASS = typedFact("company_class", "private", TODAY);
+
+test("company class is typed from the backend's three classes and reads in words", () => {
+  assert.ok(CLASS.ok && CLASS.fact.value === "private" && displayValue(CLASS.fact) === "Private");
+  assert.equal(typedFact("company_class", "section8", TODAY).ok, false);
+});
+
+test("profile facts round-trip: served with who and when, sent back as confirmed input", () => {
+  const served = profileFactSchema.parse({ field: "state", value: "Goa", basis: "COMPANY_FACT", label: "MCA master data, as uploaded by the user on 2026-10-01",
+    quoted_span: "Registered Address: Panaji, Goa", uploaded_on: "2026-10-01", confirmed: true, can_verify: false,
+    confirmed_by: "a1", confirmed_at: "2026-10-02T09:00:00+00:00" });
+  const stored = fromProfile(served);
+  assert.equal(stored.saved_on, "2026-10-02");
+  assert.equal(sourceLine(stored), "From an MCA master-data page uploaded on 2026-10-01");
+  assert.deepEqual(toProfileInput(stored), { field: "state", value: "Goa", basis: "COMPANY_FACT",
+    quoted_span: "Registered Address: Panaji, Goa", source_label: served.label, confirmed: true });
+  assert.equal(isoDate("14/08/2010"), "2010-08-14");
+  assert.equal(isoDate("2010-08-14"), "2010-08-14");
+  assert.equal(isoDate("August 2010"), undefined);
+});
+
+test("profile HTTP routes match the backend's rest_path", async () => {
+  const original = globalThis.fetch;
+  const seen: string[] = [];
+  globalThis.fetch = async (url) => { seen.push(String(url)); return Response.json({ facts: [] }); };
+  try {
+    const gw = new HttpGateway("http://localhost:8021", "fixture-key");
+    await gw.companyProfileGet();
+    await gw.companyProfileSet({ facts: [], reason: "Confirmed on the Company page" });
+    assert.deepEqual(seen, ["http://localhost:8021/v2/company_profile", "http://localhost:8021/v2/company-profile/set"]);
+  } finally { globalThis.fetch = original; }
+});
+
+test("load: a backend without the profile keeps browser mode; any other failure is unavailable, never empty", async () => {
+  const original = MockGateway.prototype.companyProfileGet;
+  try {
+    await withEnv({ PLACEDON_DEMO_MODE: "true" }, async () => {
+      MockGateway.prototype.companyProfileGet = async () => ({ ok: false, error: { kind: "not_found", route: "/v2/company_profile", status: 404, message: "404" } });
+      assert.deepEqual(await loadCompanyProfileAction(), { mode: "browser" });
+      MockGateway.prototype.companyProfileGet = async () => ({ ok: false, error: { kind: "server_error", route: "/v2/company_profile", status: 500, message: "500" } });
+      assert.deepEqual(await loadCompanyProfileAction(), { mode: "unavailable" });
+    });
+  } finally { MockGateway.prototype.companyProfileGet = original; }
+});
+
+test("save: the demo stores the profile firm-wide and reads it back; 404 falls back to the browser", async () => {
+  assert.ok(CLASS.ok);
+  const listed = typedFact("listed", "yes", TODAY);
+  assert.ok(listed.ok);
+  await withEnv({ PLACEDON_DEMO_MODE: "true" }, async () => {
+    const saved = await saveCompanyProfileAction([listed.fact, CLASS.fact], "Listed entered by hand, on the Company page");
+    assert.ok(saved.ok && saved.facts.length === 2);
+    const loaded = await loadCompanyProfileAction();
+    assert.ok(loaded.mode === "server" && loaded.facts.map((f) => f.field).join() === "listed,company_class");
+    const short = await saveCompanyProfileAction([listed.fact], "short");
+    assert.ok(!short.ok && !short.browserOnly);
+    const unconfirmed = await saveCompanyProfileAction([{ ...listed.fact, confirmed: false } as unknown as StoredFact], "Listed entered by hand");
+    assert.ok(!unconfirmed.ok);
+    const original = MockGateway.prototype.companyProfileSet;
+    try {
+      MockGateway.prototype.companyProfileSet = async () => ({ ok: false, error: { kind: "not_found", route: "/v2/company-profile/set", status: 404, message: "404" } });
+      const old = await saveCompanyProfileAction([listed.fact], "Listed entered by hand, on the Company page");
+      assert.ok(!old.ok && old.browserOnly);
+    } finally { MockGateway.prototype.companyProfileSet = original; }
+    await saveCompanyProfileAction([], "Cleared by the test, on the Company page");
+  });
 });

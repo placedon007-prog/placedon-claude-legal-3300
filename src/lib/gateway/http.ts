@@ -31,6 +31,8 @@ import {
   vaultDeleteSchema,
   vaultShareSchema,
   companyFactsExtractSchema,
+  companyProfileSchema,
+  companyProfileSetSchema,
   documentCheckSchema,
   conversationSendSchema,
   sourcesListSchema,
@@ -452,6 +454,16 @@ export class HttpGateway implements GatewayProvider {
   companyFactsExtract(input: { text: string; uploadedOn: string }): Promise<EngineResult<import("./types").CompanyFactsExtract>> {
     return this.call(GATEWAY_ROUTES.companyFactsExtract, GATEWAY_ROUTES.companyFactsExtract,
       companyFactsExtractSchema, { method: "POST", body: { text: input.text, uploaded_on: input.uploadedOn } });
+  }
+
+  companyProfileGet(): Promise<EngineResult<import("./types").CompanyProfile>> {
+    return this.call(GATEWAY_ROUTES.companyProfileGet, GATEWAY_ROUTES.companyProfileGet,
+      companyProfileSchema, { method: "POST", body: {}, refusalOn200: true });
+  }
+
+  companyProfileSet(input: { facts: readonly import("./types").CompanyProfileInput[]; reason: string }): Promise<EngineResult<import("./types").CompanyProfileSet>> {
+    return this.call(GATEWAY_ROUTES.companyProfileSet, GATEWAY_ROUTES.companyProfileSet,
+      companyProfileSetSchema, { method: "POST", body: { facts: [...input.facts], reason: input.reason }, refusalOn200: true });
   }
 
   conversationSend(input: {

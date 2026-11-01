@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { companyFactSchema } from "../company-facts";
+import { companyFactSchema, profileFactSchema } from "../company-facts";
 
 /**
  * Wire contract for the Placedon gateway `/v2` verbs, read from
@@ -468,6 +468,15 @@ export const companyFactsExtractOkSchema = z.object({
 });
 export const companyFactsExtractSchema = z.union([companyFactsExtractOkSchema, verbRefusalSchema]);
 export type CompanyFactsExtract = z.infer<typeof companyFactsExtractSchema>;
+/** `company_profile.get` (backend 032): the firm's confirmed facts with their provenance. */
+export const companyProfileOkSchema = z.object({ facts: z.array(profileFactSchema), note: z.string().optional() });
+export const companyProfileSchema = z.union([companyProfileOkSchema, verbRefusalSchema]);
+export type CompanyProfile = z.infer<typeof companyProfileSchema>;
+/** `company_profile.set`: SAVED with the profile as now stored, or a refusal. */
+export const companyProfileSetOkSchema = z.object({ status: z.literal("SAVED"), facts: z.array(profileFactSchema) });
+export const companyProfileSetSchema = z.union([companyProfileSetOkSchema, verbRefusalSchema]);
+export type CompanyProfileSet = z.infer<typeof companyProfileSetSchema>;
+export type CompanyProfileInput = { field: string; value: string; basis: string; quoted_span: string; source_label: string; confirmed: true };
 
 /** `vault.delete`: the document and its searchable chunks are removed from this workspace.
  *  `deleted: false` means nothing was removed and must never be shown as a deletion.
