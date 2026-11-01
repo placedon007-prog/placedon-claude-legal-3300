@@ -16,6 +16,7 @@ import {
   sourcesSearchSchema,
   webResearchSchema,
 } from "./types";
+import { formatLawDate } from "../law-as-of";
 import type {
   Matter,
   Membership,
@@ -288,6 +289,8 @@ const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.pars
 const RECORDED_TRACE = runTraceSchema.parse(SOURCES.trace_default.body);
 const RECORDED_RUN_IDS = new Set(Object.values(BY_SOURCES).map((r) => r.run_id ?? ""));
 const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
+/** Section 96's last amendment took effect on this date (Act 1 of 2018, w.e.f. 13-6-2018). */
+const S96_LAST_AMENDED = "2018-06-13";
 /** The one ANSWERED recording is the Section 96 AGM reply; only an AGM question gets it as its answer. */
 const RECORDED_QUESTION = /annual general meeting|\bagm\b|(?:section|s\.|u\/s)\s*96(?!\d)/i;
 // Any other question still sees the recording, led by a notice saying whose question it answers.
@@ -462,6 +465,7 @@ export class MockGateway implements GatewayProvider {
     taskOverride?: string;
     sources?: readonly string[];
     matterId?: string;
+    asOf?: string;
   }): Promise<EngineResult<ConversationSend>> {
     if (input.sources?.some((id) => !["held", "vault"].includes(id)) || input.sources?.join(",") === "vault") {
       return engineOk({ status: "REFUSED", code: "NOT_RECORDED", detail: "No recorded reply exists for this source selection in the demo." });
@@ -486,6 +490,19 @@ export class MockGateway implements GatewayProvider {
         : /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
           ? ABSTAINED
           : RECORDED_QUESTION.test(input.text) ? ANSWERED : ANSWERED_ELSEWHERE;
+    // Past dates: the live default is OFF (AS_OF_UNSUPPORTED). The one recording, Section 96,
+    // has not changed since its last amendment took effect on 13 June 2018, so the demo may show
+    // it for a date from then on. An earlier date, or any other question, gets the refusal.
+    const pastDate = input.asOf && /^\d{4}-\d{2}-\d{2}$/.test(input.asOf) ? input.asOf : undefined;
+    if (pastDate && !(recorded === ANSWERED && pastDate >= S96_LAST_AMENDED)) {
+      return engineOk({ status: "REFUSED", code: "AS_OF_UNSUPPORTED", detail: "This conversation reads current law only. Ask without as_of." });
+    }
+    const lawAsOf = pastDate ? { date: pastDate, rebuilt: false, sections: [{ provision: "s.96", fidelity: "EXACT", rebuilt: false, unknown: [] }] } : undefined;
+    const envelope = pastDate && recorded.envelope ? { ...recorded.envelope, as_of: pastDate, text_blocks: [
+      ...recorded.envelope.text_blocks.slice(0, 1),
+      { text: `Law as it stood on ${formatLawDate(pastDate)}.`, citation_ids: [] },
+      ...recorded.envelope.text_blocks.slice(1),
+    ] } : recorded.envelope;
     const payload = JSON.stringify(input);
     const previous = input.requestId ? REQUESTS.get(input.requestId) : undefined;
     if (previous && previous.payload !== payload) return engineOk({ status: "REFUSED", code: "REQUEST_ID_CONFLICT", detail: "This request ID belongs to a different request." });
@@ -500,8 +517,9 @@ export class MockGateway implements GatewayProvider {
       role: "assistant",
       text: "",
       run_id: recorded.run_id ?? null,
-      envelope: slow ? null : recorded.envelope,
+      envelope: slow ? null : envelope,
       metadata: { schema: "conversation_turn.v1", request_id: input.requestId, artifacts: [],
+        ...(lawAsOf ? { law_as_of: lawAsOf } : {}),
         // Synthetic coverage for the explicitly labelled demo workspace; never live retrieval.
         sources: { picked: [...input.sources ?? ["held", "vault"]], searched: ["held"], report: [
           { id: "held", tier: "HELD", status: "available", outcome: "SEARCHED_HITS", hits: recorded.envelope?.citations.length ?? 0, reason: "Recorded example passages in this demo." },
@@ -517,7 +535,7 @@ export class MockGateway implements GatewayProvider {
     if (input.requestId) REQUESTS.set(input.requestId, { conversationId: id, payload });
     const filedTo = FILED.get(id)?.matter_id ?? input.matterId;
     if (filedTo) FILED.set(id, { matter_id: filedTo, title: FILED.get(id)?.title ?? input.text.slice(0, 60), updated_at: new Date().toISOString() });
-    if (slow) PENDING.set(reply.message_id, { startedAt: Date.now(), envelope: recorded.envelope });
+    if (slow) PENDING.set(reply.message_id, { startedAt: Date.now(), envelope: envelope ?? null });
     return engineOk({ ...recorded, envelope: reply.envelope ?? null, conversation_id: id, message_id: reply.message_id, metadata: reply.metadata ?? undefined });
   }
 
@@ -625,7 +643,11 @@ export class MockGateway implements GatewayProvider {
     conversationId: string;
   }): Promise<EngineResult<CitationGet>> {
     const raw = (RECORDED.citations as Record<string, unknown>)[input.citationId];
-    const hit = raw === undefined ? undefined : citationGetOkSchema.parse(raw);
+    const read = raw === undefined ? undefined : citationGetOkSchema.parse(raw);
+    // A past-date turn in this demo thread re-reads against its own date, as the gateway does.
+    // ponytail: recorded citation ids repeat across turns, so a thread mixing dates takes the first dated turn.
+    const law = THREADS.get(input.conversationId)?.find((m) => m.metadata?.law_as_of)?.metadata?.law_as_of;
+    const hit = read && law ? { ...read, law_as_of: { date: law.date, rebuilt: law.rebuilt } } : read;
     return engineOk(
       hit ?? {
         status: "REFUSED",

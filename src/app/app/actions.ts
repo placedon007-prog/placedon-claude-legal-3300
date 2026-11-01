@@ -6,7 +6,8 @@ import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse, DocumentSummaryUnavailable, RunProgress } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, DocumentSummaryUnavailable, LawAsOf, RunProgress } from "@/lib/gateway/types";
+import { pastLawDate } from "@/lib/law-as-of";
 import type { EngineError } from "@/lib/engine/errors";
 import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
@@ -47,6 +48,8 @@ export type TurnState =
       readonly documentSummary?: DocumentSummary;
       /** The summary cannot run until an operator acts: shown without a retry. */
       readonly documentSummaryUnavailable?: DocumentSummaryUnavailable;
+      /** A past-date answer: the date the law was read as at, and whether wording was rebuilt. */
+      readonly lawAsOf?: LawAsOf;
       readonly artifacts?: readonly ConversationArtifact[];
       /** The refusal/failure code the gateway returned beside the envelope (NO_MODEL,
        *  NOTHING_TRACED, NO_EVIDENCE…), so the screen can tell a model shortfall from an
@@ -93,6 +96,8 @@ export async function sendAction(input: {
   /** Source ids from sources.list; the gateway refuses an unknown one by name. */
   sources?: readonly string[];
   matterId?: string | null;
+  /** A past date (YYYY-MM-DD) picked in the composer; anything else means today's law. */
+  asOf?: string;
 }): Promise<TurnState> {
   if (!(await hasSession())) return { phase: "signed_out" };
   const request = z.string().regex(/^[A-Za-z0-9_-]{8,128}$/).safeParse(input.requestId);
@@ -109,6 +114,11 @@ export async function sendAction(input: {
   if (!sources.success) return { phase: "invalid", message: "Those sources are not valid ids." };
   const matter = input.matterId ? idSchema.safeParse(input.matterId) : null;
   if (matter && !matter.success) return { phase: "invalid", message: "That matter id is not valid." };
+  // The server's own calendar decides "past"; an invalid or future date is dropped, not sent.
+  const asOf = pastLawDate(input.asOf, new Date().toISOString().slice(0, 10));
+  if (input.asOf && !asOf && input.asOf < new Date().toISOString().slice(0, 10)) {
+    return { phase: "invalid", message: "Pick a date from 1 April 2014 to today." };
+  }
 
   const gateway = await getGateway();
   const result = await gateway.conversationSend({
@@ -119,6 +129,7 @@ export async function sendAction(input: {
     taskOverride: override.data,
     sources: sources.data,
     matterId: matter?.data,
+    asOf,
   });
   if (!result.ok) return { phase: "failed", error: result.error };
   const data = result.data;
@@ -153,6 +164,7 @@ export async function sendAction(input: {
     documentEvidence: data.metadata?.document_evidence ?? data.document_evidence,
     documentSummary: data.metadata?.document_summary,
     documentSummaryUnavailable: data.metadata?.document_summary_unavailable,
+    lawAsOf: data.metadata?.law_as_of,
     artifacts: data.metadata?.artifacts ?? [
       ...(data.draft_id ? [{ type: "draft" as const, id: data.draft_id, version: data.version }] : []),
       ...(data.grid_id ? [{ type: "review_table" as const, id: data.grid_id }] : []),

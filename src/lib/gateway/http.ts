@@ -462,6 +462,7 @@ export class HttpGateway implements GatewayProvider {
     taskOverride?: string;
     sources?: readonly string[];
     matterId?: string;
+    asOf?: string;
   }): Promise<EngineResult<ConversationSend>> {
     return this.call(GATEWAY_ROUTES.conversationSend, GATEWAY_ROUTES.conversationSend,
       conversationSendSchema, {
@@ -474,6 +475,7 @@ export class HttpGateway implements GatewayProvider {
           ...(input.taskOverride ? { task_override: input.taskOverride } : {}),
           ...(input.sources ? { sources: [...input.sources] } : {}),
           ...(input.matterId ? { matter_id: input.matterId } : {}),
+          ...(input.asOf ? { as_of: input.asOf } : {}),
         },
       });
   }
