@@ -3,8 +3,8 @@
 /**
  * What this BROWSER remembers: the threads it started and whether the sidebar is expanded.
  *
- * There is no all-threads verb (`conversation.list` needs a matter), so the sidebar lists
- * only these, and says so. Storage can be missing or throw (private windows, blocked site
+ * With the shared passcode the sidebar lists only these, and says so. Signed-in accounts
+ * also see their saved conversations, listed by the server one matter at a time. Storage can be missing or throw (private windows, blocked site
  * data); every read falls back to the empty state rather than breaking the screen.
  */
 import * as React from "react";
