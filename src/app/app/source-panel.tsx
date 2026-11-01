@@ -11,7 +11,7 @@
  * When the gateway serves the section the quotes were re-read from (`section`, only on a
  * re-verified quote), the panel shows that section once with every cited passage marked;
  * each mark is drawn only where `text[start:end]` is exactly the quote. Otherwise it shows
- * the passages alone and says so. `in_force_from: null` is "not recorded", never a date.
+ * the passages alone and says so. `in_force_from: null` hides the line, never a date.
  */
 import * as React from "react";
 import { Check, Copy, X } from "lucide-react";
@@ -322,7 +322,7 @@ function Evidence({ citation }: { citation: EnvelopeCitation }) {
     <div className="mt-3 border-t border-line pt-3">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-caption text-fg-2">
         <dt className="text-fg-3">provision</dt><dd>{citation.instrument}, {citation.provision}</dd>
-        <dt className="text-fg-3">in force from</dt><dd>{citation.in_force_from ?? "not recorded"}</dd>
+        {citation.in_force_from ? <><dt className="text-fg-3">in force from</dt><dd>{citation.in_force_from}</dd></> : null}
       </dl>
       <details className="mt-2 text-caption text-fg-2">
         <summary className="min-h-11 cursor-pointer content-center">Verification details</summary>
