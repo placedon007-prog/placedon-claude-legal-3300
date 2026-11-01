@@ -269,6 +269,9 @@ export interface CitedSentence {
   readonly span: readonly [number, number] | null;
 }
 
+/** Leads the `[notice]` the demo gateway puts on a recording shown for a different question. */
+export const DEMO_MISMATCH_NOTICE = "Demo: no recorded answer for your question.";
+
 export interface ParsedAnswer {
   /** The leading "[1 of 4 sentence(s) … did not trace …]" line, when present. */
   readonly notice: string | null;

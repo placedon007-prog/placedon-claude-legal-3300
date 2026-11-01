@@ -7,6 +7,7 @@ import RECORDED from "./fixtures/conversation.json" with { type: "json" };
 import SOURCES from "./fixtures/sources.json" with { type: "json" };
 import {
   citationGetOkSchema,
+  DEMO_MISMATCH_NOTICE,
   conversationSendOkSchema,
   mattersListSchema,
   runTraceSchema,
@@ -235,6 +236,20 @@ const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.pars
 const RECORDED_TRACE = runTraceSchema.parse(SOURCES.trace_default.body);
 const RECORDED_RUN_IDS = new Set(Object.values(BY_SOURCES).map((r) => r.run_id ?? ""));
 const ABSTAINED = conversationSendOkSchema.parse(RECORDED.send_abstained);
+/** The one ANSWERED recording is the Section 96 AGM reply; only an AGM question gets it as its answer. */
+const RECORDED_QUESTION = /annual general meeting|\bagm\b|(?:section|s\.|u\/s)\s*96(?!\d)/i;
+// Any other question still sees the recording, led by a notice saying whose question it answers.
+// The statutory text is untouched: only a `[notice]` line (see parseAnswer) is put in front of it.
+const ANSWERED_ELSEWHERE = conversationSendOkSchema.parse({
+  ...RECORDED.send_answered,
+  envelope: {
+    ...RECORDED.send_answered.envelope,
+    text_blocks: RECORDED.send_answered.envelope.text_blocks.map((b, i) => i ? b : {
+      ...b,
+      text: `[${DEMO_MISMATCH_NOTICE} Showing a recorded answer to: \u201c${RECORDED.conversation.conversation.title}\u201d]\n${b.text}`,
+    }),
+  },
+});
 
 /**
  * `sources.search` is unimplemented on the backend as of this writing (it ships on branch
@@ -418,7 +433,7 @@ export class MockGateway implements GatewayProvider {
         ? CASE_FOUND
         : /insider|sebi|lodr|data protection|dpdp|arbitration|stamp/i.test(input.text)
           ? ABSTAINED
-          : ANSWERED;
+          : RECORDED_QUESTION.test(input.text) ? ANSWERED : ANSWERED_ELSEWHERE;
     const payload = JSON.stringify(input);
     const previous = input.requestId ? REQUESTS.get(input.requestId) : undefined;
     if (previous && previous.payload !== payload) return engineOk({ status: "REFUSED", code: "REQUEST_ID_CONFLICT", detail: "This request ID belongs to a different request." });
