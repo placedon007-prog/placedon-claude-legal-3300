@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { citationGetOkSchema, turnMetadataSchema } from "../src/lib/gateway/types";
-import { formatLawDate, lawAsOfDetail, LAW_DATE_MIN, localToday, pastLawDate } from "../src/lib/law-as-of";
+import { formatLawDate, lawAsOfDetail, LAW_DATE_MIN, indiaToday, pastLawDate } from "../src/lib/law-as-of";
 
 const AGM = "What is the time limit for holding an annual general meeting?";
 
@@ -21,7 +21,16 @@ test("only a valid past date from 1 April 2014 is sent; today or nothing means c
 test("dates read the way a lawyer writes them", () => {
   assert.equal(formatLawDate("2022-03-12"), "12 March 2022");
   assert.equal(formatLawDate("2014-04-01"), "1 April 2014");
-  assert.equal(localToday(new Date(2026, 10, 1, 23, 30)), "2026-11-01");
+  // 23:30 IST on 1 Nov is 18:00 UTC; 00:30 IST on 2 Nov is still 1 Nov in UTC.
+  assert.equal(indiaToday(new Date("2026-11-01T18:00:00Z")), "2026-11-01");
+  assert.equal(indiaToday(new Date("2026-11-01T19:00:00Z")), "2026-11-02");
+});
+
+test("near midnight IST, yesterday in India is a past date even while UTC is still on it", () => {
+  const justAfterMidnightIst = new Date("2026-11-01T19:00:00Z"); // 00:30 IST, 2 Nov
+  const today = indiaToday(justAfterMidnightIst);
+  assert.equal(pastLawDate("2026-11-01", today), "2026-11-01", "1 Nov is sent as a past date");
+  assert.equal(pastLawDate("2026-11-02", today), undefined, "2 Nov is today in India: current law");
 });
 
 test("the backend's dated block loses only the sentence the banner already shows", () => {

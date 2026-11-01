@@ -14,10 +14,10 @@ export const AS_OF_OFF_MESSAGE =
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-/** Today as YYYY-MM-DD in the reader's own calendar, the way a native date input reads it. */
-export function localToday(now: Date = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+/** Today as YYYY-MM-DD in India (Asia/Kolkata), on the browser and the server alike, so a date
+ *  picked just before midnight IST is judged against the same calendar the reader sees. */
+export function indiaToday(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
 /** A real calendar date, YYYY-MM-DD, or null. */
@@ -35,7 +35,7 @@ export function formatLawDate(iso: string): string {
 }
 
 /** The date to send: only a valid PAST date from LAW_DATE_MIN; today or nothing means current law. */
-export function pastLawDate(value: string | null | undefined, today: string = localToday()): string | undefined {
+export function pastLawDate(value: string | null | undefined, today: string = indiaToday()): string | undefined {
   if (!value || !parse(value) || value >= today || value < LAW_DATE_MIN) return undefined;
   return value;
 }

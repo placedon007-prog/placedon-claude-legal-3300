@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { MentionItem } from "@/lib/sources";
-import { formatLawDate, LAW_DATE_MIN, localToday, pastLawDate } from "@/lib/law-as-of";
+import { formatLawDate, LAW_DATE_MIN, indiaToday, pastLawDate } from "@/lib/law-as-of";
 import { cn } from "@/lib/utils";
 
 export { SourcesChip } from "./source-picker";
@@ -109,7 +109,7 @@ export function AsOfChip({ value, onChange, disabled = false }: {
   disabled?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
-  const today = localToday();
+  const today = indiaToday();
   const picked = pastLawDate(value, today);
   const label = picked ? `As of ${formatLawDate(picked)}` : "As of today";
   return (

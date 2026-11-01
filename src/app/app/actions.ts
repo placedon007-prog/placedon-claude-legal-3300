@@ -7,7 +7,7 @@ import { getGateway } from "@/lib/gateway";
 import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
 import type { Decision, DocumentResponse, DocumentSummaryUnavailable, LawAsOf, RunProgress } from "@/lib/gateway/types";
-import { pastLawDate } from "@/lib/law-as-of";
+import { indiaToday, pastLawDate } from "@/lib/law-as-of";
 import type { EngineError } from "@/lib/engine/errors";
 import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
@@ -114,9 +114,10 @@ export async function sendAction(input: {
   if (!sources.success) return { phase: "invalid", message: "Those sources are not valid ids." };
   const matter = input.matterId ? idSchema.safeParse(input.matterId) : null;
   if (matter && !matter.success) return { phase: "invalid", message: "That matter id is not valid." };
-  // The server's own calendar decides "past"; an invalid or future date is dropped, not sent.
-  const asOf = pastLawDate(input.asOf, new Date().toISOString().slice(0, 10));
-  if (input.asOf && !asOf && input.asOf < new Date().toISOString().slice(0, 10)) {
+  // India's calendar decides "past"; an invalid or future date is dropped, not sent.
+  const today = indiaToday();
+  const asOf = pastLawDate(input.asOf, today);
+  if (input.asOf && !asOf && input.asOf < today) {
     return { phase: "invalid", message: "Pick a date from 1 April 2014 to today." };
   }
 
