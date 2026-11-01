@@ -14,6 +14,7 @@ import {
   Archive,
   CalendarDays,
   FileCheck2,
+  Building2,
   FileSearch,
   History,
   LogOut,
@@ -65,6 +66,7 @@ const LINKS = [
   { href: "/app/tables", label: "Review tables", icon: Table2 },
   { href: "/app/drafts", label: "Drafts", icon: PenLine },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/app/company", label: "Company", icon: Building2 },
   { href: "/app/runs", label: "Runs", icon: History },
   { href: "/app/team", label: "Team", icon: Users },
 ] as const;

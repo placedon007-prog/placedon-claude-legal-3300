@@ -67,6 +67,9 @@ export const GATEWAY_ROUTES = {
   usageStatus: "/v2/usage/status",
   // `vault.share` (LAWYER): the uploader shares an UNFILED document with the whole firm, or stops.
   vaultShare: "/v2/vault/share",
+  // `company_facts.extract` (LAWYER): reads an MCA master-data page's TEXT. Returns
+  // unconfirmed facts with the line each was read from; it stores nothing.
+  companyFactsExtract: "/v2/company-facts/extract",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",

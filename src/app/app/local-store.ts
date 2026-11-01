@@ -12,6 +12,7 @@ import type { LocalThread } from "@/lib/thread";
 import type { QueuedMemory } from "@/lib/conversation";
 import type { ThreadDocument } from "@/lib/thread-documents";
 import { activityAt, cleanName, MAX_ACTIVITY, type Activity } from "@/lib/greeting";
+import { readStoredFacts, type StoredFact } from "@/lib/company-facts";
 
 const THREADS_KEY = "placedon.console.threads.v1";
 const SIDEBAR_KEY = "placedon.console.sidebar.v1";
@@ -244,4 +245,17 @@ export function rememberCarried(conversationId: string, documents: readonly Thre
 
 export function rememberedCarried(conversationId: string | null): readonly ThreadDocument[] | undefined {
   return conversationId ? carriedDocuments.get(conversationId) : undefined;
+}
+
+// Company facts. The backend takes them with a request and does not store them, so this
+// browser keeps the confirmed ones; the Company page says so.
+const COMPANY_KEY = "placedon.console.company.v1";
+
+export function useCompanyFacts(): readonly StoredFact[] {
+  const raw = useStored(COMPANY_KEY);
+  return React.useMemo(() => readStoredFacts(raw), [raw]);
+}
+
+export function saveCompanyFacts(facts: readonly StoredFact[]): void {
+  write(COMPANY_KEY, JSON.stringify(facts));
 }

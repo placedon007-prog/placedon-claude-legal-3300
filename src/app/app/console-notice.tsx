@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
  */
 const PAGE_LIMIT: Record<string, string> = {
   "/app/calendar": "No date is given without the fact it depends on. Model hosted in UAE North.",
+  "/app/company": "Company details are what you entered or what your uploaded page says; none is verified.",
   "/app/case-law": "Judgment search, not live case status.",
   "/app/contracts": "The playbook is a company standard, not law: nothing here says a clause is valid or enforceable.",
   "/app/document-check": "Flags what needs lawyer review; it does not certify validity.",

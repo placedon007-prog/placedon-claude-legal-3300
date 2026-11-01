@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { companyFactSchema } from "../company-facts";
 
 /**
  * Wire contract for the Placedon gateway `/v2` verbs, read from
@@ -455,6 +456,18 @@ export const vaultShareOkSchema = z.object({
 });
 export const vaultShareSchema = z.union([vaultShareOkSchema, verbRefusalSchema]);
 export type VaultShare = z.infer<typeof vaultShareSchema>;
+/** `company_facts.extract`: unconfirmed facts, each with the line it was read from.
+ *  `unmatched` names the fields it looked for and did not find. Refusals: CANNOT_READ
+ *  (no text), BAD_REQUEST (no upload date), PERSONAL_DATA. */
+export const companyFactsExtractOkSchema = z.object({
+  source_label: z.string(),
+  facts: z.array(companyFactSchema),
+  unmatched: z.array(z.string()),
+  director_lines_dropped: z.number().optional(),
+  note: z.string().optional(),
+});
+export const companyFactsExtractSchema = z.union([companyFactsExtractOkSchema, verbRefusalSchema]);
+export type CompanyFactsExtract = z.infer<typeof companyFactsExtractSchema>;
 
 /** `vault.delete`: the document and its searchable chunks are removed from this workspace.
  *  `deleted: false` means nothing was removed and must never be shown as a deletion.
