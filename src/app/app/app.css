@@ -209,7 +209,7 @@
 /* Forms */
 .console label { display: block; font-size: var(--text-ui); margin-bottom: 0.45rem; color: var(--c-fg-2); }
 .console textarea:not(.pb-input), .console input[type="text"], .console input[type="password"],
-.console input[type="date"], .console input[type="search"]:not(.bare), .console select {
+.console input[type="date"], .console input[type="email"], .console input[type="search"]:not(.bare), .console select {
   width: 100%;
   min-height: 44px;
   background: var(--c-ground);
@@ -778,3 +778,27 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
   margin: 0.125rem 0 0;
 }
 .console .web-search-consent span { min-width: 0; }
+
+/* ── team (matters, access, invites) ─────────────────────────────────────── */
+/* flex + gap, not space-y: the unlayered global `p {}` beats Tailwind's margins. */
+.team { display: flex; flex-direction: column; gap: 40px; margin-top: 24px; }
+.team > section { display: flex; flex-direction: column; gap: 8px; }
+.team-h2 { margin: 0; font-size: var(--text-title); font-weight: 600; }
+.team-account { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 12px 0; border-top: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); }
+.team-account p, .team-note, .team-form p, .team-row p { margin: 0; }
+.team-note { font-size: var(--text-ui); color: var(--c-fg-2); }
+.team-note:empty { display: none; }
+.team-id { font-family: var(--font-code); font-size: var(--text-caption); color: var(--c-fg-2); overflow-wrap: anywhere; }
+.team-form { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.console-main .team-form button[type="submit"] { margin-top: 0; align-self: flex-start; }
+.team-form label { margin-bottom: 6px; }
+.team-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px; }
+.team-fields select { width: 100%; min-width: 0; }
+.team-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.team-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--c-line); }
+.team-list > li { border-bottom: 1px solid var(--c-line); padding: 8px 0; }
+.team-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.team-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.team-people { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 8px 16px; padding-left: 16px; border-left: 1px solid var(--c-line); }
+.team-invite-link { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-top: 12px; padding: 12px; border: 1px solid var(--c-line-2); border-radius: 10px; }
+@media (max-width: 480px) { .team-people { margin-left: 0; padding-left: 12px; } }

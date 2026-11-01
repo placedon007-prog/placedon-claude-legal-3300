@@ -16,6 +16,8 @@ import {
   webResearchSchema,
 } from "./types";
 import type {
+  Matter,
+  Membership,
   CitationGet,
   ConversationGet,
   MattersList,
@@ -230,6 +232,11 @@ const REQUESTS = new Map<string, { conversationId: string; payload: string }>();
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
 const SOURCES_LIST = sourcesListSchema.parse(MAIN_SOURCES);
 const MATTERS = mattersListSchema.parse(SOURCES.matters_list.body);
+/** Demo team state. Module-level because a MockGateway is built per request; synthetic only.
+ *  ponytail: per-process and unbounded, like THREADS above. */
+const DEMO_ME = { actor_id: "00000000-0000-4000-8000-00000000d3e0", tenant_id: "demo", email: "demo@placedon.example", role: "admin" as const, label: "Demo admin" };
+const DEMO_MATTERS: Matter[] = [];
+const DEMO_MEMBERS = new Map<string, Membership[]>();
 const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
   "held,vault": ANSWERED, held: ANSWERED,
 };
@@ -485,7 +492,62 @@ export class MockGateway implements GatewayProvider {
   }
 
   async mattersList(): Promise<EngineResult<MattersList>> {
-    return engineOk(MATTERS);
+    return engineOk({ matters: [...MATTERS.matters, ...DEMO_MATTERS] });
+  }
+
+  /* ── team (demo: the caller is an admin; nothing leaves this process) ─── */
+  async authMe(): Promise<EngineResult<import("./types").AuthMe>> {
+    return engineOk(DEMO_ME);
+  }
+
+  async matterCreate(input: { name: string; clientRef?: string }): Promise<EngineResult<import("./types").MatterCreate>> {
+    const name = input.name.trim();
+    // The backend's own words for 019 matters_tenant_name_idx, as HTTP 400 surfaces them.
+    if (DEMO_MATTERS.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
+      return engineFail({ kind: "bad_request", route: GATEWAY_ROUTES.mattersCreate, status: 400,
+        message: "Placedon answered with an error (HTTP 400).", detail: `'${name}' is already a matter in this tenant` });
+    }
+    const matter = { matter_id: crypto.randomUUID(), name, client_ref: input.clientRef ?? "" };
+    DEMO_MATTERS.push({ ...matter, role: "owner" });
+    DEMO_MEMBERS.set(matter.matter_id, [{ actor_id: DEMO_ME.actor_id, role: "owner", granted_by: DEMO_ME.actor_id,
+      granted_at: new Date().toISOString(), grant_reason: "created the matter" }]);
+    return engineOk({ ...matter, note: "Work is filed to a matter." });
+  }
+
+  async matterMembers(matterId: string): Promise<EngineResult<import("./types").MatterMembers>> {
+    const members = DEMO_MEMBERS.get(matterId);
+    if (!members) return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: "No matter with that id is available to you." });
+    return engineOk({ matter_id: matterId, memberships: [...members] });
+  }
+
+  async matterGrant(input: { matterId: string; actorId: string; role: "owner" | "member" | "viewer"; reason: string }): Promise<EngineResult<import("./types").MatterGrant>> {
+    const members = DEMO_MEMBERS.get(input.matterId);
+    if (!members) return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: "No matter with that id is available to you." });
+    const membership = { actor_id: input.actorId, role: input.role, granted_by: DEMO_ME.actor_id,
+      granted_at: new Date().toISOString(), grant_reason: input.reason };
+    DEMO_MEMBERS.set(input.matterId, [...members.filter((m) => m.actor_id !== input.actorId), membership]);
+    return engineOk({ status: "GRANTED" as const, membership, self_grant: input.actorId === DEMO_ME.actor_id });
+  }
+
+  async matterRevoke(input: { matterId: string; actorId: string; reason: string }): Promise<EngineResult<import("./types").MatterRevoke>> {
+    const members = DEMO_MEMBERS.get(input.matterId);
+    if (!members) return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: "No matter with that id is available to you." });
+    const kept = members.filter((m) => m.actor_id !== input.actorId);
+    DEMO_MEMBERS.set(input.matterId, kept);
+    return engineOk({ status: kept.length < members.length ? "REVOKED" as const : "NO_ACTIVE_GRANT" as const,
+      matter_id: input.matterId, actor_id: input.actorId });
+  }
+
+  async inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>> {
+    // A demo token: invites.accept fails closed in demo, so this link can never create an account.
+    return engineOk({ invite_id: crypto.randomUUID(), email: input.email, role: input.role,
+      expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(), token: "demo-invite-cannot-be-accepted" });
+  }
+
+  async usageStatus(): Promise<EngineResult<import("./types").UsageStatus>> {
+    // Synthetic figures against the backend's real per-firm cap (TENANT_MONTHLY_CAP_INR).
+    return engineOk({ readable: true, month: new Date().toISOString().slice(0, 7),
+      tenant: { month_inr: 182.4, month_cap_inr: 700, remaining_inr: 517.6 } });
   }
 
   async conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>> {

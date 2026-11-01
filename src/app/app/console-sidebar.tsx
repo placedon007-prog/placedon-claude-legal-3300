@@ -27,6 +27,7 @@ import {
   SquarePen,
   Table2,
   UserRound,
+  Users,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -65,6 +66,7 @@ const LINKS = [
   { href: "/app/drafts", label: "Drafts", icon: PenLine },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/runs", label: "Runs", icon: History },
+  { href: "/app/team", label: "Team", icon: Users },
 ] as const;
 
 const item =

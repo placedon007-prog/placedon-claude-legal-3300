@@ -1277,7 +1277,77 @@ export type WebResearch = z.infer<typeof webResearchSchema>;
 /** `matters.list`: this firm's matters. A thread may be filed to one (`matter_id`). */
 export const mattersListSchema = z.object({
   matters: z.array(
-    z.object({ matter_id: z.string(), name: z.string(), client_ref: z.string().optional() }),
+    z.object({
+      matter_id: z.string(), name: z.string(), client_ref: z.string().optional(),
+      /** 028: the caller's own role on the matter; `null` for an admin who holds no grant. */
+      role: z.enum(["owner", "member", "viewer"]).nullable().optional(),
+    }),
   ),
 });
 export type MattersList = z.infer<typeof mattersListSchema>;
+export type Matter = MattersList["matters"][number];
+
+/* ── team: auth.me, matters.*, invites.create, usage.status ────────────────── */
+
+/** `auth.me`: the caller's own row. There is no argument that names somebody else. */
+export const authMeSchema = z.object({
+  actor_id: z.string(), tenant_id: z.string(), email: z.string().nullable(),
+  role: accountRoleSchema, label: z.string().optional(),
+});
+export type AuthMe = z.infer<typeof authMeSchema>;
+
+/** `matters.create` (LAWYER). A duplicate name is HTTP 400 BAD_REQUEST, read from `detail`. */
+export const matterCreateSchema = z.union([
+  z.object({ matter_id: z.string(), name: z.string(), client_ref: z.string().optional(), note: z.string().optional() }),
+  verbRefusalSchema,
+]);
+export type MatterCreate = z.infer<typeof matterCreateSchema>;
+
+/** One live grant (028 matter_memberships). The backend names the person by account id only. */
+export const membershipSchema = z.object({
+  actor_id: z.string(), role: z.enum(["owner", "member", "viewer"]),
+  granted_by: z.string().nullable().optional(), granted_at: z.string().nullable().optional(),
+  grant_reason: z.string().nullable().optional(),
+});
+export type Membership = z.infer<typeof membershipSchema>;
+
+/** `matters.members` (ADMIN). NOT_FOUND (HTTP 404) for a matter that is not this firm's. */
+export const matterMembersSchema = z.union([
+  z.object({ matter_id: z.string(), memberships: z.array(membershipSchema) }),
+  verbRefusalSchema,
+]);
+export type MatterMembers = z.infer<typeof matterMembersSchema>;
+
+/** `matters.grant` (ADMIN). REASON_REQUIRED and FORBIDDEN arrive with HTTP 200. */
+export const matterGrantSchema = z.union([
+  z.object({ status: z.literal("GRANTED"), membership: membershipSchema, self_grant: z.boolean().optional() }),
+  verbRefusalSchema,
+]);
+export type MatterGrant = z.infer<typeof matterGrantSchema>;
+
+/** `matters.revoke` (ADMIN). NO_ACTIVE_GRANT means nothing changed, never a removal. */
+export const matterRevokeSchema = z.union([
+  z.object({ status: z.enum(["REVOKED", "NO_ACTIVE_GRANT"]), matter_id: z.string(), actor_id: z.string() }),
+  verbRefusalSchema,
+]);
+export type MatterRevoke = z.infer<typeof matterRevokeSchema>;
+
+/** `invites.create` (ADMIN). The raw token is returned ONCE and never stored by the backend.
+ *  A taken email is CONFLICT (HTTP 409); `token_hash` is deliberately not read. */
+export const inviteCreateSchema = z.union([
+  z.object({ invite_id: z.string(), email: z.string(), role: accountRoleSchema, expires_at: z.string(), token: z.string().min(1) }),
+  verbRefusalSchema,
+]);
+export type InviteCreate = z.infer<typeof inviteCreateSchema>;
+
+/** `usage.status` (LAWYER). Figures are rupees; a missing scope is `null`, never 0. */
+export const usageStatusSchema = z.union([
+  z.object({
+    readable: z.boolean(),
+    month: z.string().optional(),
+    reason: z.string().optional(),
+    tenant: z.object({ month_inr: z.number(), month_cap_inr: z.number(), remaining_inr: z.number() }).nullable().optional(),
+  }),
+  verbRefusalSchema,
+]);
+export type UsageStatus = z.infer<typeof usageStatusSchema>;

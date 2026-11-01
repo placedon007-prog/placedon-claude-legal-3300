@@ -227,6 +227,19 @@ export interface GatewayProvider {
     externalSearchConsent: boolean;
   }): Promise<EngineResult<WebResearch>>;
   mattersList(): Promise<EngineResult<MattersList>>;
+
+  /* ── team ───────────────────────────────────────────────────────────────── */
+  /** The caller's own account id, email and role. Read to hide what the role cannot do;
+   *  the gateway still refuses (HTTP 403) whatever is not hidden. */
+  authMe(): Promise<EngineResult<import("./types").AuthMe>>;
+  matterCreate(input: { name: string; clientRef?: string }): Promise<EngineResult<import("./types").MatterCreate>>;
+  matterMembers(matterId: string): Promise<EngineResult<import("./types").MatterMembers>>;
+  /** Every access change carries a reason of at least 10 characters, recorded with it. */
+  matterGrant(input: { matterId: string; actorId: string; role: "owner" | "member" | "viewer"; reason: string }): Promise<EngineResult<import("./types").MatterGrant>>;
+  matterRevoke(input: { matterId: string; actorId: string; reason: string }): Promise<EngineResult<import("./types").MatterRevoke>>;
+  /** The token in the answer is shown once and never stored; do not log it. */
+  inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>>;
+  usageStatus(): Promise<EngineResult<import("./types").UsageStatus>>;
   conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>>;
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>>;
   /** One citation for the source panel, its quote re-read from the corpus at call time. */

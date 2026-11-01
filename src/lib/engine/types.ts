@@ -57,6 +57,14 @@ export const GATEWAY_ROUTES = {
   vaultRetry: "/v2/vault/retry",
   // `vault.delete` (LAWYER): removes the document and its chunks from this workspace.
   vaultDelete: "/v2/vault/delete",
+  // Team (backend 026/028). rest_path(): dots become slashes, so each is /v2/<noun>/<verb>.
+  authMe: "/v2/auth/me",
+  mattersCreate: "/v2/matters/create",
+  mattersMembers: "/v2/matters/members",
+  mattersGrant: "/v2/matters/grant",
+  mattersRevoke: "/v2/matters/revoke",
+  invitesCreate: "/v2/invites/create",
+  usageStatus: "/v2/usage/status",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",
