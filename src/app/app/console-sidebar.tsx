@@ -4,7 +4,7 @@
  * The console's navigation.
  *
  * Desktop: an icon rail by default, every icon with a tooltip; the toggle expands it to
- * labelled links with this browser's threads, and the choice is remembered per browser.
+ * labelled links with the conversation list, and the choice is remembered per browser.
  * Below 768px: a top bar whose menu button opens the same content in a left sheet.
  */
 import * as React from "react";
@@ -43,7 +43,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PlacedonMark } from "@/components/brand/placedon-mark";
-import { groupThreads, type LocalThread } from "@/lib/thread";
+import { groupThreads, unlistedLocalThreads, type LocalThread } from "@/lib/thread";
+import type { accountIdentity } from "@/lib/team";
 import {
   forgetActivity,
   useActivity,
@@ -54,7 +55,18 @@ import {
 } from "./local-store";
 import { NameDialog } from "./welcome";
 import { PERSONA_NAME, PERSONA_REASON, persona } from "@/lib/greeting";
-import { logoutAction } from "./actions";
+import { loadSavedConversations, logoutAction, type SavedConversations } from "./actions";
+
+type Identity = ReturnType<typeof accountIdentity>;
+/** Who is signed in and how; passed down unchanged to the menu and the thread list. */
+interface Who {
+  passcode: boolean;
+  account: boolean;
+  /** The server's account row; null for the shared passcode, or when it could not be read. */
+  identity: Identity | null;
+  /** List saved conversations from the server (accounts, demo) rather than this browser only. */
+  serverThreads: boolean;
+}
 
 const LINKS = [
   { href: "/app", label: "Ask", icon: MessageSquare },
@@ -92,7 +104,10 @@ function useCurrent() {
   return (href: string) => (href === "/app" ? path === "/app" : path.startsWith(href));
 }
 
-export function ConsoleSidebar({ passcode, account = false }: { passcode: boolean; account?: boolean }) {
+export function ConsoleSidebar({ passcode, account = false, identity = null, serverThreads = false }: {
+  passcode: boolean; account?: boolean; identity?: Identity | null; serverThreads?: boolean;
+}) {
+  const who: Who = { passcode, account, identity, serverThreads };
   const [expanded, setExpanded] = useSidebarExpanded();
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
@@ -115,7 +130,7 @@ export function ConsoleSidebar({ passcode, account = false }: { passcode: boolea
             }}
           >
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <Expanded passcode={passcode} account={account} />
+            <Expanded who={who} />
           </SheetContent>
         </Sheet>
         <Brand />
@@ -152,7 +167,7 @@ export function ConsoleSidebar({ passcode, account = false }: { passcode: boolea
               </button>
             </Tip>
           </div>
-          {expanded ? <Expanded passcode={passcode} account={account} /> : <Rail passcode={passcode} account={account} />}
+          {expanded ? <Expanded who={who} /> : <Rail who={who} />}
         </aside>
       </div>
     </>
@@ -172,7 +187,7 @@ function Brand() {
   );
 }
 
-function Rail({ passcode, account }: { passcode: boolean; account: boolean }) {
+function Rail({ who }: { who: Who }) {
   const current = useCurrent();
   return (
     <nav aria-label="Console" className="mt-2 flex flex-1 flex-col items-center gap-0.5">
@@ -190,13 +205,13 @@ function Rail({ passcode, account }: { passcode: boolean; account: boolean }) {
         </Tip>
       ))}
       <div className="mt-auto">
-        <UserMenu passcode={passcode} account={account} compact />
+        <UserMenu who={who} compact />
       </div>
     </nav>
   );
 }
 
-function Expanded({ passcode, account }: { passcode: boolean; account: boolean }) {
+function Expanded({ who }: { who: Who }) {
   const current = useCurrent();
   return (
     <div className="mt-2 flex min-h-0 flex-1 flex-col">
@@ -204,7 +219,7 @@ function Expanded({ passcode, account }: { passcode: boolean; account: boolean }
         <SquarePen className="size-4" aria-hidden />
         New question
       </a>
-      <Threads />
+      <Threads server={who.serverThreads} />
       <nav aria-label="Console" className="mt-3 flex flex-col gap-0.5 border-t border-line pt-3">
         {LINKS.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={item} aria-current={current(href) ? "page" : undefined}>
@@ -214,14 +229,29 @@ function Expanded({ passcode, account }: { passcode: boolean; account: boolean }
         ))}
       </nav>
       <div className="mt-2 border-t border-line pt-2">
-        <UserMenu passcode={passcode} account={account} />
+        <UserMenu who={who} />
       </div>
     </div>
   );
 }
 
-function Threads() {
+/** Saved conversations, re-read whenever this browser records a turn (a new thread may now be filed). */
+function useSavedConversations(enabled: boolean, latest: string): SavedConversations | null {
+  const [saved, setSaved] = React.useState<SavedConversations | null>(null);
+  React.useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    loadSavedConversations()
+      .then((next) => { if (live) setSaved(next); })
+      .catch(() => { if (live) setSaved({ phase: "unavailable", message: "Saved conversations could not be loaded." }); });
+    return () => { live = false; };
+  }, [enabled, latest]);
+  return saved;
+}
+
+function Threads({ server }: { server: boolean }) {
   const threads = useLocalThreads();
+  const saved = useSavedConversations(server, `${threads[0]?.id}:${threads[0]?.at}`);
   const [query, setQuery] = React.useState("");
   const params = useSearchParams();
   const open = params.get("c");
@@ -229,8 +259,13 @@ function Threads() {
   // here cannot produce a mismatch.
 
   const q = query.trim().toLowerCase();
-  const shown = q ? threads.filter((t) => t?.title?.toLowerCase().includes(q)) : threads;
-  const { today, previous } = groupThreads(shown, new Date());
+  const matches = (t: LocalThread) => !q || Boolean(t?.title?.toLowerCase().includes(q));
+  const groups = server && saved?.phase === "loaded" ? saved.groups : [];
+  // On the server list, local threads are only the ones no matter holds: unfiled or unsaved.
+  const local = (server ? unlistedLocalThreads(groups, threads) : threads).filter(matches);
+  const { today, previous } = groupThreads(local, new Date());
+  const filed = groups.map((g) => ({ ...g, threads: g.threads.filter(matches) })).filter((g) => g.threads.length);
+  const empty = today.length + previous.length + filed.reduce((n, g) => n + g.threads.length, 0) === 0;
 
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
@@ -239,23 +274,29 @@ function Threads() {
         <Search className="size-4 flex-none" aria-hidden />
         <input
           type="search"
-          aria-label="Search this browser’s threads"
+          aria-label={server ? "Search your conversations" : "Search this browser’s threads"}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search threads"
+          placeholder={server ? "Search conversations" : "Search threads"}
           className="bare w-full bg-transparent text-fg outline-none placeholder:text-fg-3"
         />
       </div>
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto">
-        <Group title="Today" threads={today} open={open} />
-        <Group title="Previous 7 days" threads={previous} open={open} />
-        {today.length + previous.length === 0 ? (
+        {filed.map((g) => <Group key={g.matterId} title={g.matter} threads={g.threads} open={open} />)}
+        <Group title={server ? "Unfiled · this browser only" : "Today"} threads={server ? [...today, ...previous] : today} open={open} />
+        {server ? null : <Group title="Previous 7 days" threads={previous} open={open} />}
+        {server && !saved ? <p role="status" className="px-3 py-2 text-caption text-fg-3">Loading saved conversations…</p> : null}
+        {saved?.phase === "unavailable" ? <p role="status" className="px-3 py-2 text-caption text-fg-2">{saved.message}</p> : null}
+        {saved?.phase === "loaded" && saved.partial ? (
+          <p className="px-3 py-2 text-caption text-fg-3">Some matters’ conversations could not be listed.</p>
+        ) : null}
+        {empty && (!server || saved) ? (
           <p className="px-3 py-2 text-caption text-fg-3">
-            {q ? "No thread here matches." : "Questions you ask in this browser appear here."}
+            {q ? "No conversation here matches." : server ? "Conversations you file to a matter appear here." : "Questions you ask in this browser appear here."}
           </p>
         ) : null}
       </div>
-      <p className="px-3 pt-1 text-caption text-fg-3">Only threads started in this browser are listed.</p>
+      {server ? null : <p className="px-3 pt-1 text-caption text-fg-3">Only threads started in this browser are listed.</p>}
     </div>
   );
 }
@@ -303,12 +344,17 @@ function Avatar({ name }: { name: string | null }) {
   );
 }
 
-function UserMenu({ passcode, account, compact = false }: { passcode: boolean; account: boolean; compact?: boolean }) {
-  const [name] = useDisplayName();
+function UserMenu({ who, compact = false }: { who: Who; compact?: boolean }) {
+  const { passcode, account, identity } = who;
+  const [browserName] = useDisplayName();
+  // A server identity wins; only the shared passcode, which has none, names you from this browser.
+  const name = identity?.name ?? (passcode ? browserName : null);
   const [nicknames, setNicknames] = useNicknamesOn();
   const earned = persona(useActivity());
   const [naming, setNaming] = React.useState(false);
-  const access = account ? "Your account" : passcode ? "Shared passcode" : "Demo · synthetic data";
+  const access = identity
+    ? `${identity.role}${account ? "" : " · demo"}`
+    : account ? "Your account" : passcode ? "Shared passcode" : "Demo · synthetic data";
   const trigger = (
     <button
       type="button"
@@ -322,7 +368,7 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
       <Avatar name={name} />
       {compact ? null : (
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-body font-medium text-fg">{name ?? "Set browser display name"}</span>
+          <span className="truncate text-body font-medium text-fg">{name ?? (passcode ? "Set browser display name" : "Your account")}</span>
           <span className="truncate text-caption text-fg-3">{access}</span>
         </span>
       )}
@@ -342,15 +388,18 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
           <div className="flex items-center gap-2.5 px-2 py-2">
             <Avatar name={name} />
             <span className="flex min-w-0 flex-col leading-tight">
-              <span className="truncate text-body font-medium text-fg">{name ?? "No name set"}</span>
+              <span className="truncate text-body font-medium text-fg">{name ?? (passcode ? "No name set" : "Your account")}</span>
+              {identity?.email ? <span className="truncate text-caption text-fg-2">{identity.email}</span> : null}
               <span className="truncate text-caption text-fg-3">{access}</span>
             </span>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="min-h-11" onSelect={() => setNaming(true)}>
-            <PenLine className="size-4" aria-hidden />
-            {name ? "Change your name" : "What should we call you?"}
-          </DropdownMenuItem>
+          {passcode ? (
+            <DropdownMenuItem className="min-h-11" onSelect={() => setNaming(true)}>
+              <PenLine className="size-4" aria-hidden />
+              {name ? "Change your name" : "What should we call you?"}
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuCheckboxItem
             className="min-h-11"
             checked={nicknames}
@@ -371,7 +420,9 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-caption font-normal text-fg-3">
             {account
-              ? "You are signed in with your own account: the matters you can open and the files you upload are tied to it. The display name above is stored in this browser only."
+              ? identity
+                ? "You are signed in with your own account: the matters you can open and the files you upload are tied to it."
+                : "You are signed in with your own account, but its details could not be read just now. Reload to try again."
               : passcode
               ? "There are no personal accounts yet: everyone signs in with the shared passcode. Your display name is stored in this browser only; it is not your account identity."
               : "Demo workspace: recorded examples and synthetic data only. No live legal research or client documents."}
@@ -386,7 +437,7 @@ function UserMenu({ passcode, account, compact = false }: { passcode: boolean; a
           </form>
         </DropdownMenuContent>
       </DropdownMenu>
-      <NameDialog open={naming} onOpenChange={setNaming} />
+      {passcode ? <NameDialog open={naming} onOpenChange={setNaming} /> : null}
     </>
   );
 }

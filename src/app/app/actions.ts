@@ -16,6 +16,7 @@ import { accountLoginOutcome } from "@/lib/auth/account-login";
 import { trustedClientAddress } from "@/lib/auth/login-limiter";
 import { rememberRun } from "@/lib/auth/recent-runs";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
+import type { SavedThreadGroup } from "@/lib/thread";
 import { toCaseLawRenderModel, type CaseLawRenderModel } from "@/lib/case-law";
 import { sourceCatalogFailureMessage } from "@/lib/sources";
 import type { WebResearch } from "@/lib/gateway/types";
@@ -305,6 +306,34 @@ export async function loadMatterHistory(matterId: string): Promise<MatterHistory
   if (!result.ok) return { phase: "unavailable", message: "Matter history did not arrive. Close and reopen to retry." };
   if (isRefusal(result.data)) return { phase: "unavailable", message: result.data.detail };
   return { phase: "loaded", conversations: result.data.conversations };
+}
+
+export type SavedConversations =
+  | { phase: "loaded"; groups: SavedThreadGroup[]; partial: boolean }
+  | { phase: "unavailable"; message: string };
+
+// ponytail: one conversation.list per matter, capped; a firm with more open matters sees the
+// first ones only (said in `partial`). Needs a cross-matter verb if that ever matters, which 8b refuses.
+const SIDEBAR_MATTERS = 20;
+
+/** The sidebar's saved conversations: every matter this account can open, each listed by the server. */
+export async function loadSavedConversations(): Promise<SavedConversations> {
+  if (!(await hasSession())) return { phase: "unavailable", message: "Sign in to see saved conversations." };
+  const gateway = await getGateway();
+  const matters = await gateway.mattersList();
+  if (!matters.ok) return { phase: "unavailable", message: "Saved conversations could not be loaded." };
+  const shown = matters.data.matters.slice(0, SIDEBAR_MATTERS);
+  const lists = await Promise.all(shown.map((m) => gateway.conversationList(m.matter_id)));
+  let partial = matters.data.matters.length > shown.length;
+  const groups: SavedThreadGroup[] = [];
+  lists.forEach((list, i) => {
+    if (!list.ok || isRefusal(list.data)) { partial = true; return; }
+    const threads = list.data.conversations.map((c) => ({
+      id: c.conversation_id, title: c.title || "Untitled conversation", at: c.updated_at ?? c.created_at ?? "",
+    }));
+    if (threads.length) groups.push({ matterId: shown[i]!.matter_id, matter: shown[i]!.name, threads });
+  });
+  return { phase: "loaded", groups, partial };
 }
 
 export type CitationState =

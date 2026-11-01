@@ -176,7 +176,7 @@ export function linkCitations(
 
 /**
  * A conversation this browser started. There is no all-threads verb (`conversation.list`
- * needs a matter), so the sidebar lists only these and says so.
+ * needs a matter), so unfiled threads are only ever listed from this browser.
  */
 export interface LocalThread {
   readonly id: string;
@@ -306,4 +306,21 @@ export function searchedSummary(report: SourceReport): SearchedSummary {
     }
   }
   return { searched, notSearched };
+}
+
+/* ── saved conversations, listed by the server one matter at a time ─────── */
+
+export interface SavedThreadGroup {
+  readonly matterId: string;
+  readonly matter: string;
+  readonly threads: readonly LocalThread[];
+}
+
+/**
+ * Threads this browser started that no listed matter holds: unfiled ones, which the server
+ * cannot list (there is no cross-matter listing), and any not yet saved.
+ */
+export function unlistedLocalThreads(groups: readonly SavedThreadGroup[], local: readonly LocalThread[]): LocalThread[] {
+  const saved = new Set(groups.flatMap((g) => g.threads.map((t) => t.id)));
+  return local.filter((t) => typeof t?.id === "string" && !saved.has(t.id));
 }

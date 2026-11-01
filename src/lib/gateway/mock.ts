@@ -228,6 +228,8 @@ const DOCUMENT_MINUTES: DocumentResponse = {
  * ponytail: unbounded and per-process, fine for a demo with no backend; the real store is the gateway's.
  */
 const THREADS = new Map<string, ConversationMessage[]>();
+/** Which matter a demo thread was filed to, so conversation.list can answer per matter. */
+const FILED = new Map<string, { matter_id: string; title: string; updated_at: string }>();
 const REQUESTS = new Map<string, { conversationId: string; payload: string }>();
 // Parsed, not cast: a fixture that drifted from the contract fails here, loudly.
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
@@ -470,6 +472,8 @@ export class MockGateway implements GatewayProvider {
       reply,
     ]);
     if (input.requestId) REQUESTS.set(input.requestId, { conversationId: id, payload });
+    const filedTo = FILED.get(id)?.matter_id ?? input.matterId;
+    if (filedTo) FILED.set(id, { matter_id: filedTo, title: FILED.get(id)?.title ?? input.text.slice(0, 60), updated_at: new Date().toISOString() });
     return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id, metadata: reply.metadata ?? undefined });
   }
 
@@ -552,7 +556,10 @@ export class MockGateway implements GatewayProvider {
   }
 
   async conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>> {
-    return engineOk({ matter_id: matterId, conversations: [] });
+    const conversations = [...FILED].filter(([, c]) => c.matter_id === matterId)
+      .map(([conversation_id, c]) => ({ conversation_id, title: c.title, updated_at: c.updated_at }))
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    return engineOk({ matter_id: matterId, conversations });
   }
 
   async conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>> {

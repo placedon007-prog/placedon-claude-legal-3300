@@ -35,3 +35,14 @@ export function usageLine(usage: UsageStatus): string | null {
   if (!usage.tenant) return null;
   return `Used ${rupees(usage.tenant.month_inr)} of ${rupees(usage.tenant.month_cap_inr)} this month`;
 }
+
+const ROLE_SHORT: Record<AccountRole, string> = { viewer: "Viewer", lawyer: "Lawyer", admin: "Admin" };
+
+/** The account menu's lines: the backend's name for the person if it has one, else their email. */
+export function accountIdentity(me: { email: string | null; role: AccountRole; label?: string }): {
+  name: string; email: string | null; role: string;
+} {
+  const label = me.label?.trim();
+  const email = me.email?.trim() || null;
+  return { name: label || email || "Signed in", email: label ? email : null, role: ROLE_SHORT[me.role] };
+}
