@@ -1,6 +1,6 @@
 # AGENTS.md — Placedon website (standing rules, re-read every turn)
 
-This repo is the **Placedon** marketing website: Next.js 15 (App Router) + TypeScript (strict) +
+This repo is the **Placedon** marketing website: Next.js 16 (App Router) + TypeScript (strict) +
 Tailwind v4 + shadcn/ui. Placedon is an evidence-first legal-intelligence layer for Indian corporate
 law (Companies Act, 2013). It answers only with the exact provision + amending instrument + operative
 date, and **abstains** when it cannot verify. It is a **witness, not a tool.**
@@ -60,10 +60,14 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
 - **Components:** shadcn primitives (radix base) in `src/components/ui/` — Button, Tooltip,
   Popover, Dialog, Sheet, DropdownMenu, ScrollArea, Separator, Textarea, Skeleton. `cn` is
   `@/lib/utils`. The composer is `src/components/ui/prompt-box.tsx` (from the owner's 21st.dev
-  "ChatGPT prompt input"): "+" stores a PDF/DOCX in Wall System then opens Document Check;
-  Tools = Research (default) · Draft (removable chip, sends the `DRAFT` override) · Check a
-  document · Review a contract; mic shown, `aria-disabled`, "Voice input — coming soon"
-  (voice will go through AWS Transcribe in Mumbai, never the browser speech API).
+  "ChatGPT prompt input"): Files stores a PDF/DOCX in Wall System and attaches it as a chip
+  (the chip links to Document Check); a file dropped anywhere on the conversation attaches;
+  Tools = Research held law (default) · Research the public web (only the question is sent) ·
+  Draft from this thread (removable chip, sends the `DRAFT` override) · Check a document ·
+  Review a contract (both open their screens). Voice input is **not shown** until it exists
+  (voice will go through AWS Transcribe in Mumbai, never the browser speech API). Below
+  640px the composer is one row, its chips icon-only at 44×44 with the label as the
+  accessible name.
 - **Answer registers — shape and words, never colour:** answered ✓ · partly answered ◐ ·
   a lawyer needs to decide ⦶ · not answered ⊘ (names its reason, or the body-by-body notes) ·
   needs clarification ? · queued ◷ · **did not arrive — this is not a refusal** (dashed ink
@@ -87,8 +91,9 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
   (`recognise`, `greeting`). Name, switch and the day/hour/weekday of past questions stay in
   this browser and are never sent; the account menu turns nicknames off and forgets the
   pattern. Warmth stays on the welcome line — answers stay formal.
-- **Standing limits:** on Ask, one quiet line under every result (law read as at · Playbook
-  DRAFT · UAE North · not legal advice); on every other screen, one line under the page's results
+- **Standing limits:** on Ask, one quiet line under every result (research as at the date ·
+  Playbook DRAFT on a contract review · recorded model and region details are in the answer
+  trace · not legal advice; `ResultLine` in `answer.tsx`); on every other screen, one line under the page's results
   (`console-notice.tsx`). Each page heading carries one short line: what the page does, with an example.
 - **Banned in the console:** colour of any hue, gradients, blur/glass, left-border accent
   cards, ALL-CAPS tracked labels, avatar discs, suggestion cards on the empty state,
@@ -141,8 +146,9 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
 
   **`/v2` — the gateway verbs, API-key authenticated** (`gateway/verbs.py`, generated from
   ONE verb table that also produces the MCP tools and the CLI, with a parity test):
-  `POST /v2/ask` · `POST /v2/review-contract` · `GET /v2/runs/{run_id}` ·
-  `GET /v2/runs/{run_id}/trace` · `POST /v2/documents/upload`.
+  `POST /v2/review-contract` · `GET /v2/runs/{run_id}` · `GET /v2/runs/{run_id}/trace` ·
+  `POST /v2/documents/upload`, plus the routes in `GATEWAY_ROUTES` (`src/lib/engine/types.ts`).
+  `POST /v2/ask` exists on the gateway but this app no longer calls it.
   **Ask runs on the conversation layer (C2):** `POST /v2/conversation/send` ·
   `GET /v2/conversation/{conversation_id}` · `POST /v2/citation` (`citation.get`, re-verifies the
   quote). `conversation.list` exists but needs a `matter_id`, so the sidebar lists only this
