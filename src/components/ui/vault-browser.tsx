@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, FileText, FolderOpen, RefreshCw, Search } from "lucide-react";
-import { browseVaultAction, deleteVaultDocumentAction, retryVaultDocumentAction, type VaultBrowseResult } from "@/app/app/vault/actions";
+import { browseVaultAction, deleteVaultDocumentAction, retryVaultDocumentAction, shareVaultDocumentAction, type VaultBrowseResult } from "@/app/app/vault/actions";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type SelectedVaultFile = { id: string; sha256?: string; name: string };
@@ -46,6 +46,58 @@ function RetryButton({ documentId, name, onDone }: { documentId: string; name: s
  * decides who may delete (LAWYER and up, and only files they may write); a refusal stays in
  * the dialog in words, and only a confirmed deletion closes it and refreshes the list.
  */
+/**
+ * `vault.share`: the uploader shares an unfiled file with the whole firm, or stops. The
+ * backend records a reason with every access change, so the dialog asks for one. Who may
+ * share is the backend's decision; a refusal stays in the dialog in words.
+ */
+function ShareButton({ documentId, name, shared, onDone }: {
+  documentId: string; name: string; shared: boolean; onDone: (message: string, sharedAt: string | null) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [refusal, setRefusal] = React.useState<string | null>(null);
+  const id = `share-reason-${documentId}`;
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const reason = String(new FormData(event.currentTarget).get("reason") ?? "");
+    setBusy(true);
+    setRefusal(null);
+    let result: Awaited<ReturnType<typeof shareVaultDocumentAction>>;
+    try { result = await shareVaultDocumentAction({ documentId, name, reason, shared: !shared }); }
+    catch { result = { ok: false, message: "The change could not be confirmed. Refresh the list to see whether the file is shared." }; }
+    setBusy(false);
+    if (!result.ok) { setRefusal(result.message); return; }
+    setOpen(false);
+    onDone(result.message, result.sharedAt);
+  }
+  const verb = shared ? "Stop sharing" : "Share";
+  return <Dialog open={open} onOpenChange={(next) => { if (!busy) { setOpen(next); setRefusal(null); } }}>
+    <button type="button" className="vault-text-button" aria-label={`${verb} ${name}`} onClick={() => setOpen(true)}>{verb}</button>
+    <DialogContent className="vault-picker vault-delete" showCloseButton={!busy}>
+      <DialogHeader><DialogTitle>{shared ? `Stop sharing ${name}?` : `Share ${name} with the firm?`}</DialogTitle>
+        <DialogDescription>
+          {shared ? "Only you will see this file again. People in the firm who used it keep what they already read."
+            : "Everyone in the firm will be able to see this file and use it in their questions. You can stop sharing later."}
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={submit} className="vault-share-form">
+        <label htmlFor={id} className="text-ui text-fg-2">Reason, recorded with the change</label>
+        <textarea id={id} name="reason" maxLength={500} aria-describedby={`${id}-help`} rows={3}
+          placeholder={shared ? "For example: the deal team no longer needs it" : "For example: the template for every NDA review"} />
+        <p id={`${id}-help`} className="text-caption text-fg-3">At least 10 characters.</p>
+        {refusal && <p role="alert" className="text-body text-fg">Not changed. {refusal}</p>}
+        <div className="vault-picker-footer">
+          <DialogClose asChild><button type="button" className="vault-text-button" disabled={busy}>Cancel</button></DialogClose>
+          <button type="submit" className="vault-add-button" disabled={busy} aria-busy={busy}>
+            {busy ? "Saving…" : shared ? "Stop sharing" : "Share with the firm"}
+          </button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>;
+}
+
 function DeleteButton({ documentId, name, onDeleted, focusAfter }: {
   documentId: string; name: string; onDeleted: (message: string) => void; focusAfter: () => void;
 }) {
@@ -105,6 +157,10 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
   const listRef = React.useRef<HTMLDivElement>(null);
   // Ids the backend CONFIRMED deleted stay hidden even if a list read races the deletion.
   const [gone, setGone] = React.useState<ReadonlySet<string>>(() => new Set());
+  // Sharing the backend CONFIRMED, by id, so a list read that races the change cannot undo it on screen.
+  const [sharing, setSharing] = React.useState<ReadonlyMap<string, string | null>>(() => new Map());
+  const sharedAt = (file: { document_id: string; shared_with_firm_at?: string | null }) =>
+    sharing.has(file.document_id) ? sharing.get(file.document_id) : file.shared_with_firm_at;
   const router = useRouter();
   React.useEffect(() => {
     if (!notice) return;
@@ -146,7 +202,7 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
           const disabled = !readable || (!checked && selected.length >= capacity);
           const label = stateLabel[file.state] ?? "Status unavailable";
           const content = <><span className="vault-file-art"><FileText className="size-5" aria-hidden /></span>
-            <span className="vault-file-copy"><strong>{file.name}</strong><span>{label}{!readable ? " · cannot attach yet" : ""}</span></span></>;
+            <span className="vault-file-copy"><strong>{file.name}</strong><span>{label}{!readable ? " · cannot attach yet" : ""}{sharedAt(file) ? " · Shared with the firm" : ""}</span></span></>;
           return <li key={file.document_id}>
             {onToggle ? <button type="button" role="checkbox" aria-checked={checked} disabled={disabled}
               aria-label={`${file.name} — ${label}`} className="vault-file-row" data-selected={checked}
@@ -154,6 +210,8 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
               {content}<span className="vault-file-check" aria-hidden>{checked ? <Check className="size-3.5" /> : null}</span>
             </button> : <div className="vault-file-row">{content}{file.state === "FAILED" && <RetryButton documentId={file.document_id} name={file.name} onDone={(message) => { setNotice({ scope, text: message }); refresh(); }} />}
               <Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link>
+              {file.matter_id === null && <ShareButton documentId={file.document_id} name={file.name} shared={Boolean(sharedAt(file))}
+                onDone={(message, at) => { setSharing((prev) => new Map(prev).set(file.document_id, at)); setNotice({ scope, text: message }); refresh(); }} />}
               <DeleteButton documentId={file.document_id} name={file.name} onDeleted={(message) => { setGone((prev) => new Set([...prev, file.document_id])); setNotice({ scope, text: message }); refresh();
                   router.refresh(); /* the page's vault counts are server-rendered */ }}
                 focusAfter={() => listRef.current?.focus()} /></div>}

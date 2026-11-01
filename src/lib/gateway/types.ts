@@ -371,6 +371,9 @@ export const vaultFileSchema = z.object({
   document_id: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/), name: z.string(), state: z.string(),
   matter_id: z.string().nullable(), byte_count: z.number().int().nonnegative(),
   doc_class: z.string().nullable(),
+  // Present on live rows (backend store `browse_vault_documents`); null = not shared.
+  uploaded_by: z.string().nullable().optional(),
+  shared_with_firm_at: z.string().nullable().optional(),
 });
 export type VaultFile = z.infer<typeof vaultFileSchema>;
 export const vaultListPageSchema = z.object({
@@ -442,6 +445,16 @@ export const vaultRetryOkSchema = z.object({
 });
 export const vaultRetrySchema = z.union([vaultRetryOkSchema, verbRefusalSchema]);
 export type VaultRetry = z.infer<typeof vaultRetrySchema>;
+
+/** `vault.share`: SHARED or UNSHARED. Refusals: FORBIDDEN (not the uploader, or a filed
+ *  document), REASON_REQUIRED (under 10 characters), NOT_FOUND (HTTP 404), NO_STORE. */
+export const vaultShareOkSchema = z.object({
+  status: z.enum(["SHARED", "UNSHARED"]),
+  document_id: z.string(),
+  shared_with_firm_at: z.string().nullable().optional(),
+});
+export const vaultShareSchema = z.union([vaultShareOkSchema, verbRefusalSchema]);
+export type VaultShare = z.infer<typeof vaultShareSchema>;
 
 /** `vault.delete`: the document and its searchable chunks are removed from this workspace.
  *  `deleted: false` means nothing was removed and must never be shown as a deletion.

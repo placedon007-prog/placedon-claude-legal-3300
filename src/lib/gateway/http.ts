@@ -28,6 +28,7 @@ import {
   vaultVerifySchema,
   vaultRetrySchema,
   vaultDeleteSchema,
+  vaultShareSchema,
   documentCheckSchema,
   conversationSendSchema,
   sourcesListSchema,
@@ -438,6 +439,11 @@ export class HttpGateway implements GatewayProvider {
   vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {
     return this.call(GATEWAY_ROUTES.vaultDelete, GATEWAY_ROUTES.vaultDelete,
       vaultDeleteSchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  vaultShare(input: { documentId: string; reason: string; shared: boolean }): Promise<EngineResult<import("./types").VaultShare>> {
+    return this.call(GATEWAY_ROUTES.vaultShare, GATEWAY_ROUTES.vaultShare, vaultShareSchema,
+      { method: "POST", body: { document_id: input.documentId, reason: input.reason, shared: input.shared } });
   }
 
   conversationSend(input: {

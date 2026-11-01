@@ -802,3 +802,6 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 .team-people { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 8px 16px; padding-left: 16px; border-left: 1px solid var(--c-line); }
 .team-invite-link { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-top: 12px; padding: 12px; border: 1px solid var(--c-line-2); border-radius: 10px; }
 @media (max-width: 480px) { .team-people { margin-left: 0; padding-left: 12px; } }
+.vault-share-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.vault-share-form textarea { width: 100%; min-height: 5rem; padding: 0.6rem 0.8rem; border: 1px solid var(--c-line-control); border-radius: 8px; font: inherit; font-size: var(--text-body); background: var(--c-ground); color: var(--c-fg); }
+.vault-share-form textarea:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }

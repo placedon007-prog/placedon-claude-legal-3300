@@ -883,7 +883,7 @@ export class MockGateway implements GatewayProvider {
    */
   private readonly vault = new Map<
     string,
-    { name: string; state: string; sha256: string; text: string; matterId?: string }
+    { name: string; state: string; sha256: string; text: string; matterId?: string; sharedAt?: string | null }
   >([
     [
       "a".repeat(64),
@@ -941,7 +941,8 @@ export class MockGateway implements GatewayProvider {
     const rows = [...this.vault.entries()]
       .filter(([, d]) => (d.matterId ?? null) === input.matterId && d.name.toLowerCase().includes(query))
       .map(([id, d]) => ({ document_id: id, sha256: d.sha256, name: d.name, state: d.state,
-        matter_id: d.matterId ?? null, byte_count: new TextEncoder().encode(d.text).length, doc_class: null }))
+        matter_id: d.matterId ?? null, byte_count: new TextEncoder().encode(d.text).length, doc_class: null,
+        shared_with_firm_at: d.sharedAt ?? null }))
       .sort((a, b) => a.name.localeCompare(b.name) || a.document_id.localeCompare(b.document_id));
     const start = input.offset ?? 0, limit = input.limit ?? 30;
     return engineOk({ documents: rows.slice(start, start + limit),
@@ -1041,6 +1042,20 @@ export class MockGateway implements GatewayProvider {
     one.state = "PENDING";
     return engineOk({ document_id: input.documentId, name: one.name, state: "PENDING" as const, retried: true as const,
       note: "Queued to be read again. PENDING is not INGESTED: nothing is searchable until a worker has read it." });
+  }
+
+  async vaultShare(input: { documentId: string; reason: string; shared: boolean }): Promise<EngineResult<import("./types").VaultShare>> {
+    const doc = this.vault.get(input.documentId);
+    if (!doc) return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: `no vault document '${input.documentId}' for this tenant` });
+    if (input.reason.trim().length < 10) {
+      return engineOk({ status: "REFUSED" as const, code: "REASON_REQUIRED", detail: "a reason of at least 10 characters is recorded with every access change" });
+    }
+    if (doc.matterId) {
+      return engineOk({ status: "REFUSED" as const, code: "FORBIDDEN", detail: "Only the uploader can share an unfiled document. A filed document is shared by granting matter access." });
+    }
+    const sharedAt = input.shared ? new Date().toISOString() : null;
+    this.vault.set(input.documentId, { ...doc, sharedAt });
+    return engineOk({ status: input.shared ? "SHARED" as const : "UNSHARED" as const, document_id: input.documentId, shared_with_firm_at: sharedAt });
   }
 
   async vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {
