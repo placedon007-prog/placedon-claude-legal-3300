@@ -116,9 +116,10 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   React.useEffect(() => {
     if (!conversationId || !queuedSignature) return;
     let live = true;
-    let attempt = 0;
+    const started = Date.now();
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
+      let busySeconds: number | undefined;
       if (document.visibilityState !== "hidden") {
         try {
           const loaded = await loadThread(conversationId);
@@ -138,7 +139,9 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
             setTurns((all) => all.map((turn) => turn.state?.phase === "queued" ? { ...turn, state: { ...turn.state, note } } : turn));
             return;
           } else if (live && loaded.phase === "failed") {
-            const note = loaded.error.status === 429 || loaded.error.status === 503
+            const busy = loaded.error.status === 429 || loaded.error.status === 503;
+            if (busy) busySeconds = loaded.error.retryAfterSeconds ?? 5;
+            const note = busy
               ? "The service is busy. Your saved request remains queued; checking again shortly."
               : "Connection interrupted. Your saved request continues; reconnecting.";
             setTurns((all) => all.map((turn) => turn.state?.phase === "queued" ? { ...turn, state: { ...turn.state, note } } : turn));
@@ -147,7 +150,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
           if (live) setTurns((all) => all.map((turn) => turn.state?.phase === "queued" ? { ...turn, state: { ...turn.state, note: "Connection interrupted. Your saved request continues; reconnecting." } } : turn));
         }
       }
-      if (live) timer = setTimeout(poll, conversationPollDelay(attempt++) + Math.floor(Math.random() * 400));
+      if (live) timer = setTimeout(poll, conversationPollDelay(Date.now() - started, busySeconds) + Math.floor(Math.random() * 400));
     };
     timer = setTimeout(poll, 1500);
     return () => { live = false; clearTimeout(timer); };
