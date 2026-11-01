@@ -69,7 +69,7 @@ export function LiveTable({ data }: { data: TableStatus }) {
 
   return (
     <>
-      <div className="drafts-heading">
+      <div className="drafts-heading table-heading">
         <div>
           <h1>{data.name || "Review table"}</h1>
           <p className="meta">{data.documents} file{data.documents === 1 ? "" : "s"} × {data.columns} question{data.columns === 1 ? "" : "s"}</p>
@@ -108,11 +108,11 @@ export function LiveTable({ data }: { data: TableStatus }) {
         : s.phase === "invalid" ? <p key={i} role="alert" className="invalid">{s.message}</p> : null)}
       {exported.phase === "exported" && <p role="status" className="meta">Downloaded {exported.data.filename}. Every cell has words in it, never a blank.</p>}
 
+      <p className="meta table-caption" id="table-caption">
+        {data.findings} of {data.cells} answers describe a file. Waiting and Could not run do not.
+      </p>
       <div className="table-scroll">
-        <table className="grid-table">
-          <caption className="meta">
-            {data.findings} of {data.cells} answers describe a file. Waiting and Could not run do not.
-          </caption>
+        <table className="grid-table" aria-describedby="table-caption">
           <thead>
             <tr>
               <th scope="col">File</th>
