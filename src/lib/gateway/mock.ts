@@ -2,7 +2,7 @@ import MAIN_SOURCES from "./fixtures/main-sources.json" with { type: "json" };
 import "../engine/server-guard";
 import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES } from "../engine/types";
-import { STATES, type CompanyFact } from "../company-facts";
+import { STATES, profileFactSchema, type CompanyFact, type ProfileFact } from "../company-facts";
 import type { GatewayProvider } from "./provider";
 import RECORDED from "./fixtures/conversation.json" with { type: "json" };
 import SOURCES from "./fixtures/sources.json" with { type: "json" };
@@ -282,6 +282,8 @@ function advanceMockTable(t: MockTable, now = Date.now()): void {
   });
 }
 const DEMO_MEMBERS = new Map<string, Membership[]>();
+/** The demo's firm-wide company profile: module state, like the demo's threads. */
+const DEMO_PROFILE: ProfileFact[] = [];
 const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
   "held,vault": ANSWERED, held: ANSWERED,
 };
@@ -1117,6 +1119,30 @@ export class MockGateway implements GatewayProvider {
         detail: "no text was supplied. If the upload was a scan or a photograph it has no text layer." });
     }
     return engineOk(mockMasterData(input.text, input.uploadedOn));
+  }
+
+  async companyProfileGet(): Promise<EngineResult<import("./types").CompanyProfile>> {
+    return engineOk({ facts: [...DEMO_PROFILE] });
+  }
+
+  async companyProfileSet(input: { facts: readonly import("./types").CompanyProfileInput[]; reason: string }): Promise<EngineResult<import("./types").CompanyProfileSet>> {
+    if (input.reason.trim().length < 10) {
+      return engineOk({ status: "REFUSED" as const, code: "REASON_REQUIRED", detail: "a reason of at least 10 characters is recorded with every access change" });
+    }
+    if (input.facts.some((f) => f.confirmed !== true)) {
+      return engineOk({ status: "REFUSED" as const, code: "BAD_REQUEST", detail: "Only a fact a person has confirmed is stored in the company profile" });
+    }
+    // As the backend: an unchanged fact keeps who confirmed it and when.
+    const now = new Date().toISOString();
+    const next = input.facts.map((f): ProfileFact => {
+      const same = DEMO_PROFILE.find((p) => p.field === f.field && p.value === f.value && p.basis === f.basis
+        && p.quoted_span === f.quoted_span && p.label === f.source_label);
+      return same ?? profileFactSchema.parse({ field: f.field, value: f.value, basis: f.basis, label: f.source_label,
+        quoted_span: f.quoted_span, uploaded_on: f.source_label.match(/(\d{4}-\d{2}-\d{2})$/)?.[1] ?? null,
+        confirmed: true, can_verify: false, confirmed_by: "demo", confirmed_at: now });
+    });
+    DEMO_PROFILE.splice(0, DEMO_PROFILE.length, ...next);
+    return engineOk({ status: "SAVED" as const, facts: [...DEMO_PROFILE] });
   }
 
   async vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {

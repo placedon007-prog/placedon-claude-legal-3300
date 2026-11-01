@@ -70,6 +70,10 @@ export const GATEWAY_ROUTES = {
   // `company_facts.extract` (LAWYER): reads an MCA master-data page's TEXT. Returns
   // unconfirmed facts with the line each was read from; it stores nothing.
   companyFactsExtract: "/v2/company-facts/extract",
+  // `company_profile.get` (VIEWER) / `.set` (LAWYER), backend 032: the firm's confirmed
+  // facts. rest_path() serves a `.get` at /v2/<noun>, unhyphenated.
+  companyProfileGet: "/v2/company_profile",
+  companyProfileSet: "/v2/company-profile/set",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",

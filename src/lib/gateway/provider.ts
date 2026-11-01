@@ -134,6 +134,10 @@ export interface GatewayProvider {
   vaultShare(input: { documentId: string; reason: string; shared: boolean }): Promise<EngineResult<import("./types").VaultShare>>;
   /** Read an MCA master-data page's text (`company_facts.extract`). Stores nothing. */
   companyFactsExtract(input: { text: string; uploadedOn: string }): Promise<EngineResult<import("./types").CompanyFactsExtract>>;
+  /** The firm's company profile (`company_profile.get`). A 404 means a backend without it. */
+  companyProfileGet(): Promise<EngineResult<import("./types").CompanyProfile>>;
+  /** Replace the firm's company profile (`company_profile.set`). Confirmed facts only, with a reason. */
+  companyProfileSet(input: { facts: readonly import("./types").CompanyProfileInput[]; reason: string }): Promise<EngineResult<import("./types").CompanyProfileSet>>;
   /**
    * The Document Check, end to end: verify a stored document, decide whether it is
    * still in force at `as_of`, and record the action a lawyer should take. A WRITE

@@ -5,6 +5,8 @@ import { calendarAction, type CalendarState } from "./actions";
 import { formatProvisionReference } from "@/lib/format";
 import type { DueEntry, UnknownEntry } from "@/lib/gateway/types";
 import { STATE, countedFrom, datedState } from "@/lib/calendar-display";
+import { isoDate, type ProfileLoad } from "@/lib/company-facts";
+import { useCompanyFacts } from "../local-store";
 
 const initial: CalendarState = { phase: "idle" };
 
@@ -25,8 +27,15 @@ function Provision({ entry }: { entry: DueEntry | UnknownEntry }) {
   );
 }
 
-export function CalendarConsole() {
+const FROM_PROFILE = "From your company profile. Change it here for this check only.";
+
+export function CalendarConsole({ profile }: { profile: ProfileLoad }) {
   const [state, action, pending] = useActionState(calendarAction, initial);
+  // The firm's profile, or this browser's copy against a backend without one.
+  const browserFacts = useCompanyFacts();
+  const facts = profile.mode === "server" ? profile.facts : profile.mode === "browser" ? browserFacts : [];
+  const companyClass = facts.find((f) => f.field === "company_class")?.value;
+  const incorporated = isoDate(facts.find((f) => f.field === "incorporated_on")?.value);
 
   return (
     <>
@@ -34,18 +43,23 @@ export function CalendarConsole() {
         <div className="field-row">
           <div>
             <label htmlFor="company_class">Company class</label>
-            <select id="company_class" name="company_class" defaultValue="private">
+            <select id="company_class" name="company_class" key={companyClass ?? "none"}
+                    defaultValue={companyClass ?? "private"}
+                    aria-describedby={companyClass ? "class-help" : undefined}>
               <option value="private">Private</option>
               <option value="public">Public</option>
               <option value="opc">One person company</option>
               <option value="section8">Section 8</option>
             </select>
+            {companyClass && <p className="meta" id="class-help">{FROM_PROFILE}</p>}
           </div>
           <div>
             <label htmlFor="incorporation_date">Incorporated</label>
-            <input id="incorporation_date" name="incorporation_date" type="date"
-                   required aria-describedby="incorporation-help" />
-            <p className="meta" id="incorporation-help">Required. Enter the actual date from the company record; no date is assumed.</p>
+            <input id="incorporation_date" name="incorporation_date" type="date" key={incorporated ?? "none"}
+                   defaultValue={incorporated} required aria-describedby="incorporation-help" />
+            <p className="meta" id="incorporation-help">
+              {incorporated ? FROM_PROFILE : "Required. Enter the actual date from the company record; no date is assumed."}
+            </p>
           </div>
         </div>
 

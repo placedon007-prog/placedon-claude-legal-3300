@@ -2,7 +2,10 @@
 
 import { getGateway } from "@/lib/gateway";
 import { isRefusal } from "@/lib/gateway/types";
-import type { CompanyFact } from "@/lib/company-facts";
+import { z } from "zod";
+import {
+  fromProfile, storedFactSchema, toProfileInput, type CompanyFact, type ProfileLoad, type StoredFact,
+} from "@/lib/company-facts";
 import { extractText, MAX_UPLOAD_BYTES } from "@/lib/documents";
 import { hasSession } from "@/lib/auth/session";
 
@@ -54,4 +57,46 @@ export async function extractCompanyFactsAction(formData: FormData): Promise<Ext
   // `unmatched` reads "cin (looked for: ...)"; the field name is the first word.
   const missing = result.data.unmatched.map((u) => u.split(" ")[0]);
   return { ok: true, facts: result.data.facts, missing, uploadedOn };
+}
+
+/**
+ * The firm's company profile (`company_profile.get`, backend 032). A backend without it
+ * answers 404 (no such route), and then the screens keep today's browser-only behaviour
+ * and say so. Any other failure is "unavailable", never an empty profile and never a
+ * silent switch to this browser.
+ */
+export async function loadCompanyProfileAction(): Promise<ProfileLoad> {
+  if (!(await hasSession())) return { mode: "unavailable" };
+  const result = await (await getGateway()).companyProfileGet();
+  if (!result.ok) return result.error.kind === "not_found" ? { mode: "browser" } : { mode: "unavailable" };
+  if (isRefusal(result.data)) return result.data.code === "NO_STORE" ? { mode: "browser" } : { mode: "unavailable" };
+  return { mode: "server", facts: result.data.facts.map(fromProfile) };
+}
+
+export type SaveProfileResult =
+  | { readonly ok: true; readonly facts: readonly StoredFact[] }
+  | { readonly ok: false; readonly browserOnly: boolean; readonly message: string };
+
+const saveSchema = z.object({
+  facts: z.array(storedFactSchema).max(20),
+  // What changed, in the person's terms; recorded with the change as its reason.
+  reason: z.string().trim().min(10).max(300),
+});
+
+/** Replace the firm's profile with these confirmed facts. Input is checked here, never trusted. */
+export async function saveCompanyProfileAction(facts: readonly StoredFact[], reason: string): Promise<SaveProfileResult> {
+  if (!(await hasSession())) return { ok: false, browserOnly: false, message: "Your session has ended. Sign in to save company details." };
+  const parsed = saveSchema.safeParse({ facts, reason });
+  if (!parsed.success) return { ok: false, browserOnly: false, message: "These details could not be saved. Nothing was changed." };
+  const result = await (await getGateway()).companyProfileSet({
+    facts: parsed.data.facts.map(toProfileInput), reason: parsed.data.reason,
+  });
+  if (!result.ok) {
+    if (result.error.kind === "not_found") return { ok: false, browserOnly: true, message: "Saved in this browser only." };
+    if (result.error.status === 403) return { ok: false, browserOnly: false, message: "Your role cannot change company details. A lawyer or an admin can." };
+    if (result.error.kind === "bad_request") return { ok: false, browserOnly: false, message: "Placedon refused these details, so nothing was changed." };
+    return { ok: false, browserOnly: false, message: "Placedon did not answer, so nothing was saved. Try again." };
+  }
+  if (isRefusal(result.data)) return { ok: false, browserOnly: false, message: "Placedon refused these details, so nothing was changed." };
+  return { ok: true, facts: result.data.facts.map(fromProfile) };
 }
