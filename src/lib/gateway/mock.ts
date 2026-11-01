@@ -2,6 +2,7 @@ import MAIN_SOURCES from "./fixtures/main-sources.json" with { type: "json" };
 import "../engine/server-guard";
 import { engineFail, engineOk, type EngineResult } from "../engine/errors";
 import { GATEWAY_ROUTES } from "../engine/types";
+import { STATES, type CompanyFact } from "../company-facts";
 import type { GatewayProvider } from "./provider";
 import RECORDED from "./fixtures/conversation.json" with { type: "json" };
 import SOURCES from "./fixtures/sources.json" with { type: "json" };
@@ -1058,6 +1059,14 @@ export class MockGateway implements GatewayProvider {
     return engineOk({ status: input.shared ? "SHARED" as const : "UNSHARED" as const, document_id: input.documentId, shared_with_firm_at: sharedAt });
   }
 
+  async companyFactsExtract(input: { text: string; uploadedOn: string }): Promise<EngineResult<import("./types").CompanyFactsExtract>> {
+    if (!input.text.trim()) {
+      return engineOk({ status: "REFUSED" as const, code: "CANNOT_READ",
+        detail: "no text was supplied. If the upload was a scan or a photograph it has no text layer." });
+    }
+    return engineOk(mockMasterData(input.text, input.uploadedOn));
+  }
+
   async vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {
     // The backend's answer for an id this firm does not have, deleted or never stored.
     if (!this.vault.delete(input.documentId)) {
@@ -1695,4 +1704,53 @@ export class MockGateway implements GatewayProvider {
         "derived from anything that was not supplied.",
     });
   }
+}
+
+/**
+ * A demo reading of an MCA master-data page: the backend's label table and rules
+ * (`checker/sources/mca_master_data.py`), cut down. It reads the text it is given, so a page
+ * that is not master data finds nothing rather than a recorded company.
+ */
+const MCA_LABELS: ReadonlyArray<readonly [CompanyFact["field"], readonly string[]]> = [
+  ["cin", ["cin", "corporate identity number", "cin/fcrn"]],
+  ["name", ["company name", "name of company", "company / llp name"]],
+  ["roc", ["roc code", "roc", "registrar of companies"]],
+  ["incorporated_on", ["date of incorporation", "incorporation date", "date of registration"]],
+  ["address", ["registered address", "registered office address", "address of registered office", "registered office"]],
+  ["listed", ["whether listed or not", "whether listed", "listed status", "listing status"]],
+  ["status", ["company status(for efiling)", "company status for efiling", "company status", "status"]],
+];
+
+function mockMasterData(text: string, uploadedOn: string): import("./types").CompanyFactsExtract {
+  const label = `MCA master data, as uploaded by the user on ${uploadedOn}`;
+  const all = text.split(/\r?\n/);
+  const cut = all.findIndex((l) => /^(directors?\s*\/?\s*signatory details|directors details|signatory details|din\/pan)/i.test(l.trim()));
+  const lines = cut === -1 ? all : all.slice(0, cut);
+  const facts: CompanyFact[] = [];
+  const unmatched: string[] = [];
+  const fact = (field: CompanyFact["field"], value: string, line: string): CompanyFact =>
+    ({ field, value, basis: "COMPANY_FACT", label, quoted_span: line.trim(), confirmed: false, can_verify: false });
+  for (const [field, labels] of MCA_LABELS) {
+    let hit: { value: string; line: string } | null = null;
+    for (const l of labels) {
+      const line = lines.find((x) => x.trim().toLowerCase().startsWith(l));
+      const value = line?.trim().slice(l.length).replace(/^\s*[?:]?\s*/, "").trim();
+      if (line && value && !["-", "--", "NA", "N/A"].includes(value)) { hit = { value, line }; break; }
+    }
+    if (!hit) { unmatched.push(`${field} (looked for: ${labels.join(", ")})`); continue; }
+    let value = hit.value;
+    if (field === "listed") {
+      const low = value.toLowerCase();
+      value = low.startsWith("unlisted") ? "no" : low.startsWith("listed") ? "yes" : "";
+      if (!value) { unmatched.push(`listed (could not read ${hit.value} as listed/unlisted)`); continue; }
+    }
+    facts.push(fact(field, value, hit.line));
+  }
+  const address = facts.find((f) => f.field === "address");
+  const state = address && [...STATES].sort((a, b) => b.length - a.length)
+    .find((s) => address.value.toLowerCase().includes(s.toLowerCase()));
+  if (address && state) facts.push(fact("state", state, address.quoted_span));
+  else unmatched.push(address ? "state (no known State name appears in the registered address)" : "state (no registered address to read it from)");
+  return { source_label: label, facts, unmatched, director_lines_dropped: cut === -1 ? 0 : all.length - cut,
+    note: "Every field carries the line it was read from. Nothing is used until you confirm it." };
 }

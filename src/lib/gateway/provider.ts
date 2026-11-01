@@ -132,6 +132,8 @@ export interface GatewayProvider {
   vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>>;
   /** Share an unfiled document with the firm, or stop (`vault.share`). Recorded with a reason. */
   vaultShare(input: { documentId: string; reason: string; shared: boolean }): Promise<EngineResult<import("./types").VaultShare>>;
+  /** Read an MCA master-data page's text (`company_facts.extract`). Stores nothing. */
+  companyFactsExtract(input: { text: string; uploadedOn: string }): Promise<EngineResult<import("./types").CompanyFactsExtract>>;
   /**
    * The Document Check, end to end: verify a stored document, decide whether it is
    * still in force at `as_of`, and record the action a lawyer should take. A WRITE

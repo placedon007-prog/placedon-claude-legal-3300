@@ -805,3 +805,48 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 .vault-share-form { display: flex; flex-direction: column; gap: 0.5rem; }
 .vault-share-form textarea { width: 100%; min-height: 5rem; padding: 0.6rem 0.8rem; border: 1px solid var(--c-line-control); border-radius: 8px; font: inherit; font-size: var(--text-body); background: var(--c-ground); color: var(--c-fg); }
 .vault-share-form textarea:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }
+/* ── Company ─────────────────────────────────────────────────────────────── */
+/* Flex + gap, not space-y: the unlayered global `p` margin beats Tailwind's space-y. */
+.company-section { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 2rem; }
+.company-section:first-of-type { margin-top: 0; }
+.company-section p { margin: 0; }
+.console-main .company-heading { font-size: var(--text-title); line-height: var(--text-title--line-height); font-weight: 600; margin: 0; }
+.company-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.company-facts { border-top: 1px solid var(--c-line); }
+.company-row {
+  display: grid; grid-template-columns: 11rem minmax(0, 1fr) auto; gap: 0.5rem 1.25rem;
+  align-items: start; padding: 0.9rem 0; border-bottom: 1px solid var(--c-line);
+}
+.company-label { font-size: var(--text-ui); color: var(--c-fg-2); padding-top: 0.15rem; }
+.company-value { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; font-size: var(--text-body); color: var(--c-fg); overflow-wrap: anywhere; }
+.company-missing { color: var(--c-fg-3); }
+.company-quote { font-family: var(--font-code); font-size: var(--text-caption); line-height: 1.5; color: var(--c-fg-3); overflow-wrap: anywhere; }
+.company-row-actions { display: flex; gap: 0.5rem; }
+.company-button {
+  min-height: 44px; padding: 0 0.9rem; border: 1px solid var(--c-line-control); border-radius: 8px;
+  background: var(--c-ground); color: var(--c-fg); font: inherit; font-size: var(--text-ui); cursor: pointer;
+  transition: background var(--c-dur) var(--c-ease);
+}
+.company-button:hover { background: var(--c-wash-2); }
+.company-button:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }
+.company-button-primary { background: var(--c-fg); border-color: var(--c-fg); color: var(--c-ground); font-weight: 500; }
+.company-button-primary:hover { background: var(--c-fg); opacity: 0.86; }
+.company-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.company-edit { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.console .company-edit select, .console .company-edit input[type="text"] { width: min(100%, 20rem); }
+.company-edit-actions { display: flex; gap: 0.5rem; }
+.company-edit .company-error { flex-basis: 100%; }
+.company-error { font-size: var(--text-body); color: var(--c-fg); padding: 0.6rem 0.8rem; border: 1px dashed var(--c-line-control); border-radius: 8px; }
+.company-notice { font-size: var(--text-body); color: var(--c-fg); }
+.company-notice:focus { outline: none; }
+.company-mca-form { display: flex; flex-direction: column; gap: 1rem; }
+.company-field { display: flex; flex-direction: column; }
+.company-review { display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+.company-review .company-list { gap: 0.5rem; align-self: stretch; }
+.company-review-row { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.9rem; border: 1px solid var(--c-line-2); border-radius: 10px; }
+.company-review-row input { width: 20px; height: 20px; margin-top: 0.1rem; flex: none; }
+.console .company-review-text { display: flex; flex-direction: column; gap: 0.25rem; margin: 0; min-width: 0; cursor: pointer; }
+@media (max-width: 639px) {
+  .company-row { grid-template-columns: minmax(0, 1fr); }
+  .company-label { padding-top: 0; }
+}
