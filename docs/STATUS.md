@@ -1,7 +1,8 @@
-# Status — the /app console (2026-10-08)
+# Status — the /app console (2026-10-08, corrected 2026-11-01)
 
-Branch `claude/console-redesign-2026-10-07`, draft PR #8. Not merged: the owner approves the
-final screenshots first. Design system of record: AGENTS.md → "/app console".
+The console redesign (branch `claude/console-redesign-2026-10-07`, PR #8) was merged on
+2026-10-07. Design system of record: AGENTS.md → "/app console". Statements below that had
+stopped being true were corrected on 2026-11-01; the rest is the 2026-10-08 record.
 
 ## Completed
 
@@ -15,9 +16,11 @@ final screenshots first. Design system of record: AGENTS.md → "/app console".
 **The Split workspace (Ask)**
 - Ask runs on the conversation layer (`conversation.send` / `conversation.get`). The thread id
   is in the URL (`?c=`) and in this browser's thread list.
-- Each question is a heading. The answer is prose with numbered citation markers, a Sources
-  list, one quiet line of standing limits (law read as at · Playbook DRAFT · UAE North · not
-  legal advice), and copy / draft-from-this / view-run actions on hover or focus.
+- Each question is a heading. The answer is prose, one paragraph per cited sentence, with
+  inline-sized numbered citation markers, a Sources list, one quiet line of standing limits
+  (research as at the date · Playbook DRAFT on a contract review only · the recorded model and
+  region are in the answer trace · not legal advice), and copy / draft-from-this / view-run
+  actions on hover or focus.
 - The answer registers are told apart by shape and words, never colour: answered, partly
   answered, a lawyer needs to decide, not answered (reason named, body by body), needs
   clarification, queued, and **did not arrive — this is not a refusal** (dashed box, Try
@@ -34,9 +37,13 @@ final screenshots first. Design system of record: AGENTS.md → "/app console".
 - The **Placedon mark** (inline SVG, from `brand-kit/logo/`) replaces the placeholder "P".
 - An initials avatar and an account menu in the style of Claude.
 - Composer (from the owner's 21st.dev prompt input, rebuilt on shadcn):
-  - "+" stores a PDF/DOCX in **Wall System**, then opens it in Document Check.
-  - Tools: Research, Draft (a removable chip), Check a document, Review a contract.
-  - The mic is disabled, with the tooltip "Voice input — coming soon".
+  - Files stores a PDF/DOCX in **Wall System** and attaches it to the question as a chip
+    (with a link to open it in Document Check); a file dropped anywhere on the conversation
+    attaches too.
+  - Tools: Research held law (default), Research the public web, Draft from this thread (a
+    removable chip), Check a document, Review a contract.
+  - Voice input is not shown (no browser speech API).
+  - On phones the composer is one row: the chips go icon-only at 44×44.
 
 **Welcome line** (owner request)
 - A two-line greeting, then a badge saying what was recognised and why.
@@ -59,25 +66,28 @@ final screenshots first. Design system of record: AGENTS.md → "/app console".
   Calendar, Runs) use the same system.
 
 **Verification**
-- typecheck · lint · **76/76 tests** · build.
+- typecheck · lint · tests · build (76/76 tests at the time; the suite has grown since and
+  runs in CI on every PR).
 - axe (WCAG 2.0/2.1/2.2 A+AA): 0 violations.
 - Keyboard walkthrough; reduced motion leaves 0 elements animating.
 - 56 screens at 1440/1024/390 against the real gateway (`docs/design/screens/`). They predate
   the logo, avatar and welcome-line changes and are re-captured before approval.
 
 **Backend** (`bubblebee1408/placedon-law-backend`)
-- **PR #78** — `citation.get` serves the section a quote was re-read from. Gate 317/317 green.
-  **Waiting for the owner to merge.**
+- **PR #78** — `citation.get` serves the section a quote was re-read from. Merged 2026-10-12.
 
 ## Open — needs the owner
-1. Merge backend PR #78 (the whole-section source panel).
-2. Approve the final screenshots, then merge PR #8.
+1. ~~Merge backend PR #78~~ — merged 2026-10-12.
+2. ~~Approve the final screenshots, then merge PR #8~~ — merged 2026-10-07.
 3. The local `placedon_dev` database lacks migrations 010–023 (no `conversations` table). They
    must be applied deliberately; the backend's own script refuses to touch `placedon_dev`.
-4. Publishing to `probonhs/Main-product-frontend-` (see below).
+4. ~~Publishing to `probonhs/Main-product-frontend-`~~ — the repository is now
+   `placedon007-prog/placedon-claude-legal-3300`.
 
 ## Next — planned
-1. **Real login** (owner decision: invite-only accounts).
+1. **Real login** (owner decision: invite-only accounts). *Built:* `/login` (passcode or
+   account sign-in) and `/invite` (accept an invite) call `/v2/auth/login`,
+   `/v2/invites/accept` and `/v2/auth/logout`. The admin People page is not built.
    - Backend: `POST /v2/auth/login` (email + password → a per-person session key, 8 h),
      `GET /v2/auth/me`, `POST /v2/auth/logout`, `POST /v2/invites` (admin), `GET /v2/people`,
      `POST /v2/auth/accept`; plus a script to create the first admin.
@@ -87,7 +97,10 @@ final screenshots first. Design system of record: AGENTS.md → "/app console".
    - Frontend: a sign-in page, an accept-invite page, and an admin People page. Every request
      is made as the signed-in person; the greeting and avatar use the account name.
 2. Re-capture all screens at 1440/1024/390 for approval.
-3. Deploy (`vercel --prod`) once a reachable gateway with a migrated database is configured,
-   then verify the live URL end to end.
+3. ~~Deploy~~ — live. placedon.com is the Vercel project `placedon-legal` (functions in
+   Mumbai, `bom1`), deployed with the Vercel CLI (`vercel --prod`); a git push does not
+   deploy. The backend gateway runs on Azure App Service `placedon-api-hyd` (Hyderabad) with
+   its database in UAE North.
 4. Streaming, once the backend streams a conversation turn. `/v2/ask/stream` today wraps
-   `ask` and emits its steps only when the run ends.
+   `ask` and emits its steps only when the run ends; this app does not call `/v2/ask` at all
+   (Ask runs on `conversation.send`).
