@@ -18,7 +18,7 @@ import { DocumentEvidenceAnswer } from "./document-evidence-answer";
 import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
-import { parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
+import { DEMO_MISMATCH_NOTICE, parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope } from "@/lib/gateway/types";
 import { envelopeKind, failedRegister, isNothingTraced, summaryUnavailableLead, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -356,6 +356,7 @@ function Answered({
   const kind = envelopeKind(envelope.status);
   const [first, ...rest] = envelope.text_blocks;
   const parsed = parseAnswer(first?.text ?? "");
+  const demoMismatch = parsed.notice?.startsWith(DEMO_MISMATCH_NOTICE) ?? false;
   const { groups, refs, active } = linkCitations(parsed.sentences, envelope.citations);
   const open = (g: CitationGroup, id: string | null) => onOpenSource(g, id, conversationId);
   // An abstention that still carries CITED text: that text is set aside under its own label.
@@ -433,19 +434,20 @@ function Answered({
 
   return (
     <article className="flex flex-col gap-4">
+      {/* A demo recording shown for another question must not say this question was answered. */}
       <StatusLine
-        kind={kind}
-        extra={groups.length && !setAside ? `${groups.length} source${groups.length > 1 ? "s" : ""}` : undefined}
+        kind={demoMismatch ? "refused" : kind}
+        extra={groups.length && !setAside && !demoMismatch ? `${groups.length} source${groups.length > 1 ? "s" : ""}` : undefined}
       />
+      {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
 
       {setAside ? null : servedProse}
       {rest.map((b, i) => (
         <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
       ))}
-      {parsed.notice ? <p className="text-ui text-fg-2">{parsed.notice}</p> : null}
 
       {groups.length > 0 && !setAside ? <Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /> : null}
-      {onDraft && kind === "answered" && envelope.citations.length > 0 ? <button type="button" onClick={onDraft}
+      {onDraft && kind === "answered" && !demoMismatch && envelope.citations.length > 0 ? <button type="button" onClick={onDraft}
         className="flex min-h-11 items-center gap-2 self-start rounded-chip border border-line-control px-3 text-ui text-fg hover:bg-wash">
         <PenLine className="size-4" aria-hidden />Create draft from latest cited answer
       </button> : null}
