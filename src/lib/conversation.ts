@@ -62,9 +62,20 @@ export function waitedLabel(ms: number): string {
   return `Waiting ${minutes} min ${String(total % 60).padStart(2, "0")} s`;
 }
 
-/** Polls start promptly, then back off. Callers add jitter and pause while hidden. */
-export function conversationPollDelay(attempt: number): number {
-  return Math.min(30_000, 1_500 * 2 ** Math.min(Math.max(0, attempt), 5));
+const POLL_FAST_MS = 1_500;
+const POLL_FAST_WINDOW_MS = 60_000;
+const POLL_MAX_MS = 30_000;
+
+/**
+ * Poll every 1.5 s for the first minute so a ready answer shows within ~1.5 s, then double
+ * every 30 s up to a 30 s ceiling. A busy server (429/503) is waited out for at least its
+ * Retry-After. Callers add jitter and pause while hidden.
+ */
+export function conversationPollDelay(elapsedMs: number, retryAfterSeconds?: number): number {
+  const slow = Math.max(0, elapsedMs - POLL_FAST_WINDOW_MS);
+  const base = elapsedMs < POLL_FAST_WINDOW_MS ? POLL_FAST_MS
+    : Math.min(POLL_MAX_MS, Math.round(POLL_FAST_MS * 2 ** (1 + slow / 30_000)));
+  return retryAfterSeconds ? Math.max(base, retryAfterSeconds * 1000) : base;
 }
 
 export type ProvenanceStep = Pick<RunStep, "capability" | "status" | "model" | "provider" | "region" | "cost_inr" | "cost_note">;

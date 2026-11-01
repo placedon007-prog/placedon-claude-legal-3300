@@ -54,8 +54,24 @@ test("an accepted reservation with no run yet remains queued and can reconcile b
   ]);
   assert.equal(turn.state?.phase, "queued");
   assert.equal(turn.key, metadata.request_id);
+});
+
+test("poll delay stays fast for the first minute, then backs off to a 30 s ceiling", () => {
   assert.equal(conversationPollDelay(0), 1500);
-  assert.equal(conversationPollDelay(20), 30000);
+  assert.equal(conversationPollDelay(13_000), 1500);
+  assert.equal(conversationPollDelay(59_999), 1500);
+  assert.equal(conversationPollDelay(60_000), 3000);
+  assert.equal(conversationPollDelay(90_000), 6000);
+  assert.equal(conversationPollDelay(150_000), 24000);
+  assert.equal(conversationPollDelay(180_000), 30000);
+  assert.equal(conversationPollDelay(3_600_000), 30000);
+  for (let t = 0; t < 300_000; t += 1_000) assert.ok(conversationPollDelay(t + 1_000) >= conversationPollDelay(t));
+});
+
+test("a busy server is waited out for at least its Retry-After", () => {
+  assert.equal(conversationPollDelay(5_000, 20), 20000);
+  assert.equal(conversationPollDelay(200_000, 5), 30000);
+  assert.equal(conversationPollDelay(5_000, undefined), 1500);
 });
 
 test("run provenance lists only recorded model calls and never treats an unknown price as free", () => {
