@@ -9,7 +9,6 @@
 import * as React from "react";
 import { Briefcase, CalendarDays, Check, FileText } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { MentionItem } from "@/lib/sources";
+import { formatLawDate, LAW_DATE_MIN, localToday, pastLawDate } from "@/lib/law-as-of";
 import { cn } from "@/lib/utils";
 
 export { SourcesChip } from "./source-picker";
@@ -96,37 +96,51 @@ export function MentionMenu({
   );
 }
 
-/* ── As of today ─────────────────────────────────────────────────────────── */
+/* ── As of ────────────────────────────────────────────────────────────────── */
 
-/** The gateway's own reason for refusing a past as_of (AS_OF_UNSUPPORTED). */
-export const AS_OF_REASON =
-  "This engine reads the law as it stands today. Point-in-time reconstruction is unverified against any external source, so an answer stamped with a past date would be today's text wearing one.";
-
-export function AsOfChip() {
+/**
+ * "As of today", or a past date the law is read as at. A native date picker bounded to the
+ * gateway's range (1 April 2014 to today). Only a past date is ever sent; the gateway may
+ * still refuse it (AS_OF_UNSUPPORTED) while the feature is switched off.
+ */
+export function AsOfChip({ value, onChange, disabled = false }: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const today = localToday();
+  const picked = pastLawDate(value, today);
+  const label = picked ? `As of ${formatLawDate(picked)}` : "As of today";
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className={chip}>
+        <button type="button" className={cn(chip, picked && "border-fg text-fg")} disabled={disabled} aria-label={label}>
           <CalendarDays className="size-4" aria-hidden />
-          <span className={chipLabel}>As of today</span>
+          <span className={chipLabel}>{label}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="start" sideOffset={8} className="w-72">
-        <p className="text-body font-medium text-fg">Read as the law stands today</p>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span tabIndex={0} className="mt-2 block rounded-chip">
-              <input
-                type="date"
-                disabled
-                aria-label="A past date — not available"
-                className="bare h-11 w-full rounded-lg border border-line-2 bg-wash px-3 text-body text-fg-3"
-              />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-64">{AS_OF_REASON}</TooltipContent>
-        </Tooltip>
-        <p className="mt-2 text-caption text-fg-3">A past date is refused (AS_OF_UNSUPPORTED). {AS_OF_REASON}</p>
+      <PopoverContent side="top" align="start" sideOffset={8} collisionPadding={12} className="w-72">
+        <label htmlFor="composer-as-of" className="text-body font-medium text-fg">Read the law as it stood on</label>
+        <input
+          id="composer-as-of"
+          type="date"
+          min={LAW_DATE_MIN}
+          max={today}
+          value={picked ?? today}
+          onChange={(e) => onChange(pastLawDate(e.target.value, today) ?? null)}
+          className="bare mt-2 h-11 w-full rounded-lg border border-line-control bg-ground px-3 text-body text-fg"
+        />
+        <p className="mt-2 text-caption text-fg-3">
+          From 1 April 2014, when most of the <i>Companies Act, 2013</i> came into force. Earlier
+          wording is rebuilt from India Code&rsquo;s amendment notes.
+        </p>
+        {picked ? (
+          <button type="button" onClick={() => { onChange(null); setOpen(false); }}
+            className="mt-2 min-h-11 rounded-chip border border-line-control px-3 text-ui text-fg hover:bg-wash">
+            Use today&rsquo;s law
+          </button>
+        ) : null}
       </PopoverContent>
     </Popover>
   );
