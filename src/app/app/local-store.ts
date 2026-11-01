@@ -247,8 +247,8 @@ export function rememberedCarried(conversationId: string | null): readonly Threa
   return conversationId ? carriedDocuments.get(conversationId) : undefined;
 }
 
-// Company facts. The backend takes them with a request and does not store them, so this
-// browser keeps the confirmed ones; the Company page says so.
+// Company facts, against a backend without the company profile (032): this
+// browser keeps the confirmed ones and the Company page says so.
 const COMPANY_KEY = "placedon.console.company.v1";
 
 export function useCompanyFacts(): readonly StoredFact[] {

@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { extractCompanyFactsAction, type ExtractResult } from "./actions";
+import { extractCompanyFactsAction, saveCompanyProfileAction, type ExtractResult } from "./actions";
 import { saveCompanyFacts, useCompanyFacts } from "../local-store";
 import {
-  FIELDS, FIELD_LABEL, STATES, displayValue, isTypeable, mergeFacts, sourceLine, typedFact,
-  type CompanyFact, type FactField, type StoredFact, type TypeableField,
+  COMPANY_CLASSES, FIELDS, FIELD_LABEL, PROFILE_FIELDS, STATES, displayValue, isTypeable, mergeFacts, sourceLine, typedFact,
+  type CompanyFact, type FactField, type ProfileLoad, type StoredFact, type TypeableField,
 } from "@/lib/company-facts";
+
+/** Persist the whole profile; resolves to an error message, or null once saved. */
+type Save = (next: readonly StoredFact[], what: string) => Promise<string | null>;
 
 function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
@@ -19,6 +22,11 @@ function FactInput({ field, id, initial }: { field: TypeableField; id: string; i
       <option value="">Choose…</option><option value="yes">Yes, listed</option><option value="no">No, not listed</option>
     </select>;
   }
+  if (field === "company_class") {
+    return <select id={id} name="value" defaultValue={initial}>
+      <option value="">Choose…</option>{COMPANY_CLASSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>;
+  }
   if (field === "state") {
     return <select id={id} name="value" defaultValue={initial}>
       <option value="">Choose…</option>{STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -28,32 +36,36 @@ function FactInput({ field, id, initial }: { field: TypeableField; id: string; i
     maxLength={21} placeholder="U00000MH2010PTC000000" className="mono" />;
 }
 
-function EditForm({ field, fact, facts, onDone }: {
-  field: TypeableField; fact?: StoredFact; facts: readonly StoredFact[]; onDone: (message: string | null) => void;
+function EditForm({ field, fact, facts, save, onDone }: {
+  field: TypeableField; fact?: StoredFact; facts: readonly StoredFact[]; save: Save; onDone: (message: string | null) => void;
 }) {
   const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
   const id = `fact-${field}`;
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = String(new FormData(event.currentTarget).get("value") ?? "");
     const result = typedFact(field, value, today());
     if (!result.ok) { setError(result.message); return; }
-    saveCompanyFacts(mergeFacts(facts, [result.fact]));
+    setBusy(true);
+    const problem = await save(mergeFacts(facts, [result.fact]), `${FIELD_LABEL[field]} entered by hand`);
+    setBusy(false);
+    if (problem) { setError(problem); return; }
     onDone(`${FIELD_LABEL[field]} saved.`);
   }
   return <form className="company-edit" onSubmit={submit} noValidate>
     <label htmlFor={id} className="sr-only">{FIELD_LABEL[field]}</label>
     <FactInput field={field} id={id} initial={fact?.basis === "USER_FACT" ? fact.value : ""} />
     <div className="company-edit-actions">
-      <button type="submit" className="bare company-button company-button-primary">Save</button>
+      <button type="submit" className="bare company-button company-button-primary" disabled={busy} aria-busy={busy}>{busy ? "Saving…" : "Save"}</button>
       <button type="button" className="company-button" onClick={() => onDone(null)}>Cancel</button>
     </div>
     {error && <p role="alert" className="company-error">{error}</p>}
   </form>;
 }
 
-function FactRow({ field, fact, facts, onNotice }: {
-  field: FactField; fact?: StoredFact; facts: readonly StoredFact[]; onNotice: (m: string) => void;
+function FactRow({ field, fact, facts, save, onNotice }: {
+  field: FactField; fact?: StoredFact; facts: readonly StoredFact[]; save: Save; onNotice: (m: string) => void;
 }) {
   const [editing, setEditing] = React.useState(false);
   const typeable = isTypeable(field);
@@ -61,7 +73,7 @@ function FactRow({ field, fact, facts, onNotice }: {
     <p className="company-label">{FIELD_LABEL[field]}</p>
     <div className="company-value">
       {editing && typeable
-        ? <EditForm field={field} fact={fact} facts={facts} onDone={(m) => { setEditing(false); if (m) onNotice(m); }} />
+        ? <EditForm field={field} fact={fact} facts={facts} save={save} onDone={(m) => { setEditing(false); if (m) onNotice(m); }} />
         : fact
           ? <>
               <p className={field === "cin" ? "mono" : undefined}>{displayValue(fact)}</p>
@@ -77,21 +89,29 @@ function FactRow({ field, fact, facts, onNotice }: {
       {typeable && <button type="button" className="company-button" onClick={() => setEditing(true)}
         aria-label={`${fact ? "Change" : "Add"} ${FIELD_LABEL[field]}`}>{fact ? "Change" : "Add"}</button>}
       {fact && <button type="button" className="company-button" aria-label={`Remove ${FIELD_LABEL[field]}`}
-        onClick={() => { saveCompanyFacts(facts.filter((f) => f.field !== field)); onNotice(`${FIELD_LABEL[field]} removed.`); }}>Remove</button>}
+        onClick={async () => {
+          const problem = await save(facts.filter((f) => f.field !== field), `${FIELD_LABEL[field]} removed`);
+          onNotice(problem ?? `${FIELD_LABEL[field]} removed.`);
+        }}>Remove</button>}
     </div>}
   </li>;
 }
 
-function McaReview({ result, current, onSaved }: {
-  result: Extract<ExtractResult, { ok: true }>; current: readonly StoredFact[]; onSaved: (m: string) => void;
+function McaReview({ result, current, save, onSaved }: {
+  result: Extract<ExtractResult, { ok: true }>; current: readonly StoredFact[]; save: Save; onSaved: (m: string) => void;
 }) {
   const [ticked, setTicked] = React.useState<ReadonlySet<FactField>>(() => new Set());
+  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
   const before = new Map(current.map((f) => [f.field, f]));
   const missing = result.missing.filter((m): m is FactField => (FIELDS as readonly string[]).includes(m));
-  function save() {
+  async function confirm() {
     const chosen = result.facts.filter((f) => ticked.has(f.field))
       .map((f: CompanyFact): StoredFact => ({ ...f, confirmed: true, saved_on: result.uploadedOn }));
-    saveCompanyFacts(mergeFacts(current, chosen));
+    setBusy(true);
+    const problem = await save(mergeFacts(current, chosen), `${chosen.length} confirmed from the MCA page uploaded on ${result.uploadedOn}`);
+    setBusy(false);
+    if (problem) { setError(problem); return; }
     onSaved(`${chosen.length} ${chosen.length === 1 ? "detail" : "details"} saved from the MCA page.`);
   }
   if (result.facts.length === 0) {
@@ -118,15 +138,35 @@ function McaReview({ result, current, onSaved }: {
       })}
     </ul>
     {missing.length > 0 && <p className="meta">Not found on this page: {missing.map((m) => FIELD_LABEL[m]).join(", ")}. These stay as they are.</p>}
-    <button type="button" className="company-button company-button-primary" disabled={ticked.size === 0} onClick={save}>
+    {error && <p role="alert" className="company-error">{error}</p>}
+    <button type="button" className="company-button company-button-primary" disabled={ticked.size === 0 || busy} aria-busy={busy} onClick={confirm}>
       Save {ticked.size || ""} ticked {ticked.size === 1 ? "detail" : "details"}
     </button>
   </section>;
 }
 
-export function CompanyConsole() {
-  const facts = useCompanyFacts();
+export function CompanyConsole({ initial }: { initial: ProfileLoad }) {
+  const browserFacts = useCompanyFacts();
+  // Where the profile lives. "browser" only when the backend has no company profile yet.
+  const [mode, setMode] = React.useState(initial.mode);
+  const [serverFacts, setServerFacts] = React.useState<readonly StoredFact[]>(
+    initial.mode === "server" ? initial.facts : []);
+  const facts = mode === "server" ? serverFacts : browserFacts;
   const [notice, setNotice] = React.useState<string | null>(null);
+
+  const save: Save = React.useCallback(async (next, what) => {
+    if (mode !== "server") { saveCompanyFacts(next); return null; }
+    try {
+      const result = await saveCompanyProfileAction(next, `${what}, on the Company page`);
+      if (result.ok) { setServerFacts(result.facts); return null; }
+      if (result.browserOnly) { setMode("browser"); saveCompanyFacts(next); return null; }
+      return result.message;
+    } catch {
+      return "Placedon did not answer, so nothing was saved. Try again.";
+    }
+  }, [mode]);
+  // Details an earlier visit kept in this browser, offered once the firm's profile exists.
+  const movable = mode === "server" && serverFacts.length === 0 ? browserFacts : [];
   const noticeRef = React.useRef<HTMLParagraphElement>(null);
   // The button that was pressed is gone after a save or removal; focus lands on what happened.
   React.useEffect(() => { if (notice) noticeRef.current?.focus(); }, [notice]);
@@ -135,6 +175,14 @@ export function CompanyConsole() {
   const formRef = React.useRef<HTMLFormElement>(null);
   const byField = new Map(facts.map((f) => [f.field, f]));
   const recorded = facts.length;
+
+  if (mode === "unavailable") {
+    return <section aria-labelledby="company-details" className="company-section">
+      <h2 id="company-details" className="company-heading">Company details</h2>
+      <p role="alert" className="company-error">Your company profile could not be loaded just now, so nothing is shown and
+        nothing can be changed. Reload the page to try again.</p>
+    </section>;
+  }
 
   async function read(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -147,14 +195,26 @@ export function CompanyConsole() {
   return <>
     <section aria-labelledby="company-details" className="company-section">
       <h2 id="company-details" className="company-heading">Company details</h2>
-      <p className="meta">{recorded} of {FIELDS.length} recorded. A detail that is not recorded is never assumed.</p>
+      <p className="meta">{recorded} of {PROFILE_FIELDS.length} recorded. A detail that is not recorded is never assumed.</p>
       {notice && <p role="status" className="company-notice" tabIndex={-1} ref={noticeRef}>{notice}</p>}
       <ul className="company-list company-facts">
-        {FIELDS.map((field) => <FactRow key={field} field={field} fact={byField.get(field)} facts={facts} onNotice={setNotice} />)}
+        {PROFILE_FIELDS.map((field) => <FactRow key={field} field={field} fact={byField.get(field)} facts={facts} save={save} onNotice={setNotice} />)}
       </ul>
-      <p className="meta">Saved in this browser only. Placedon does not keep company details yet, so colleagues on
-        other computers will not see them, and they are not yet sent with your questions. None of them is
-        checked against the MCA register.</p>
+      {mode === "server"
+        ? <p className="meta">Saved as your firm&rsquo;s company profile: everyone in your firm sees the same details,
+            and Calendar and your questions use them unless you change them there. None of them is checked against
+            the MCA register.</p>
+        : <p className="meta">Saved in this browser only. Placedon does not keep company details yet, so colleagues on
+            other computers will not see them, and they are not yet sent with your questions. None of them is
+            checked against the MCA register.</p>}
+      {movable.length > 0 && <div className="company-move">
+        <p className="text-body text-fg">{movable.length} {movable.length === 1 ? "detail was" : "details were"} saved in this
+          browser before your firm&rsquo;s profile existed.</p>
+        <button type="button" className="company-button" onClick={async () => {
+          const problem = await save(movable, `${movable.length} moved from this browser`);
+          setNotice(problem ?? "Moved to your company profile.");
+        }}>Move them to the company profile</button>
+      </div>}
     </section>
 
     <section aria-labelledby="company-mca" className="company-section">
@@ -177,7 +237,7 @@ export function CompanyConsole() {
         </div>
       </form>
       {result && !result.ok && <p role="alert" className="company-error">{result.message}</p>}
-      {result?.ok && <McaReview key={result.uploadedOn + result.facts.length} result={result} current={facts}
+      {result?.ok && <McaReview key={result.uploadedOn + result.facts.length} result={result} current={facts} save={save}
         onSaved={(m) => { setResult(null); formRef.current?.reset(); setNotice(m); }} />}
     </section>
   </>;
