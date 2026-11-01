@@ -1077,6 +1077,9 @@ export const conversationSendSchema = z.union([conversationSendOkSchema, verbRef
 export type ConversationSend = z.infer<typeof conversationSendSchema>;
 export type ConversationSendOk = z.infer<typeof conversationSendOkSchema>;
 
+export const runProgressSchema = z.object({ current: z.string(), done: z.array(z.string()) });
+export type RunProgress = z.infer<typeof runProgressSchema>;
+
 export const conversationMessageSchema = z.object({
   message_id: z.string(),
   ordinal: z.number().int(),
@@ -1086,6 +1089,8 @@ export const conversationMessageSchema = z.object({
   envelope: envelopeSchema.nullable().optional(),
   file_ids: z.array(z.string()).optional(),
   metadata: turnMetadataSchema.nullable().optional(),
+  /** Live steps of a reply still being prepared. Absent on older backends and once answered. */
+  progress: runProgressSchema.nullable().optional(),
 });
 export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 

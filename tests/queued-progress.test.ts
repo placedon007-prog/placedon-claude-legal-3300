@@ -53,3 +53,46 @@ test("a remounted workspace gets back the progress line and queue time the serve
   assert.equal(second, server[1], "an answered turn is untouched");
   assert.equal(restoreQueued(server, [])[0], server[0], "nothing remembered: unchanged");
 });
+
+test("a queued reply with live steps carries them; an older backend's reply shows today's UI", async () => {
+  const { conversationTurns } = await import("../src/lib/conversation");
+  const { conversationMessageSchema } = await import("../src/lib/gateway/types");
+  const user = { message_id: "u", ordinal: 0, role: "user" as const, text: "Q" };
+  const steps = { current: "Searching the Companies Act", done: ["Understanding the question"] };
+  const withSteps = conversationMessageSchema.parse({ message_id: "a", ordinal: 1, role: "assistant", text: "", run_id: "r", envelope: null, progress: steps });
+  const old = conversationMessageSchema.parse({ message_id: "a", ordinal: 1, role: "assistant", text: "", run_id: "r", envelope: null });
+  assert.deepEqual((conversationTurns("c", [user, withSteps])[0].state as { steps?: unknown }).steps, steps);
+  assert.equal("steps" in (conversationTurns("c", [user, old])[0].state as object), false, "no progress field: no checklist");
+});
+
+test("a poll replaces the steps with fresh ones and keeps the last known ones otherwise", () => {
+  const first = { current: "Understanding the question", done: [] };
+  const next = { current: "Writing the answer", done: ["Understanding the question", "Searching the Companies Act"] };
+  const shown = stillQueued({ ...queued, steps: first }, next);
+  assert.deepEqual(shown.steps, next);
+  assert.equal(shown.note, queued.progress);
+  assert.deepEqual(stillQueued({ ...queued, steps: first }).steps, first);
+  assert.equal("steps" in stillQueued(queued), false);
+});
+
+test("demo mode: a 'slow demo' question advances through the steps, then answers", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: 1_000_000 });
+  const { MockGateway } = await import("../src/lib/gateway/mock");
+  const mock = new MockGateway();
+  const sent = await mock.conversationSend({ text: "slow demo: when must an AGM be held?", requestId: "slow-demo-req-1" });
+  assert.ok(sent.ok && !("code" in sent.data && sent.data.code));
+  const cid = (sent.data as { conversation_id: string }).conversation_id;
+  assert.equal((sent.data as { envelope: unknown }).envelope, null, "queued, not answered");
+  const reply = async () => {
+    const got = await mock.conversationGet(cid);
+    assert.ok(got.ok && "messages" in got.data);
+    return got.data.messages[1];
+  };
+  assert.deepEqual((await reply()).progress, { current: "Understanding the question", done: [] });
+  t.mock.timers.tick(6_500);
+  assert.deepEqual((await reply()).progress, { current: "Writing the answer", done: ["Understanding the question", "Searching the Companies Act"] });
+  t.mock.timers.tick(6_000);
+  const done = await reply();
+  assert.ok(done.envelope, "the recorded answer arrives");
+  assert.equal(done.progress, undefined);
+});

@@ -231,6 +231,22 @@ const THREADS = new Map<string, ConversationMessage[]>();
 /** Which matter a demo thread was filed to, so conversation.list can answer per matter. */
 const FILED = new Map<string, { matter_id: string; title: string; updated_at: string }>();
 const REQUESTS = new Map<string, { conversationId: string; payload: string }>();
+/**
+ * Demo only: a question containing "slow demo" is queued, and each read of the thread shows
+ * the next live step (the backend's labels) until the recorded answer arrives.
+ */
+const SLOW_DEMO = /\bslow demo\b/i;
+const DEMO_STEPS = ["Understanding the question", "Searching the Companies Act", "Writing the answer", "Checking quotes"] as const;
+const DEMO_STEP_MS = 3_000;
+const PENDING = new Map<string, { startedAt: number; envelope: ConversationMessage["envelope"] }>();
+
+function withDemoProgress(m: ConversationMessage, now: number): ConversationMessage {
+  const pending = PENDING.get(m.message_id);
+  if (!pending) return m;
+  const step = Math.floor((now - pending.startedAt) / DEMO_STEP_MS);
+  if (step >= DEMO_STEPS.length) return { ...m, envelope: pending.envelope };
+  return { ...m, progress: { current: DEMO_STEPS[step], done: DEMO_STEPS.slice(0, step) } };
+}
 // Parsed, not cast: a fixture that drifted from the contract fails here, loudly.
 const ANSWERED = conversationSendOkSchema.parse(RECORDED.send_answered);
 const SOURCES_LIST = sourcesListSchema.parse(MAIN_SOURCES);
@@ -451,13 +467,14 @@ export class MockGateway implements GatewayProvider {
     const thread = THREADS.get(id) ?? [];
     const existing = thread.find((m) => m.role === "assistant" && m.metadata?.request_id === input.requestId);
     if (input.requestId && existing) return engineOk({ ...recorded, conversation_id: id, message_id: existing.message_id, envelope: existing.envelope ?? null, metadata: existing.metadata ?? undefined });
+    const slow = SLOW_DEMO.test(input.text);
     const reply: ConversationMessage = {
       message_id: crypto.randomUUID(),
       ordinal: thread.length + 1,
       role: "assistant",
       text: "",
       run_id: recorded.run_id ?? null,
-      envelope: recorded.envelope,
+      envelope: slow ? null : recorded.envelope,
       metadata: { schema: "conversation_turn.v1", request_id: input.requestId, artifacts: [],
         // Synthetic coverage for the explicitly labelled demo workspace; never live retrieval.
         sources: { picked: [...input.sources ?? ["held", "vault"]], searched: ["held"], report: [
@@ -474,7 +491,8 @@ export class MockGateway implements GatewayProvider {
     if (input.requestId) REQUESTS.set(input.requestId, { conversationId: id, payload });
     const filedTo = FILED.get(id)?.matter_id ?? input.matterId;
     if (filedTo) FILED.set(id, { matter_id: filedTo, title: FILED.get(id)?.title ?? input.text.slice(0, 60), updated_at: new Date().toISOString() });
-    return engineOk({ ...recorded, conversation_id: id, message_id: reply.message_id, metadata: reply.metadata ?? undefined });
+    if (slow) PENDING.set(reply.message_id, { startedAt: Date.now(), envelope: recorded.envelope });
+    return engineOk({ ...recorded, envelope: reply.envelope ?? null, conversation_id: id, message_id: reply.message_id, metadata: reply.metadata ?? undefined });
   }
 
   async sourcesList(): Promise<EngineResult<SourcesList>> {
@@ -572,7 +590,8 @@ export class MockGateway implements GatewayProvider {
       });
     }
     const title = messages[0]?.text.slice(0, 60) ?? "";
-    return engineOk({ conversation: { conversation_id: conversationId, title }, messages });
+    const now = Date.now();
+    return engineOk({ conversation: { conversation_id: conversationId, title }, messages: messages.map((m) => withDemoProgress(m, now)) });
   }
 
   async citationGet(input: {
