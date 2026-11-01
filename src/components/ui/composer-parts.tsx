@@ -24,8 +24,11 @@ import { cn } from "@/lib/utils";
 
 export { SourcesChip } from "./source-picker";
 
+/** Below 640px the chips go icon-only (44px square) so the controls fit one row; the
+ *  label stays as the accessible name through `chipLabel` (sr-only there). */
 export const chip =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-body text-fg-2 transition-colors duration-150 hover:bg-wash-2 hover:text-fg aria-expanded:bg-wash-2 aria-expanded:text-fg";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-body text-fg-2 transition-colors duration-150 hover:bg-wash-2 hover:text-fg aria-expanded:bg-wash-2 aria-expanded:text-fg max-sm:min-w-11 max-sm:justify-center max-sm:px-0";
+export const chipLabel = "max-sm:sr-only";
 
 /* ── the @ menu ───────────────────────────────────────────────────────────── */
 
@@ -105,7 +108,7 @@ export function AsOfChip() {
       <PopoverTrigger asChild>
         <button type="button" className={chip}>
           <CalendarDays className="size-4" aria-hidden />
-          As of today
+          <span className={chipLabel}>As of today</span>
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" align="start" sideOffset={8} className="w-72">
@@ -147,7 +150,7 @@ export function MatterChip({
       <DropdownMenuTrigger asChild>
         <button type="button" className={chip}>
           <Briefcase className="size-4" aria-hidden />
-          <span className="max-w-40 truncate">{current ? current.name : "No matter"}</span>
+          <span className={cn("max-w-40 truncate", chipLabel)}>{current ? current.name : "No matter"}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-64">

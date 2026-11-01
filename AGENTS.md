@@ -77,7 +77,7 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
   once with every cited passage marked — a mark is drawn only where `text[start:end]` is
   exactly the quote (`splitSection`, `segmentSection`); PDF hard wraps are joined for display
   only (`joinWrappedLines`). Without it, the passages alone, said so. `in_force_from: null`
-  renders "not recorded", never a date.
+  hides the in-force line, never a date.
 - **Welcome line (owner request, 2026-10-08):** two lines, then a badge saying what was
   recognised and why. The MOMENT is recognised on the first visit (open at 1 am → "Hey Night
   Wolf, / what are we checking tonight?" · badge "Night Wolf · Late-night session"); a HABIT

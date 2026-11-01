@@ -21,7 +21,7 @@ import { ArrowUp, ChevronRight, FileCheck2, FileSearch, FileText, FolderOpen, Gl
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
-import { AsOfChip, MatterChip, MentionMenu, SourcesChip, chip } from "@/components/ui/composer-parts";
+import { AsOfChip, MatterChip, MentionMenu, SourcesChip, chip, chipLabel } from "@/components/ui/composer-parts";
 import type { SourceBody, SourceIntegration } from "@/lib/gateway/types";
 import { requiresDocumentSource } from "@/lib/document-evidence";
 import { mentionMatches, type MentionItem } from "@/lib/sources";
@@ -459,7 +459,7 @@ export function PromptBox(props: PromptBoxProps) {
         />
         <Popover open={filesOpen} onOpenChange={setFilesOpen}>
           <PopoverTrigger asChild><button ref={filesButtonRef} type="button" className={chip} disabled={pending}>
-            <Paperclip className="size-4" aria-hidden />Files
+            <Paperclip className="size-4" aria-hidden /><span className={chipLabel}>Files</span>
           </button></PopoverTrigger>
           <PopoverContent side="top" align="start" className="composer-files-menu"
             onCloseAutoFocus={(event) => { if (openingVault.current) { event.preventDefault(); openingVault.current = false; } }}>
@@ -480,7 +480,7 @@ export function PromptBox(props: PromptBoxProps) {
           <PopoverTrigger asChild>
             <button type="button" className={chip}>
               {tool === "web" ? <Globe2 className="size-4" aria-hidden /> : <SlidersHorizontal className="size-4" aria-hidden />}
-              {tool === "draft" ? "Draft" : tool === "web" ? "Web research" : "Research"}
+              <span className={chipLabel}>{tool === "draft" ? "Draft" : tool === "web" ? "Web research" : "Research"}</span>
             </button>
           </PopoverTrigger>
           <PopoverContent side="top" align="start" sideOffset={8} className="w-72 p-1.5">
