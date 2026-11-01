@@ -18,9 +18,7 @@ export default async function TablesPage({ searchParams }: { searchParams: Promi
     <>
       <h1>Review tables</h1>
       <p className="lede">
-        Documents down the side, questions across the top, one run per cell. A cell that was
-        read says what it found and quotes it; a cell that was not read says so. Those are
-        different answers, and the grid never renders either as a blank.
+        Ask the same questions of many documents at once — for example, the governing law of every NDA in a matter.
       </p>
       <TablesConsole key={initialGridId} initialGridId={initialGridId} initialStatus={initialStatus} matters={matters} mattersUnavailable={mattersUnavailable} />
     </>

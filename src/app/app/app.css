@@ -173,12 +173,12 @@
 .console-bar { padding: 0.9rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--c-line); }
 .console-bar h1 { margin: 0; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
 
-/* Standing notices on screens other than Ask: one quiet line. On Ask they sit under each
-   result instead, which is where a reader is when they matter. */
+/* Standing limits on screens other than Ask: one quiet line under the page's results. On
+   Ask they sit under each answer instead, which is where a reader is when they matter. */
 .console-notice {
-  margin: 0;
-  padding: 0.5rem clamp(1rem, 3vw, 2rem);
-  border-bottom: 1px solid var(--c-line);
+  margin: 1.75rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--c-line);
   font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--c-fg-3);

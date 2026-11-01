@@ -88,7 +88,8 @@ Research and rationale: `docs/design/TEARDOWN.md` (10 principles), `docs/design/
   this browser and are never sent; the account menu turns nicknames off and forgets the
   pattern. Warmth stays on the welcome line — answers stay formal.
 - **Standing limits:** on Ask, one quiet line under every result (law read as at · Playbook
-  DRAFT · UAE North · not legal advice); on every other screen, one line under the top edge.
+  DRAFT · UAE North · not legal advice); on every other screen, one line under the page's results
+  (`console-notice.tsx`). Each page heading carries one short line: what the page does, with an example.
 - **Banned in the console:** colour of any hue, gradients, blur/glass, left-border accent
   cards, ALL-CAPS tracked labels, avatar discs, suggestion cards on the empty state,
   model-written follow-up prompts, confidence numbers.

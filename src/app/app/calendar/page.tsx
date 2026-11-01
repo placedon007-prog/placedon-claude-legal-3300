@@ -9,10 +9,7 @@ export default function CalendarPage() {
     <>
       <h1>Calendar</h1>
       <p className="lede">
-        What falls due in the next ninety days, derived from facts you supply. An obligation
-        whose fact is missing is listed as unknown and names the fact — it is never given a
-        date. A deadline computed from something nobody supplied is a fabricated figure,
-        and this screen does not produce one.
+        See what falls due in the next 90 days from your company&rsquo;s dates — for example, the annual general meeting.
       </p>
       <CalendarConsole />
     </>

@@ -8,7 +8,7 @@ import { searchCaseLawAction, type CaseLawSearchState } from "../actions";
 function Failure({ error }: { error: EngineError }) {
   return (
     <div role="alert" className="transport-failure">
-      <h3>The gateway did not answer</h3>
+      <h3>Placedon did not answer</h3>
       <p>{error.message}</p>
       <p className="meta">
         {error.kind} · {error.route}

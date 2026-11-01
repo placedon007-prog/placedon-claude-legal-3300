@@ -9,10 +9,7 @@ export default function DocumentsPage() {
     <>
       <h1>Documents</h1>
       <p className="lede">
-        Minutes and notices against the Secretarial Standards. The document type is worked
-        out first, and a check written for minutes never fires on a notice — a notice is
-        issued before the meeting, so it cannot record what the meeting did. Every finding
-        cites the standard and a real adjudication order.
+        Check board minutes and meeting notices against the Secretarial Standards — for example, paste the minutes of a board meeting.
       </p>
       <DocumentConsole />
     </>

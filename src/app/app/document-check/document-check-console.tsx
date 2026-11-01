@@ -201,9 +201,8 @@ export function DocumentCheckConsole({ initialDocumentId = "", initialName = nul
           <span className="register-label">Refused — {state.code}</span>
           <p className="lede-sm">{state.detail}</p>
           <p className="meta">
-            A refusal is the verb&rsquo;s answer, not a breakdown. No check was recorded,
-            because a judgement in the audit record where there was none would be worse than
-            none.
+            A refusal is Placedon&rsquo;s answer, not a breakdown. No check was recorded,
+            because recording a judgement where none was made would be worse than none.
           </p>
         </div>
       ) : null}

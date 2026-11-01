@@ -39,7 +39,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   const problem =
     loaded.phase === "refused"
       ? loaded.code === "NOT_FOUND"
-        ? "That thread is not on this gateway — it may have been started against a different deployment. Ask a new question below."
+        ? "That thread is not on this service — it may have been started in a different Placedon workspace. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
   return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;

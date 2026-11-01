@@ -164,7 +164,7 @@ function Passages({ source }: { source: OpenSource }) {
         ))}
       </ol>
       <p className="mt-6 border-t border-line pt-3 text-caption text-fg-3">
-        Only the cited passages are shown: this gateway did not serve the section&rsquo;s full
+        Only the cited passages are shown: the service did not send the section&rsquo;s full
         text with them.
       </p>
     </>
@@ -291,7 +291,7 @@ function Passage({
           )
         ) : state.phase === "refused" ? (
           <p className="text-fg-2">
-            Not re-verified — the gateway declined ({state.code}): {state.detail}. The stored quote
+            Not re-verified — Placedon declined ({state.code}): {state.detail}. The stored quote
             is shown.
           </p>
         ) : (

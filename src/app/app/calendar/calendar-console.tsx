@@ -55,8 +55,8 @@ export function CalendarConsole() {
             <input id="financial_year_end" name="financial_year_end" type="date"
                    aria-describedby="fye-help" />
             <p className="meta" id="fye-help">
-              Optional. Leave it blank to see what the engine does without it: the annual
-              general meeting becomes UNKNOWN and names this as the fact it is missing.
+              Optional. Leave it blank and the annual general meeting is listed as
+              unknown, naming this as the missing fact.
             </p>
           </div>
           <div>
@@ -78,7 +78,7 @@ export function CalendarConsole() {
           date: the gateway never answered, so there is nothing to be unknown ABOUT. */}
       {state.phase === "failed" && (
         <div role="alert" className="transport-failure">
-          <h3>The gateway did not answer</h3>
+          <h3>Placedon did not answer</h3>
           <p>{state.error.message}</p>
           <p className="meta">
             {state.error.kind} · {state.error.route}
@@ -102,7 +102,7 @@ export function CalendarConsole() {
           {state.data.due.length === 0 ? (
             <p className="cal-empty">
               Nothing in this window carries a date. That is not “nothing is due”: an
-              obligation the engine cannot date is listed below, with the fact it needs.
+              obligation that cannot be dated is listed below, with the fact it needs.
             </p>
           ) : (
             <ul className="cal-list">
@@ -148,12 +148,6 @@ export function CalendarConsole() {
           )}
 
           {state.data.note && <p className="meta cal-note">{state.data.note}</p>}
-
-          {/* On every result, per AGENTS.md. */}
-          <p className="meta hosting-note">
-            playbook_status DRAFT — the rules behind these obligations are not lawyer
-            approved. Model hosting: UAE North; no client document may be sent there.
-          </p>
         </section>
       )}
     </>

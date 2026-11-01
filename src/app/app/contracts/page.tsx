@@ -9,9 +9,7 @@ export default function ContractsPage() {
     <>
       <h1>Contracts</h1>
       <p className="lede">
-        An NDA read against the company playbook. Each rule reports where the document
-        differs from the standard, quoting the clause it read. The playbook is a commercial
-        standard, not law: nothing here says a clause is valid, enforceable or void.
+        Check an NDA against your company playbook — for example, which clauses differ from your standard terms.
       </p>
       <ContractConsole />
     </>

@@ -11,15 +11,8 @@ export default async function RunsPage() {
     <>
       <h1>Runs</h1>
       <p className="lede">
-        Every question and review leaves a run: the steps it took, which model served each
-        one, where that model ran, and what it cost.
+        What each question or review did — for example, the steps it took, the model it used, and what it cost.
       </p>
-      <p className="meta">
-        These are the runs started <strong>in this browser session</strong>. The gateway
-        serves a run by id and has no list-verb, so this is not every run for the tenant —
-        and a list that looked complete would be worse than one that says it is not.
-      </p>
-
       {runs.length === 0 ? (
         <p className="empty" style={{ marginTop: "1.5rem" }}>
           No runs yet. Ask a question or review a contract.
@@ -39,6 +32,10 @@ export default async function RunsPage() {
           ))}
         </ul>
       )}
+      <p className="meta" style={{ marginTop: "1rem" }}>
+        Only runs started <strong>in this browser session</strong> are listed. Placedon can
+        open a run by its id but cannot list them all, so this list may be incomplete.
+      </p>
     </>
   );
 }

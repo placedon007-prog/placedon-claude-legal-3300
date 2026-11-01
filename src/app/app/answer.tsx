@@ -204,7 +204,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
         if (item.outcome === "NOT_SEARCHED") return `${name}: not searched${item.reason ? ` — ${item.reason}` : ""}`;
         const count = item.hits === undefined ? "" : `; ${item.hits} match${item.hits === 1 ? "" : "es"}`;
         return `${name}: searched${count}`;
-      }).join(" · ") || "The gateway returned an empty source report."
+      }).join(" · ") || "Placedon returned an empty source report."
     : envelope?.searched
       ? `${envelope.searched.bodies.map((body) => `${traceSourceName(body.id)}: ${body.read ? "read" : "not read"}${body.note ? ` — ${body.note}` : ""}`).join(" · ") || "No legal bodies are listed."} · As of ${envelope.searched.as_of}${envelope.searched.defaulted ? " · source scope defaulted" : ""}`
       : state?.phase === "failed"
@@ -268,7 +268,7 @@ function AnswerPath({ turn, onOpenSource }: { turn: Turn; onOpenSource: (group: 
         <TraceStage number="2" title="Scope" status={scopeStatus} detail={scopeDetails} />
         <TraceStage number="3" title="Search" status={searchStatus} detail={searchDetails} />
         <TraceStage number="4" title="Evidence" status={evidenceStatus} detail={evidenceDetail} />
-        <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "signed_out" ? "Not sent — the session ended before this question reached the gateway." : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for the gateway response."} />
+        <TraceStage number="5" title="Response" status={answerStatus} detail={envelope ? `Answer status: ${envelope.status}. As of ${envelope.as_of}.` : state?.phase === "queued" ? `Run ${state.runId ?? "not provided"} is awaiting completion.` : state?.phase === "refused" ? state.detail : state?.phase === "invalid" ? state.message : state?.phase === "signed_out" ? "Not sent — the session ended before this question reached Placedon." : state?.phase === "failed" ? "No answer was received. This is not a legal refusal." : "Waiting for Placedon to respond."} />
       </ol>
       <section aria-labelledby={`processing-${turn.key}`} className="border-t border-line px-3 py-3">
         <h3 id={`processing-${turn.key}`} className="text-ui font-medium text-fg">Model and processing</h3>
@@ -662,12 +662,12 @@ function Actions({ envelope }: { envelope: Envelope }) {
           {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
         </button>
       </Act>
-      <Act label="Add to calendar — no verb accepts an entry yet">
+      <Act label="Add to calendar — not available yet">
         {/* aria-disabled keeps it focusable so the tooltip can say why it does nothing. */}
         <button
           type="button"
           aria-disabled="true"
-          aria-label="Add to calendar — no verb accepts an entry yet"
+          aria-label="Add to calendar — not available yet"
           onClick={(e) => e.preventDefault()}
           className={cn(btn, "cursor-not-allowed text-fg-3 hover:bg-transparent hover:text-fg-3")}
         >

@@ -25,7 +25,7 @@ export function NewDraft() {
       )}
       {state.phase === "failed" && (
         <div role="alert" className="transport-failure">
-          <h3>The gateway did not answer</h3>
+          <h3>Placedon did not answer</h3>
           <p>{state.error.message}</p>
           <p className="meta">
             {state.error.kind} · {state.error.route}

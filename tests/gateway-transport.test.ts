@@ -123,7 +123,7 @@ test("a 401 on a person's session ends that session instead of blaming the API k
     assert.equal(result.ok, false);
     if (!result.ok) assert.match(result.error.message, /session has ended/i);
     const keyed = await new HttpGateway("http://localhost:8021", "fixture-key").conversationSend(request);
-    if (!keyed.ok) assert.match(keyed.error.message, /API key/, "the deployment-key wording stays for passcode mode");
+    if (!keyed.ok) assert.match(keyed.error.message, /access key/, "the deployment-key wording stays for passcode mode");
   } finally { globalThis.fetch = original; }
 });
 
