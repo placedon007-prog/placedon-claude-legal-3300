@@ -597,9 +597,8 @@ function Sources({ groups, title, onOpen }: { groups: readonly CitationGroup[]; 
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-body font-semibold text-fg">{g.section ? `Section ${g.section}` : g.label}</span>
-                <span className="truncate font-mono text-caption text-fg-3">
-                  {g.label} · {g.citations.length} passage{g.citations.length > 1 ? "s" : ""} · sha256{" "}
-                  {g.citations[0].sha256.slice(0, 12) || "not recorded"}
+                <span className="truncate text-caption text-fg-3">
+                  {g.label} · {g.citations.length} passage{g.citations.length > 1 ? "s" : ""}
                 </span>
               </span>
               <span className="ml-auto self-center text-caption text-fg-3">Open</span>
@@ -607,7 +606,22 @@ function Sources({ groups, title, onOpen }: { groups: readonly CitationGroup[]; 
           </li>
         ))}
       </ol>
+      <SourceFingerprints groups={groups} />
     </section>
+  );
+}
+
+/** Each source's file fingerprint, folded under "Details" like SourceDetails. */
+function SourceFingerprints({ groups }: { groups: readonly CitationGroup[] }) {
+  const recorded = groups.filter((g) => g.citations[0]?.sha256);
+  if (recorded.length === 0) return null;
+  return (
+    <details className="meta mt-1">
+      <summary>Details</summary>
+      <ul className="mono">
+        {recorded.map((g) => <li key={g.n} className="break-all">[{g.n}] sha256 {g.citations[0].sha256}</li>)}
+      </ul>
+    </details>
   );
 }
 
