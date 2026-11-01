@@ -34,6 +34,13 @@ import {
   sourcesSearchSchema,
   webResearchSchema,
   mattersListSchema,
+  authMeSchema,
+  matterCreateSchema,
+  matterMembersSchema,
+  matterGrantSchema,
+  matterRevokeSchema,
+  inviteCreateSchema,
+  usageStatusSchema,
   type SourcesList,
   type SourcesSearch,
   type WebResearch,
@@ -483,6 +490,42 @@ export class HttpGateway implements GatewayProvider {
   mattersList(): Promise<EngineResult<MattersList>> {
     return this.call(GATEWAY_ROUTES.mattersList, GATEWAY_ROUTES.mattersList, mattersListSchema,
       { method: "POST", body: {} });
+  }
+
+  authMe(): Promise<EngineResult<import("./types").AuthMe>> {
+    return this.call(GATEWAY_ROUTES.authMe, GATEWAY_ROUTES.authMe, authMeSchema, { method: "POST", body: {} });
+  }
+
+  matterCreate(input: { name: string; clientRef?: string }): Promise<EngineResult<import("./types").MatterCreate>> {
+    return this.call(GATEWAY_ROUTES.mattersCreate, GATEWAY_ROUTES.mattersCreate, matterCreateSchema, {
+      method: "POST", body: { name: input.name, ...(input.clientRef ? { client_ref: input.clientRef } : {}) } });
+  }
+
+  matterMembers(matterId: string): Promise<EngineResult<import("./types").MatterMembers>> {
+    return this.call(GATEWAY_ROUTES.mattersMembers, GATEWAY_ROUTES.mattersMembers, matterMembersSchema,
+      { method: "POST", body: { matter_id: matterId } });
+  }
+
+  matterGrant(input: { matterId: string; actorId: string; role: "owner" | "member" | "viewer"; reason: string }): Promise<EngineResult<import("./types").MatterGrant>> {
+    return this.call(GATEWAY_ROUTES.mattersGrant, GATEWAY_ROUTES.mattersGrant, matterGrantSchema, {
+      method: "POST", refusalOn200: true,
+      body: { matter_id: input.matterId, actor_id: input.actorId, role: input.role, reason: input.reason } });
+  }
+
+  matterRevoke(input: { matterId: string; actorId: string; reason: string }): Promise<EngineResult<import("./types").MatterRevoke>> {
+    return this.call(GATEWAY_ROUTES.mattersRevoke, GATEWAY_ROUTES.mattersRevoke, matterRevokeSchema, {
+      method: "POST", refusalOn200: true,
+      body: { matter_id: input.matterId, actor_id: input.actorId, reason: input.reason } });
+  }
+
+  inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>> {
+    return this.call(GATEWAY_ROUTES.invitesCreate, GATEWAY_ROUTES.invitesCreate, inviteCreateSchema,
+      { method: "POST", refusalOn200: true, body: { email: input.email, role: input.role } });
+  }
+
+  usageStatus(): Promise<EngineResult<import("./types").UsageStatus>> {
+    return this.call(GATEWAY_ROUTES.usageStatus, GATEWAY_ROUTES.usageStatus, usageStatusSchema,
+      { method: "POST", refusalOn200: true, body: {} });
   }
 
   conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>> {
