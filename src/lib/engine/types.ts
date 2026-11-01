@@ -55,6 +55,8 @@ export const GATEWAY_ROUTES = {
   vaultVerify: "/v2/vault/verify",
   // `vault.retry` (backend #130): a FAILED document back to PENDING, its job requeued once.
   vaultRetry: "/v2/vault/retry",
+  // `vault.delete` (LAWYER): removes the document and its chunks from this workspace.
+  vaultDelete: "/v2/vault/delete",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",

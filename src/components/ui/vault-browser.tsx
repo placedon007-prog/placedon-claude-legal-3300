@@ -3,9 +3,10 @@
 import { isReadableVaultState } from "@/lib/vault-state";
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, FileText, FolderOpen, RefreshCw, Search } from "lucide-react";
-import { browseVaultAction, retryVaultDocumentAction, type VaultBrowseResult } from "@/app/app/vault/actions";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { browseVaultAction, deleteVaultDocumentAction, retryVaultDocumentAction, type VaultBrowseResult } from "@/app/app/vault/actions";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type SelectedVaultFile = { id: string; sha256?: string; name: string };
 const PAGE_SIZE = 30;
@@ -40,6 +41,51 @@ function RetryButton({ documentId, name, onDone }: { documentId: string; name: s
   </span>;
 }
 
+/**
+ * `vault.delete`: a confirmation that names the file and says it is permanent. The backend
+ * decides who may delete (LAWYER and up, and only files they may write); a refusal stays in
+ * the dialog in words, and only a confirmed deletion closes it and refreshes the list.
+ */
+function DeleteButton({ documentId, name, onDeleted, focusAfter }: {
+  documentId: string; name: string; onDeleted: (message: string) => void; focusAfter: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [refusal, setRefusal] = React.useState<string | null>(null);
+  const deleted = React.useRef(false);
+  async function confirm() {
+    setBusy(true);
+    setRefusal(null);
+    let result: { ok: boolean; message: string };
+    try { result = await deleteVaultDocumentAction({ documentId, name }); }
+    catch { result = { ok: false, message: "The deletion could not be confirmed. Refresh the list to see whether the file is still there." }; }
+    setBusy(false);
+    if (!result.ok) { setRefusal(result.message); return; }
+    deleted.current = true;
+    setOpen(false);
+    onDeleted(result.message);
+  }
+  return <Dialog open={open} onOpenChange={(next) => { if (!busy) { setOpen(next); setRefusal(null); } }}>
+    <button type="button" className="vault-text-button" aria-label={`Delete ${name}`} onClick={() => setOpen(true)}>Delete</button>
+    <DialogContent className="vault-picker vault-delete" role="alertdialog" showCloseButton={!busy}
+      onCloseAutoFocus={(event) => { if (deleted.current) { event.preventDefault(); focusAfter(); } }}>
+      <DialogHeader><DialogTitle>Delete {name}?</DialogTitle>
+        <DialogDescription>
+          This permanently removes {name} and its searchable text from this workspace. It cannot be undone.
+          A record that the file existed and was deleted is kept.
+        </DialogDescription>
+      </DialogHeader>
+      {refusal && <p role="alert" className="text-body text-fg">Not deleted. {refusal}</p>}
+      <div className="vault-picker-footer">
+        <DialogClose asChild><button type="button" className="vault-text-button" disabled={busy}>Cancel</button></DialogClose>
+        <button type="button" className="vault-add-button" disabled={busy} aria-busy={busy} onClick={confirm}>
+          {busy ? "Deleting…" : "Delete permanently"}
+        </button>
+      </div>
+    </DialogContent>
+  </Dialog>;
+}
+
 /** Metadata only. Search is bounded on the server and stale responses never become rows. */
 export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity = 20, refreshKey = "" }: {
   matterId: string | null;
@@ -55,6 +101,11 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
   // hides it, and it clears itself after NOTICE_MS so it cannot outlive what it describes.
   const scope = JSON.stringify([matterId, query, offset]);
   const [notice, setNotice] = React.useState<{ scope: string; text: string } | null>(null);
+  // A deleted row takes its button with it; focus lands on the list, not on <body>.
+  const listRef = React.useRef<HTMLDivElement>(null);
+  // Ids the backend CONFIRMED deleted stay hidden even if a list read races the deletion.
+  const [gone, setGone] = React.useState<ReadonlySet<string>>(() => new Set());
+  const router = useRouter();
   React.useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(null), NOTICE_MS);
@@ -75,7 +126,7 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
     return () => { live = false; clearTimeout(timer); };
   }, [key, matterId, query, offset]);
   const result = response?.key === key ? response.result : null;
-  const data = result?.ok ? result.data : null;
+  const data = result?.ok ? { ...result.data, documents: result.data.documents.filter((d) => !gone.has(d.document_id)) } : null;
   return <div className="vault-browser">
     <div className="vault-browser-search">
       <Search className="size-4" aria-hidden />
@@ -85,7 +136,7 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
     </div>
     {/* Always present, so screen readers announce the text when it arrives. */}
     <p role="status" className="text-caption text-fg-2">{notice?.scope === scope ? notice.text : ""}</p>
-    <div className="vault-browser-list" aria-busy={!result}>
+    <div className="vault-browser-list" aria-busy={!result} ref={listRef} tabIndex={-1} aria-label="Stored files">
       {!result ? <p role="status" className="vault-browser-empty">Loading stored files…</p> : !result.ok ?
         <div role="alert" className="vault-browser-empty"><p>{result.message}</p><button type="button" className="vault-text-button" onClick={refresh}>Retry</button></div> :
         data?.documents.length === 0 ? <div className="vault-browser-empty"><FolderOpen className="size-7" aria-hidden /><p>{query ? "No filenames match this search." : "No files stored in this scope yet."}</p><p className="text-caption text-fg-3">Upload a file here, or choose its matter in Wall System.</p></div> :
@@ -102,7 +153,10 @@ export function VaultFileBrowser({ matterId, selected = [], onToggle, capacity =
               onClick={() => onToggle({ id: file.document_id, sha256: file.sha256, name: file.name })}>
               {content}<span className="vault-file-check" aria-hidden>{checked ? <Check className="size-3.5" /> : null}</span>
             </button> : <div className="vault-file-row">{content}{file.state === "FAILED" && <RetryButton documentId={file.document_id} name={file.name} onDone={(message) => { setNotice({ scope, text: message }); refresh(); }} />}
-              <Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link></div>}
+              <Link className="vault-text-button" href={`/app/document-check?doc=${encodeURIComponent(file.document_id)}`}>Inspect</Link>
+              <DeleteButton documentId={file.document_id} name={file.name} onDeleted={(message) => { setGone((prev) => new Set([...prev, file.document_id])); setNotice({ scope, text: message }); refresh();
+                  router.refresh(); /* the page's vault counts are server-rendered */ }}
+                focusAfter={() => listRef.current?.focus()} /></div>}
           </li>;
         })}</ul>}
     </div>

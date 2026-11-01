@@ -443,6 +443,18 @@ export const vaultRetryOkSchema = z.object({
 export const vaultRetrySchema = z.union([vaultRetryOkSchema, verbRefusalSchema]);
 export type VaultRetry = z.infer<typeof vaultRetrySchema>;
 
+/** `vault.delete`: the document and its searchable chunks are removed from this workspace.
+ *  `deleted: false` means nothing was removed and must never be shown as a deletion.
+ *  Refusals: NOT_FOUND (HTTP 404), FORBIDDEN and ALREADY_DELETED (HTTP 200), NO_VAULT. */
+export const vaultDeleteOkSchema = z.object({
+  document_id: z.string(),
+  deleted: z.boolean(),
+  bytes_destroyed: z.boolean(),
+  note: z.string().optional(),
+});
+export const vaultDeleteSchema = z.union([vaultDeleteOkSchema, verbRefusalSchema]);
+export type VaultDelete = z.infer<typeof vaultDeleteSchema>;
+
 /* ── document.check (T3: verify → validity → action, recorded) ─────────────── */
 
 /**

@@ -183,3 +183,36 @@ export async function retryVaultDocumentAction(input: { documentId: string }): P
   }
   return { ok: true, message: "Queued to be read again. It is not searchable until it has been read." };
 }
+
+export type VaultDeleteResult = { ok: true; message: string } | { ok: false; message: string };
+
+/** `vault.delete` refusals in words. Codes from backend gateway/verbs.py `_vault_delete`. */
+const DELETE_REFUSALS: Record<string, string> = {
+  NOT_FOUND: "This file is not available to you. It may already have been deleted; refresh the list.",
+  FORBIDDEN: "You can read this file but not delete it. Ask the person who uploaded it, or an admin.",
+  ALREADY_DELETED: "This file was already deleted. Refresh the list.",
+  NO_VAULT: "File storage is not configured in this workspace, so nothing could be deleted.",
+  NO_STORE: "File storage is not available right now. Nothing was deleted; try again shortly.",
+};
+
+/** A real id is a UUID; a legacy (and demo) document is stored under its sha256. */
+const documentIdSchema = z.union([z.uuid(), z.string().regex(/^[0-9a-f]{64}$/)]);
+
+/** Remove a stored file from this workspace (`vault.delete`, LAWYER). Never a silent success. */
+export async function deleteVaultDocumentAction(input: { documentId: string; name: string }): Promise<VaultDeleteResult> {
+  if (!(await hasSession())) return { ok: false, message: "Your session has ended. Sign in to delete this file." };
+  const parsed = documentIdSchema.safeParse(input?.documentId);
+  if (!parsed.success) return { ok: false, message: "That is not a document id." };
+  const name = String(input?.name ?? "").trim().slice(0, 200) || "The file";
+  const result = await (await getGateway()).vaultDelete({ documentId: parsed.data });
+  if (!result.ok) {
+    // The gateway's role check answers 403 before the verb runs: a viewer key.
+    if (result.error.status === 403) return { ok: false, message: "Your role cannot delete files. A lawyer or an admin can." };
+    return { ok: false, message: "The deletion could not be confirmed. Refresh the list to see whether the file is still there." };
+  }
+  if (isRefusal(result.data)) {
+    return { ok: false, message: DELETE_REFUSALS[result.data.code] ?? "This file could not be deleted. Nothing was changed." };
+  }
+  if (!result.data.deleted) return { ok: false, message: "Nothing was deleted. Refresh the list and try again." };
+  return { ok: true, message: `${name} was deleted. Its searchable text is removed from this workspace.` };
+}

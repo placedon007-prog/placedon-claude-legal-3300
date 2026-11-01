@@ -128,6 +128,8 @@ export interface GatewayProvider {
   vaultVerify(input: { documentId: string }): Promise<EngineResult<VaultVerify>>;
   /** Read a FAILED document again. Refused for any other state, so it never runs twice. */
   vaultRetry(input: { documentId: string }): Promise<EngineResult<import("./types").VaultRetry>>;
+  /** Remove a document from this workspace (`vault.delete`). A refusal is a product state. */
+  vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>>;
   /**
    * The Document Check, end to end: verify a stored document, decide whether it is
    * still in force at `as_of`, and record the action a lawyer should take. A WRITE

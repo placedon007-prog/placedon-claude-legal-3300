@@ -27,6 +27,7 @@ import {
   vaultUploadSchema,
   vaultVerifySchema,
   vaultRetrySchema,
+  vaultDeleteSchema,
   documentCheckSchema,
   conversationSendSchema,
   sourcesListSchema,
@@ -425,6 +426,11 @@ export class HttpGateway implements GatewayProvider {
   vaultRetry(input: { documentId: string }): Promise<EngineResult<VaultRetry>> {
     return this.call(GATEWAY_ROUTES.vaultRetry, GATEWAY_ROUTES.vaultRetry,
       vaultRetrySchema, { method: "POST", body: { document_id: input.documentId } });
+  }
+
+  vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {
+    return this.call(GATEWAY_ROUTES.vaultDelete, GATEWAY_ROUTES.vaultDelete,
+      vaultDeleteSchema, { method: "POST", body: { document_id: input.documentId } });
   }
 
   conversationSend(input: {
