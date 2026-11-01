@@ -1,21 +1,19 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { parseColumnLines } from "../src/lib/table-columns";
+import { checkColumns } from "../src/lib/table-columns";
 import { vaultUploadAction } from "../src/app/app/vault/actions";
 
-test("a malformed column line is named, with the expected format", () => {
-  // Regression: "Invalid input: expected string, received undefined".
-  const r = parseColumnLines("date|Expiry|When does it expire?\njust some words");
+test("a question row that cannot be asked is named, in words", () => {
+  const r = checkColumns([{ name: "Expiry", kind: "date", question: "When does it expire?" }, { name: "", kind: "text", question: "Which law governs?" }]);
   assert.equal(r.ok, false);
-  if (!r.ok) {
-    assert.match(r.message, /^Column line 2 \("just some words"\) needs three parts: kind\|name\|question/);
-    assert.doesNotMatch(r.message, /Invalid input|received undefined/);
-  }
-  const kind = parseColumnLines("number|Fee|What is the fee?");
-  assert.ok(!kind.ok && /kind must be one of text, date, amount, yes_no/.test(kind.message));
-  const good = parseColumnLines("date|Expiry|When does it expire?\n\namount|Fee|What is the monthly fee?");
-  assert.deepEqual(good.ok && good.columns.map((c) => c.name), ["Expiry", "Fee"]);
+  if (!r.ok) assert.equal(r.message, "Question 2 needs a column name.");
+  const short = checkColumns([{ name: "Fee", kind: "amount", question: "Fee?" }]);
+  assert.ok(!short.ok && /Question 1 \("Fee"\) needs a question of at least 5 characters/.test(short.message));
+  const dup = checkColumns([{ name: "Fee", kind: "amount", question: "What is the fee?" }, { name: "fee", kind: "text", question: "Who pays the fee?" }]);
+  assert.ok(!dup.ok && /both called "fee"/.test(dup.message));
+  const good = checkColumns([{ name: "Expiry", kind: "date", question: "When does it expire?" }, { name: "", kind: "text", question: "" }, { name: "Clause", kind: "clause", question: "What does the lock-in clause say?" }]);
+  assert.deepEqual(good.ok && good.columns.map((c) => c.kind), ["date", "clause"]);
 });
 
 test("an empty file is named as empty, not as 'choose a file'", async () => {

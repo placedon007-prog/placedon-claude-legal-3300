@@ -850,3 +850,48 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
   .company-row { grid-template-columns: minmax(0, 1fr); }
   .company-label { padding-top: 0; }
 }
+
+/* ── review tables: plain-language form and live table (2026-11-01) ───────────── */
+.table-section { margin-top: 1.5rem; }
+.table-section:first-of-type { margin-top: 0; }
+.console .table-q-text:not(.pb-input) { min-height: 44px; resize: vertical; font-size: var(--text-body); line-height: 1.45; }
+@media (max-width: 720px) { .console .table-q-text:not(.pb-input) { min-height: 4.5rem; } }
+.table-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.table-fieldset { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.5rem 0 0; padding: 1rem; border: 1px solid var(--c-line); border-radius: 10px; min-width: 0; }
+.table-fieldset legend { padding: 0 0.35rem; font-size: var(--text-body); font-weight: 600; color: var(--c-fg); }
+.table-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.table-scope label { margin: 0; }
+.table-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.table-chip, .table-add, .table-action, .table-remove {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px; padding: 0 0.9rem;
+  border: 1px solid var(--c-line-control); border-radius: 6px; background: var(--c-ground); color: var(--c-fg); font-size: var(--text-ui);
+}
+.table-chip:hover, .table-add:hover, .table-action:hover, .table-remove:hover:not(:disabled) { background: var(--c-wash-2); }
+.table-chip:focus-visible, .table-add:focus-visible, .table-action:focus-visible, .table-remove:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }
+.table-add { align-self: flex-start; }
+.table-remove { width: 44px; padding: 0; align-self: flex-end; }
+.table-remove:disabled, .table-add:disabled, .table-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.table-questions { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.table-question { display: grid; grid-template-columns: minmax(9rem, 1fr) 9rem minmax(14rem, 2.2fr) 44px; gap: 0.6rem; align-items: end; }
+.table-question label { margin-bottom: 0.3rem; }
+.table-question select { min-width: 0; width: 100%; }
+.table-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-actions form { margin: 0; }
+.console-main .table-actions button[type="submit"].table-action { margin-top: 0; background: var(--c-ground); color: var(--c-fg); border: 1px solid var(--c-line-control); padding: 0 0.9rem; min-height: 44px; font-size: var(--text-ui); font-weight: 400; border-radius: 6px; }
+.table-confirm { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; padding: 0.9rem 1rem; border: 1px solid var(--c-line-2); border-radius: 10px; }
+.table-confirm p { margin: 0; }
+.table-status { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 1rem; padding: 0.8rem 1rem; border: 1px solid var(--c-line); border-radius: 10px; }
+.table-scroll { overflow-x: auto; margin-top: 1rem; }
+.table-scroll .grid-table { display: table; }
+.table-scroll .grid-doc { font-family: inherit; font-weight: 600; }
+.grid-doc { min-width: 10rem; max-width: 16rem; overflow-wrap: anywhere; }
+.table-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin: 1rem 0 0; }
+.table-legend div { display: flex; gap: 0.35rem; align-items: baseline; }
+.table-legend dt { font-size: var(--text-ui); font-weight: 600; }
+.table-legend dd { margin: 0; }
+@media (max-width: 720px) {
+  .table-question { grid-template-columns: 1fr 44px; padding-bottom: 0.75rem; border-bottom: 1px solid var(--c-line); }
+  .table-q-name, .table-q-kind, .table-q-question { grid-column: 1 / 2; }
+  .table-remove { grid-column: 2; grid-row: 1; }
+  .table-question select { width: 100%; }
+}

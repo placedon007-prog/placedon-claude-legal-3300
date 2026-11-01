@@ -259,3 +259,60 @@ export function useCompanyFacts(): readonly StoredFact[] {
 export function saveCompanyFacts(facts: readonly StoredFact[]): void {
   write(COMPANY_KEY, JSON.stringify(facts));
 }
+
+/* ── review tables this browser opened, and the names of the files it ticked ── */
+
+const TABLES_KEY = "placedon.console.tables.v1";
+const DOC_NAMES_KEY = "placedon.console.docnames.v1";
+const MAX_TABLES = 50;
+const MAX_DOC_NAMES = 500;
+export type LocalTable = { id: string; name: string; at: string };
+
+function readJson<T>(key: string, fallback: T, ok: (v: unknown) => boolean): T {
+  try {
+    const parsed: unknown = JSON.parse(read(key) ?? "null");
+    return ok(parsed) ? (parsed as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+const isRecord = (v: unknown) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
+
+/** Only used when the firm-wide list is unavailable; the page says so. */
+export function useLocalTables(): LocalTable[] {
+  const raw = useStored(TABLES_KEY);
+  return React.useMemo(() => {
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? (parsed as LocalTable[]).filter((t) => typeof t?.id === "string") : [];
+    } catch {
+      return [];
+    }
+  }, [raw]);
+}
+
+export function rememberTable(id: string, name: string): void {
+  const list = readJson<LocalTable[]>(TABLES_KEY, [], Array.isArray);
+  const existing = list.find((t) => t?.id === id);
+  const next: LocalTable = { id, name: (name || existing?.name || "Untitled table").slice(0, 120), at: existing?.at ?? new Date().toISOString() };
+  write(TABLES_KEY, JSON.stringify([next, ...list.filter((t) => t?.id !== id)].slice(0, MAX_TABLES)));
+}
+
+/** A table addresses documents by content; the file names come from what was ticked here. */
+export function rememberDocNames(names: Readonly<Record<string, string>>): void {
+  const map = readJson<Record<string, string>>(DOC_NAMES_KEY, {}, isRecord);
+  const merged = Object.entries({ ...map, ...names }).slice(-MAX_DOC_NAMES);
+  write(DOC_NAMES_KEY, JSON.stringify(Object.fromEntries(merged)));
+}
+
+export function useDocNames(): Readonly<Record<string, string>> {
+  const raw = useStored(DOC_NAMES_KEY);
+  return React.useMemo(() => {
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : {};
+      return isRecord(parsed) ? (parsed as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  }, [raw]);
+}
