@@ -216,3 +216,38 @@ export async function deleteVaultDocumentAction(input: { documentId: string; nam
   if (!result.data.deleted) return { ok: false, message: "Nothing was deleted. Refresh the list and try again." };
   return { ok: true, message: `${name} was deleted. Its searchable text is removed from this workspace.` };
 }
+
+export type VaultShareResult = { ok: true; message: string; sharedAt: string | null } | { ok: false; message: string };
+
+/** `vault.share` refusals in words. Codes from backend gateway/verbs.py `_vault_share`. */
+const SHARE_REFUSALS: Record<string, string> = {
+  FORBIDDEN: "Only the person who uploaded this file can share it, and only while it is not filed to a matter. A filed file is shared by giving people access to its matter.",
+  REASON_REQUIRED: "Give a reason of at least 10 characters. It is recorded with the change.",
+  NOT_FOUND: "This file is not available to you. It may have been deleted; refresh the list.",
+  NO_STORE: "File storage is not available right now. Nothing was changed; try again shortly.",
+};
+
+const shareSchema = z.object({
+  documentId: documentIdSchema,
+  reason: z.string().trim().min(10, "Give a reason of at least 10 characters. It is recorded with the change.").max(500),
+  shared: z.boolean(),
+});
+
+/** Share one of your unfiled files with the whole firm, or stop (`vault.share`, LAWYER). */
+export async function shareVaultDocumentAction(input: { documentId: string; name: string; reason: string; shared: boolean }): Promise<VaultShareResult> {
+  if (!(await hasSession())) return { ok: false, message: "Your session has ended. Sign in to change sharing." };
+  const parsed = shareSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0].path[0] === "reason" ? parsed.error.issues[0].message : "That is not a document id." };
+  const name = String(input?.name ?? "").trim().slice(0, 200) || "The file";
+  const result = await (await getGateway()).vaultShare(parsed.data);
+  if (!result.ok) {
+    if (result.error.status === 403) return { ok: false, message: "Your role cannot change sharing. A lawyer or an admin can." };
+    return { ok: false, message: "The change could not be confirmed. Refresh the list to see whether the file is shared." };
+  }
+  if (isRefusal(result.data)) {
+    return { ok: false, message: SHARE_REFUSALS[result.data.code] ?? "Sharing could not be changed. Nothing was changed." };
+  }
+  return result.data.status === "SHARED"
+    ? { ok: true, message: `${name} is now shared with everyone in the firm.`, sharedAt: result.data.shared_with_firm_at ?? null }
+    : { ok: true, message: `${name} is no longer shared with the firm. Only you can see it.`, sharedAt: null };
+}

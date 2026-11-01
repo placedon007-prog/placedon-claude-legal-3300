@@ -65,6 +65,8 @@ export const GATEWAY_ROUTES = {
   mattersRevoke: "/v2/matters/revoke",
   invitesCreate: "/v2/invites/create",
   usageStatus: "/v2/usage/status",
+  // `vault.share` (LAWYER): the uploader shares an UNFILED document with the whole firm, or stops.
+  vaultShare: "/v2/vault/share",
   // document.verify runs INSIDE document.check; the screen calls only the latter.
   documentCheck: "/v2/document/check",
   tableCreate: "/v2/review-table/create",

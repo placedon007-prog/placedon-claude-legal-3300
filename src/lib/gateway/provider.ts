@@ -130,6 +130,8 @@ export interface GatewayProvider {
   vaultRetry(input: { documentId: string }): Promise<EngineResult<import("./types").VaultRetry>>;
   /** Remove a document from this workspace (`vault.delete`). A refusal is a product state. */
   vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>>;
+  /** Share an unfiled document with the firm, or stop (`vault.share`). Recorded with a reason. */
+  vaultShare(input: { documentId: string; reason: string; shared: boolean }): Promise<EngineResult<import("./types").VaultShare>>;
   /**
    * The Document Check, end to end: verify a stored document, decide whether it is
    * still in force at `as_of`, and record the action a lawyer should take. A WRITE
