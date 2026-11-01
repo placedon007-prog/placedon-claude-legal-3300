@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceDetails } from "../source-details";
 import { useActionState } from "react";
 import { reviewAction, type ReviewState } from "../actions";
 import { ReviewGate } from "../review-gate";
@@ -111,19 +112,13 @@ function Findings({
         </h3>
         <p className="meta">
           {source.kind === "pasted" ? "pasted text" : `${source.name} · ${source.kind}`}
-          {source.sha256 ? ` · sha256 ${source.sha256.slice(0, 12)}…` : null} ·{" "}
-          playbook {data.playbook_status}
+          {" · "}playbook {data.playbook_status}
           {data.model ? ` · model ${data.model}` : null}
           {typeof data.clauses_in_contract === "number"
             ? ` · ${data.clauses_in_contract} clauses read`
             : null}
-          {data.run_id ? (
-            <>
-              {" · run "}
-              <a href={`/app/runs/${data.run_id}`}>{data.run_id.slice(0, 8)}</a>
-            </>
-          ) : null}
         </p>
+        <SourceDetails sha256={source.sha256} runId={data.run_id} />
       </div>
 
       <table className="findings findings-labeled">

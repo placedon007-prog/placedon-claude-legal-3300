@@ -14,8 +14,7 @@ export default async function VaultPage() {
     <>
       <h1>Wall System</h1>
       <p className="lede">
-        Store searchable text copies of court orders, agreements and working documents.
-        Organise them by matter and add ready files to a conversation. Keep your original files separately.
+        Store searchable copies of your documents by matter — for example, court orders and agreements to use in a conversation.
       </p>
       <VaultConsole initialList={listed.phase === "listed" ? listed.data : null}
         matters={matters.ok ? matters.data.matters : []} mattersUnavailable={!matters.ok} />

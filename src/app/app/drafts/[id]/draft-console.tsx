@@ -50,7 +50,7 @@ function Failure({ error }: { error: { message: string; kind: string; route: str
   status?: number } }) {
   return (
     <div role="alert" className="transport-failure">
-      <h3>The gateway did not answer</h3>
+      <h3>Placedon did not answer</h3>
       <p>{error.message}</p>
       <p className="meta">
         {error.kind} · {error.route}
@@ -363,8 +363,7 @@ export function DraftConsole({ draft, account = false }: { draft: DraftVersions;
       </details>
 
       <p className="meta hosting-note">
-        playbook_status DRAFT — the templates behind this draft are not lawyer approved.
-        Model hosting: UAE North; no client document may be sent there.
+        Playbook DRAFT — the templates behind this draft are not lawyer-approved. Model hosted in UAE North: do not send client documents.
       </p>
     </>
   );

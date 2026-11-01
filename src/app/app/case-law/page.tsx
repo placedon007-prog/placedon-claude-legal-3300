@@ -9,9 +9,7 @@ export default function CaseLawPage() {
     <>
       <h1>Case law</h1>
       <p className="lede">
-        Find Supreme Court and High Court judgments by party or case name. This
-        searches available judgment collections; it does not retrieve the live court docket or
-        decide what authority controls your matter.
+        Find Supreme Court and High Court judgments by party or case name — for example, &ldquo;Tata v Cyrus&rdquo;.
       </p>
       <CaseLawConsole />
       <section aria-labelledby="live-status-heading" className="mt-8 rounded-card border border-line-2 p-5">

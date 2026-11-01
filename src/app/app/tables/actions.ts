@@ -81,7 +81,7 @@ export async function tableCreateAction(
   return { phase: "created", data: result.data };
 }
 
-const gridSchema = z.string().trim().min(1, "A grid id is required.");
+const gridSchema = z.string().trim().min(1, "A table ID is required.");
 
 export async function tableStatusAction(
   _prev: TableState,

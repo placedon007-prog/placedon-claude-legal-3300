@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceDetails } from "../source-details";
 import { useActionState } from "react";
 import { reviewDocumentAction, type DocumentState } from "../actions";
 import { ReviewGate } from "../review-gate";
@@ -116,9 +117,8 @@ function Result({ state }: { state: Extract<DocumentState, { phase: "reviewed" }
         <p className="meta">{data.note}</p>
         <p className="meta">
           <span className="mono">{source.name}</span> · {source.kind}
-          {source.sha256 ? <> · sha256 {source.sha256.slice(0, 12)}…</> : null}
-          {data.run_id ? <> · run {data.run_id.slice(0, 8)}</> : null}
         </p>
+        <SourceDetails sha256={source.sha256} runId={data.run_id} />
       </div>
     );
   }
@@ -136,14 +136,13 @@ function Result({ state }: { state: Extract<DocumentState, { phase: "reviewed" }
         <span className="meta">
           {" "}
           {source.name} · read as <strong>{data.doc_type}</strong>
-          {source.sha256 ? <> · sha256 {source.sha256.slice(0, 12)}…</> : null} ·{" "}
-          {data.checks_run} checks
+          {" · "}{data.checks_run} checks
           {data.needs_human_count > 0
             ? ` · ${data.needs_human_count} need a person`
             : ""}
-          {data.run_id ? ` · run ${data.run_id.slice(0, 8)}` : ""}
         </span>
       </h3>
+      <SourceDetails sha256={source.sha256} runId={data.run_id} />
 
       <p className="meta">{data.note}</p>
 

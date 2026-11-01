@@ -96,7 +96,7 @@ export function RunWatch({ initial }: { initial: RunSnapshot }) {
       ) : null}
       {cancelState.phase === "failed" ? (
         <p className="gate-error" role="alert">
-          The cancellation did not reach the gateway, so the run may still be going.{" "}
+          The cancellation did not reach Placedon, so the run may still be going.{" "}
           <span className="mono">{cancelState.error.kind}</span> —{" "}
           {cancelState.error.message}
         </p>

@@ -119,12 +119,12 @@ export function ReviewGate({
       ) : null}
       {state.phase === "refused" ? (
         <p className="gate-error" role="alert">
-          Not recorded — the gateway refused this decision ({state.code}): {state.detail}
+          Not recorded — Placedon refused this decision ({state.code}): {state.detail}
         </p>
       ) : null}
       {state.phase === "failed" ? (
         <p className="gate-error" role="alert">
-          The decision did not reach the gateway, so nothing was recorded.{" "}
+          The decision did not reach Placedon, so nothing was recorded.{" "}
           <span className="mono">{state.error.kind}</span> — {state.error.message}
         </p>
       ) : null}

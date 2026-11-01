@@ -154,8 +154,8 @@ export class HttpGateway implements GatewayProvider {
         kind: aborted ? "timeout" : "transport_error",
         route,
         message: aborted
-          ? `The gateway did not answer within ${TIMEOUT_MS / 1000}s.`
-          : "The gateway response was interrupted before it could be read.",
+          ? `Placedon did not answer within ${TIMEOUT_MS / 1000}s.`
+          : "Placedon's response was interrupted before it could be read.",
       });
     } finally {
       clearTimeout(timer);
@@ -169,7 +169,7 @@ export class HttpGateway implements GatewayProvider {
         kind: "schema_mismatch",
         route,
         status: response.status,
-        message: "The gateway answered with something that is not JSON.",
+        message: "Placedon answered with something this app could not read.",
       });
     }
 
@@ -211,8 +211,8 @@ export class HttpGateway implements GatewayProvider {
           response.status === 401
             ? this.onUnauthorized
               ? "Your session has ended. Sign in again."
-              : "The gateway rejected this deployment's API key."
-            : `The gateway answered ${response.status}.`,
+              : "Placedon rejected this workspace's access key."
+            : `Placedon answered with an error (HTTP ${response.status}).`,
         detail,
       });
     }
@@ -228,7 +228,7 @@ export class HttpGateway implements GatewayProvider {
         kind: "schema_mismatch",
         route,
         status: response.status,
-        message: "The gateway's answer did not match the contract this app was built to.",
+        message: "Placedon's answer was not in the format this app expects.",
         issues: parsed.error.issues.map(
           (i) => `${i.path.join(".") || "(root)"}: ${i.message}`,
         ),

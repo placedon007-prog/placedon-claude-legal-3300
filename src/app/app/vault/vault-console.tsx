@@ -19,15 +19,15 @@ const initial: VaultState = { phase: "idle" };
  * searchable yet. A tick beside it would say the opposite of the truth.
  */
 const UPLOAD_STATE: Record<string, { glyph: string; word: string; meaning: string }> = {
-  INGESTED: { glyph: "✓", word: "INGESTED", meaning: "read and searchable" },
-  PENDING: { glyph: "·", word: "PENDING", meaning: "queued; not searchable yet" },
+  INGESTED: { glyph: "✓", word: "Ready", meaning: "read and searchable" },
+  PENDING: { glyph: "·", word: "Processing", meaning: "queued; not searchable yet" },
   PARTIAL: {
     glyph: "±",
-    word: "PARTIAL",
+    word: "Partly read",
     meaning: "some pages could not be read and are not indexed",
   },
-  CANNOT_READ: { glyph: "✗", word: "CANNOT READ", meaning: "no text layer; OCR is blocked" },
-  DELETED: { glyph: "–", word: "DELETED", meaning: "bytes destroyed; the record remains" },
+  CANNOT_READ: { glyph: "✗", word: "Cannot read", meaning: "no text layer; scanned-image reading is not available" },
+  DELETED: { glyph: "–", word: "Deleted", meaning: "file contents destroyed; the record remains" },
   FAILED: {
     glyph: "!",
     word: "FAILED",
@@ -91,7 +91,7 @@ function FileList({ data }: { data: VaultStatus }) {
 function Failure({ state }: { state: Extract<VaultState, { phase: "failed" }> }) {
   return (
     <div role="alert" className="transport-failure">
-      <h3>The gateway did not answer</h3>
+      <h3>Placedon did not answer</h3>
       <p>{state.error.message}</p>
       <p className="meta">
         {state.error.kind} · {state.error.route}
@@ -113,7 +113,7 @@ function Refusal({ state }: { state: Extract<VaultState, { phase: "refused" }> }
       <h3>Refused: {state.code}</h3>
       <p>{state.detail}</p>
       <p className="meta">
-        The gateway answered, and declined. This is a decision with a name, not an error.
+        Placedon answered, and declined. This is a decision with a name, not an error.
       </p>
     </div>
   );
@@ -221,15 +221,15 @@ export function VaultConsole({ initialList, matters, mattersUnavailable }: {
       </section>
 
       <section aria-label="Verify">
-        <h3>Verify the stored bytes</h3>
+        <h3>Check the stored file is unchanged</h3>
         <form action={verifyAction}>
-          <label htmlFor="document_id">Document id</label>
+          <label htmlFor="document_id">Document ID</label>
           <input id="document_id" name="document_id" type="text"
-                 placeholder="the sha256 the document is stored under"
+                 placeholder="the ID the document is stored under"
                  aria-describedby="verify-help" />
           <p className="meta" id="verify-help">
             Each check is reported on its own line. There is no single real-or-fake verdict:
-            “the bytes are gone” and “the bytes hash to something else” are different
+            “the file is gone” and “the file has changed” are different
             problems with different remedies, and one badge would make them the same answer.
           </p>
           <button type="submit" disabled={verifying}>
@@ -270,20 +270,18 @@ export function VaultConsole({ initialList, matters, mattersUnavailable }: {
               </tbody>
             </table>
             {verify.data.stored_sha256 && (
-              <p className="meta">
-                stored {verify.data.stored_sha256} · computed{" "}
-                {verify.data.computed_sha256}
-              </p>
+              <details className="meta">
+                <summary>Details</summary>
+                <p className="mono">
+                  sha256 stored {verify.data.stored_sha256} · computed{" "}
+                  {verify.data.computed_sha256}
+                </p>
+              </details>
             )}
             {verify.data.note && <p className="meta">{verify.data.note}</p>}
           </div>
         )}
       </section>
-
-      <p className="meta hosting-note">
-        playbook_status DRAFT — the vault&rsquo;s classifier and clause rules are not lawyer
-        approved. Model hosting: UAE North; no client document may be sent there.
-      </p>
     </>
   );
 }

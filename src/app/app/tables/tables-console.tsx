@@ -37,7 +37,7 @@ const CELL: Record<CellState, { glyph: string; word: string; meaning: string }> 
 function Failure({ error }: { error: TableState & { phase: "failed" } }) {
   return (
     <div role="alert" className="transport-failure">
-      <h3>The gateway did not answer</h3>
+      <h3>Placedon did not answer</h3>
       <p>{error.error.message}</p>
       <p className="meta">
         {error.error.kind} · {error.error.route}
@@ -185,7 +185,7 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial, mat
               {created.data.cells} cell(s) over {created.data.documents} document(s) and{" "}
               {created.data.columns} question(s).
             </p>
-            <p className="meta">grid {created.data.grid_id}</p>
+            <p className="meta">Table ID {created.data.grid_id}</p>
             <Cost amount={created.data.estimated_cost_inr} note={created.data.cost_note} />
 
             {/* PAUSED_BUDGET: a STATE, not an error. It gets the status register, not the
@@ -215,7 +215,7 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial, mat
       <section aria-label="One table">
         <h3>Read a table</h3>
         <form action={statusAction} className="inline-form">
-          <label htmlFor="grid_id">Grid id</label>
+          <label htmlFor="grid_id">Table ID</label>
           <input id="grid_id" name="grid_id" type="text"
                  defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={loading}>
@@ -250,7 +250,7 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial, mat
       <section aria-label="Export and cancel">
         <h3>Export</h3>
         <form action={exportAction} className="inline-form">
-          <label htmlFor="export_grid">Grid id</label>
+          <label htmlFor="export_grid">Table ID</label>
           <input id="export_grid" name="grid_id" type="text"
                  defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={exporting}>
@@ -270,7 +270,7 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial, mat
 
         <h3>Cancel</h3>
         <form action={cancelAction} className="inline-form">
-          <label htmlFor="cancel_grid">Grid id</label>
+          <label htmlFor="cancel_grid">Table ID</label>
           <input id="cancel_grid" name="grid_id" type="text"
                  defaultValue={created.phase === "created" ? created.data.grid_id : initialGridId} />
           <button type="submit" disabled={cancelling}>
@@ -304,11 +304,6 @@ export function TablesConsole({ initialGridId = "", initialStatus = initial, mat
           ))}
         </tbody>
       </table>
-
-      <p className="meta hosting-note">
-        playbook_status DRAFT — the questions behind these cells are not lawyer approved.
-        Model hosting: UAE North; no client document may be sent there.
-      </p>
     </>
   );
 }

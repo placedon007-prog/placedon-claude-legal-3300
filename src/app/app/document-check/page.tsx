@@ -23,8 +23,7 @@ export default async function DocumentCheckPage({
     <>
       <h1>Document Check</h1>
       <p className="lede">
-        Upload readable document text to check its recorded facts, date-sensitive status and next action.
-        Results flag what needs lawyer review; they do not certify legal validity.
+        Check a document&rsquo;s key facts, dates and next step — for example, whether a licence is due for renewal.
       </p>
       <DocumentCheckConsole initialDocumentId={initial} initialName={stored?.name ?? null} initialReadiness={stored?.state ?? null} sharedPasscode={sharedPasscode} />
     </>

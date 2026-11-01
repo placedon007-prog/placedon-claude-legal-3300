@@ -68,7 +68,7 @@ export async function documentCheckAction(
     return {
       phase: "refused",
       code: result.data.code,
-      detail: result.data.detail ?? "The verb refused without a detail.",
+      detail: result.data.detail ?? "Placedon refused without giving a reason.",
     };
   }
 

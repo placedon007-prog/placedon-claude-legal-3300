@@ -71,8 +71,8 @@ test("judgment PDF links only target the allowlisted bucket and validated datase
 });
 
 test("source catalogue recovery copy distinguishes stale credentials and missing backend routes", () => {
-  assert.match(sourceCatalogFailureMessage("bad_request", 401), /restart the gateway and website together/);
-  assert.match(sourceCatalogFailureMessage("not_found", 404), /Update the backend gateway/);
+  assert.match(sourceCatalogFailureMessage("bad_request", 401), /restart the service and website together/);
+  assert.match(sourceCatalogFailureMessage("not_found", 404), /Update the service/);
   assert.match(sourceCatalogFailureMessage("server_error", 503), /temporary service error/);
   assert.match(sourceCatalogFailureMessage("transport_error"), /not an empty source list/);
 });
