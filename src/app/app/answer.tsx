@@ -138,7 +138,7 @@ export function TurnView({
         </div>
       ) : s.phase === "queued" ? (
         <div className="flex flex-col gap-2">
-          <ResearchActivity kind="queued" note={s.note} since={s.queuedAt} />
+          <ResearchActivity kind="queued" note={s.note} since={s.queuedAt} steps={s.steps} />
           {s.runId ? <RunLink runId={s.runId} /> : null}
         </div>
       ) : (

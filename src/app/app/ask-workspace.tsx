@@ -130,7 +130,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
               const oldRun = turn.state.runId;
               const match = fresh.find((next) => next.key === turn.key || oldRun && next.state?.phase === "answered" && next.state.envelope.run_id === oldRun);
               return match?.state?.phase === "answered" ? { ...turn, state: match.state }
-                : { ...turn, state: stillQueued(turn.state) };
+                : { ...turn, state: stillQueued(turn.state, match?.state?.phase === "queued" ? match.state.steps : undefined) };
             }));
           } else if (live && loaded.phase === "refused") {
             const note = loaded.code === "SESSION_EXPIRED"

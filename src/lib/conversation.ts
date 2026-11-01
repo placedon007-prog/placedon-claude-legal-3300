@@ -1,4 +1,4 @@
-import type { ConversationMessage, RunStep } from "./gateway/types";
+import type { ConversationMessage, RunProgress, RunStep } from "./gateway/types";
 import type { Turn } from "../app/app/answer";
 
 /** Stored message order is authoritative; request IDs retain the identity used for retries. */
@@ -18,7 +18,7 @@ export function conversationTurns(conversationId: string, messages: readonly Con
             documentEvidence: metadata?.document_evidence, documentSummary: metadata?.document_summary,
             documentSummaryUnavailable: metadata?.document_summary_unavailable }
         : { phase: "queued", conversationId, runId: reply?.run_id ?? null,
-            messageId: reply?.message_id, note: "" },
+            messageId: reply?.message_id, note: "", ...(reply?.progress ? { steps: reply.progress } : {}) },
     }];
   });
 }
@@ -26,10 +26,13 @@ export function conversationTurns(conversationId: string, messages: readonly Con
 /**
  * A poll found the reply still queued. Restore the server's own progress line (sent with
  * the queued reply) instead of blanking it; a connection note from an earlier poll is
- * cleared because this poll succeeded.
+ * cleared because this poll succeeded. Fresh live steps from the poll, when the server sent
+ * any, replace the previous ones; without them the last known steps stay.
  */
-export function stillQueued<T extends { readonly note: string; readonly progress?: string }>(state: T): T {
-  return { ...state, note: state.progress ?? "" };
+export function stillQueued<T extends { readonly note: string; readonly progress?: string; readonly steps?: RunProgress }>(
+  state: T, steps?: RunProgress,
+): T {
+  return { ...state, note: state.progress ?? "", ...(steps ? { steps } : {}) };
 }
 
 /** What this browser saw when a turn was queued; the server does not store it. */

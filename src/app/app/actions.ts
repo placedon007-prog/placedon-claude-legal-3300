@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
 import { isRefusal, type SourceBody, type SourceIntegration, type SourceReport, type DocumentEvidence, type DocumentSummary, type ConversationArtifact, type CitationGetOk, type ConversationMessage, type Envelope, type ReviewResponse, type RunStep } from "@/lib/gateway/types";
 import { MIN_REASON_CHARS, isLive } from "@/lib/gateway/types";
-import type { Decision, DocumentResponse, DocumentSummaryUnavailable } from "@/lib/gateway/types";
+import type { Decision, DocumentResponse, DocumentSummaryUnavailable, RunProgress } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 import { GATEWAY_ROUTES } from "@/lib/engine/types";
 import { authenticatePasscode, endSession, hasSession, startAccountSession, startSession } from "@/lib/auth/session";
@@ -60,7 +60,9 @@ export type TurnState =
       /** The server's progress line from the send reply; `note` may temporarily show a connection problem instead. */
       readonly progress?: string;
       /** When this browser saw the request queued (Date.now()); absent on a reopened thread. */
-      readonly queuedAt?: number }
+      readonly queuedAt?: number;
+      /** The server's live steps for this reply, when the backend reports them. */
+      readonly steps?: RunProgress }
   /** The verb declined before answering, by name (e.g. AS_OF_UNSUPPORTED, NO_STORE). */
   | { readonly phase: "refused"; readonly code: string; readonly detail: string }
   /** The answer never arrived. Never rendered as a refusal. */
