@@ -255,7 +255,7 @@ const gw = new MockGateway();
 // Every verb the four screens call must exist on the interface, on both providers.
 const SCREEN_VERBS = [
   "vaultUpload", "vaultStatus", "vaultFind", "vaultVerify",
-  "tableCreate", "tableStatus", "tableExport", "tableCancel",
+  "tableCreate", "tableStatus", "tableExport", "tableCancel", "tableList",
   "draftCreate", "draftRevise", "draftVersions", "draftDiff", "draftExport",
   "calendarUpcoming", "sourcesList", "researchWeb",
 ];
@@ -267,7 +267,7 @@ for (const verb of SCREEN_VERBS) {
 // And each must have a route, or the http client would POST to undefined.
 for (const route of [
   "vaultUpload", "vaultStatus", "vaultFind", "vaultVerify",
-  "tableCreate", "tableStatus", "tableExport", "tableCancel",
+  "tableCreate", "tableStatus", "tableExport", "tableCancel", "tableList",
   "draftCreate", "draftRevise", "draftVersions", "draftDiff", "draftExport",
   "calendarUpcoming", "sourcesList",
 ]) {

@@ -20,6 +20,7 @@ import {
   tableCreateSchema,
   tableExportSchema,
   tableStatusSchema,
+  tableListSchema,
   vaultFindSchema,
   vaultStatusSchema,
   vaultDocumentSchema,
@@ -81,6 +82,7 @@ import {
   type TableCreate,
   type TableExport,
   type TableStatus,
+  type TableList,
   type UploadResponse,
   type VaultFind,
   type VaultStatus,
@@ -620,6 +622,17 @@ export class HttpGateway implements GatewayProvider {
   tableCancel(input: { gridId: string }): Promise<EngineResult<TableCancel>> {
     return this.call(GATEWAY_ROUTES.tableCancel, GATEWAY_ROUTES.tableCancel,
       tableCancelSchema, { method: "POST", body: { grid_id: input.gridId } });
+  }
+
+  tableList(input: { cursor?: string; limit?: number } = {}): Promise<EngineResult<TableList>> {
+    return this.call(GATEWAY_ROUTES.tableList, GATEWAY_ROUTES.tableList,
+      tableListSchema, {
+        method: "POST",
+        body: {
+          ...(input.cursor ? { cursor: input.cursor } : {}),
+          ...(input.limit !== undefined ? { limit: String(input.limit) } : {}),
+        },
+      });
   }
 
   /* ── drafts ─────────────────────────────────────────────────────────────── */

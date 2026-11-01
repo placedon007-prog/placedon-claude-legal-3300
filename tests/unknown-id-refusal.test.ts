@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { tableCancelAction, tableExportAction, tableStatusAction } from "../src/app/app/tables/actions";
+import { readTable, tableCancelAction, tableExportAction } from "../src/app/app/tables/actions";
 import { MockGateway } from "../src/lib/gateway/mock";
 
 const REFUSAL = { status: "REFUSED", code: "NOT_FOUND", detail: "No review table with this id." };
@@ -18,10 +18,11 @@ test("a refused grid id is a message, never rendered as table data", async () =>
     for (const [name] of originals) proto[name] = async () => ({ ok: true, data: REFUSAL });
     const form = new FormData();
     form.set("grid_id", "00000000-0000-0000-0000-000000000000");
-    for (const action of [tableStatusAction, tableExportAction, tableCancelAction]) {
-      const state = await action({ phase: "idle" }, form);
-      assert.equal(state.phase, "invalid", action.name);
-      if (state.phase === "invalid") assert.match(state.message, /NOT_FOUND: No review table/);
+    const states = [await readTable("00000000-0000-0000-0000-000000000000"),
+      await tableExportAction({ phase: "idle" }, form), await tableCancelAction({ phase: "idle" }, form)];
+    for (const state of states) {
+      assert.equal(state.phase, "invalid");
+      if (state.phase === "invalid") assert.equal(state.message, "No review table with this id.");
     }
   } finally {
     for (const [name, fn] of originals) proto[name] = fn;

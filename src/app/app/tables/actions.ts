@@ -1,133 +1,105 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getGateway } from "@/lib/gateway";
-import { COLUMN_KINDS, parseColumnLines } from "@/lib/table-columns";
+import { COLUMN_KINDS, checkColumns } from "@/lib/table-columns";
 import { isRefusal } from "@/lib/gateway/types";
-import type {
-  TableCancel,
-  TableCreate,
-  TableExport,
-  TableStatus,
-} from "@/lib/gateway/types";
+import type { TableCancel, TableExport, TableList, TableStatus } from "@/lib/gateway/types";
 import type { EngineError } from "@/lib/engine/errors";
 
 /**
- * Review tables: create, status, export, cancel.
- *
- * `paused` is carried as its own field on the created state rather than inferred later,
- * because **`review_table.status` does not report it**. Measured against a live gateway on
- * 2026-10-04: no key in the status response mentions the budget. PAUSED_BUDGET arrives once,
- * on `create`, in `scheduled.paused_budget` — so a screen that only polls status would show
- * a table stuck at PENDING with no reason, and this is where the reason is kept.
+ * Review tables. Create goes straight to the table's own page (`/app/tables/[id]`), so a
+ * person never copies an id; export and stop are buttons on that page.
  */
 export type TableState =
   | { readonly phase: "idle" }
-  | { readonly phase: "created"; readonly data: TableCreate }
-  | { readonly phase: "status"; readonly data: TableStatus;
-      readonly paused: { readonly reason: string; readonly notScheduled: number } | null }
+  | { readonly phase: "status"; readonly data: TableStatus }
   | { readonly phase: "exported"; readonly data: TableExport }
   | { readonly phase: "cancelled"; readonly data: TableCancel }
   | { readonly phase: "failed"; readonly error: EngineError }
   | { readonly phase: "invalid"; readonly message: string };
 
+export type TableListResult =
+  | { readonly kind: "firm"; readonly data: TableList }
+  /** The gateway has no `review_table.list` yet (404): the page falls back to this browser. */
+  | { readonly kind: "unavailable" }
+  | { readonly kind: "failed"; readonly error: EngineError };
 
 const createSchema = z.object({
-  name: z.string().trim().min(1, "A table needs a name.").max(120),
+  name: z.string().trim().min(1, "Give the table a name.").max(120, "Use a name of at most 120 characters."),
   documentIds: z
-    .array(z.string().trim().regex(/^[0-9a-f]{64}$/, "Each document id is a sha256."))
-    .min(1, "A table needs at least one document."),
+    .array(z.string().trim().regex(/^[0-9a-f]{64}$/, "One of the ticked files cannot be used. Untick it and try again."))
+    .min(1, "Tick at least one ready file.")
+    .max(20, "Tick at most 20 files."),
   columns: z
-    .array(
-      z.object({
-        name: z.string().trim().min(1),
-        kind: z.enum(COLUMN_KINDS),
-        question: z.string().trim().min(5, "A column needs a question."),
-      }),
-    )
-    .min(1, "A table needs at least one column."),
+    .array(z.object({ name: z.string().trim().min(1), kind: z.enum(COLUMN_KINDS), question: z.string().trim().min(5) }))
+    .min(1, "Add at least one question."),
 });
 
-function lines(value: FormDataEntryValue | null): string[] {
-  return String(value ?? "")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
+const GRID_ID = /^[A-Za-z0-9-]{1,100}$/;
+
+function strings(formData: FormData, key: string): string[] {
+  return formData.getAll(key).map((v) => String(v ?? ""));
 }
 
-export async function tableCreateAction(
-  _prev: TableState,
-  formData: FormData,
-): Promise<TableState> {
-  // One question per line, `kind|name|question`. A textarea rather than a column builder
-  // because the shape of the request is the backend's, and a builder that invented its own
-  // shape would be a second place for the column contract to live.
-  const lineCheck = parseColumnLines(String(formData.get("columns") ?? ""));
-  if (!lineCheck.ok) return { phase: "invalid", message: lineCheck.message };
-  const columns = lineCheck.columns;
+export async function tableCreateAction(_prev: TableState, formData: FormData): Promise<TableState> {
+  const names = strings(formData, "column_name");
+  const kinds = strings(formData, "column_kind");
+  const questions = strings(formData, "column_question");
+  const rows = names.map((name, i) => ({ name, kind: kinds[i] ?? "", question: questions[i] ?? "" }));
+  const columnCheck = checkColumns(rows);
+  if (!columnCheck.ok) return { phase: "invalid", message: columnCheck.message };
   const parsed = createSchema.safeParse({
     name: formData.get("name"),
-    documentIds: lines(formData.get("document_ids")),
-    columns,
+    documentIds: [...new Set(strings(formData, "document_id").map((d) => d.trim()).filter(Boolean))],
+    columns: columnCheck.columns,
   });
-  if (!parsed.success) {
-    return { phase: "invalid", message: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { phase: "invalid", message: parsed.error.issues[0].message };
   const gateway = await getGateway();
   const result = await gateway.tableCreate(parsed.data);
   if (!result.ok) return { phase: "failed", error: result.error };
-  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
-  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
-  return { phase: "created", data: result.data };
+  if (isRefusal(result.data)) return { phase: "invalid", message: result.data.detail };
+  redirect(`/app/tables/${encodeURIComponent(result.data.grid_id)}`);
 }
 
-const gridSchema = z.string().trim().min(1, "A table ID is required.");
-
-export async function tableStatusAction(
-  _prev: TableState,
-  formData: FormData,
-): Promise<TableState> {
-  const parsed = gridSchema.safeParse(formData.get("grid_id"));
-  if (!parsed.success) {
-    return { phase: "invalid", message: parsed.error.issues[0].message };
-  }
-  const gateway = await getGateway();
-  const result = await gateway.tableStatus({ gridId: parsed.data });
+/** One table, for its page. */
+export async function readTable(gridId: string): Promise<TableState> {
+  if (!GRID_ID.test(gridId)) return { phase: "invalid", message: "This link does not name a review table." };
+  const result = await (await getGateway()).tableStatus({ gridId });
   if (!result.ok) return { phase: "failed", error: result.error };
   // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
-  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
-  // `paused` is null here and the console says why: status cannot tell us.
-  return { phase: "status", data: result.data, paused: null };
+  if (isRefusal(result.data)) return { phase: "invalid", message: result.data.detail };
+  return { phase: "status", data: result.data };
 }
 
-export async function tableExportAction(
-  _prev: TableState,
-  formData: FormData,
-): Promise<TableState> {
-  const parsed = gridSchema.safeParse(formData.get("grid_id"));
-  if (!parsed.success) {
-    return { phase: "invalid", message: parsed.error.issues[0].message };
-  }
-  const gateway = await getGateway();
-  const result = await gateway.tableExport({ gridId: parsed.data });
+/** The firm's tables, or `unavailable` when this gateway predates `review_table.list`. */
+export async function readTableList(cursor?: string): Promise<TableListResult> {
+  const result = await (await getGateway()).tableList({ ...(cursor ? { cursor } : {}), limit: 20 });
+  if (result.ok) return { kind: "firm", data: result.data };
+  if (result.error.kind === "not_found") return { kind: "unavailable" };
+  return { kind: "failed", error: result.error };
+}
+
+function gridFrom(formData: FormData): string | null {
+  const id = String(formData.get("grid_id") ?? "").trim();
+  return GRID_ID.test(id) ? id : null;
+}
+
+export async function tableExportAction(_prev: TableState, formData: FormData): Promise<TableState> {
+  const gridId = gridFrom(formData);
+  if (!gridId) return { phase: "invalid", message: "This page does not name a review table." };
+  const result = await (await getGateway()).tableExport({ gridId });
   if (!result.ok) return { phase: "failed", error: result.error };
-  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
-  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
+  if (isRefusal(result.data)) return { phase: "invalid", message: result.data.detail };
   return { phase: "exported", data: result.data };
 }
 
-export async function tableCancelAction(
-  _prev: TableState,
-  formData: FormData,
-): Promise<TableState> {
-  const parsed = gridSchema.safeParse(formData.get("grid_id"));
-  if (!parsed.success) {
-    return { phase: "invalid", message: parsed.error.issues[0].message };
-  }
-  const gateway = await getGateway();
-  const result = await gateway.tableCancel({ gridId: parsed.data });
+export async function tableCancelAction(_prev: TableState, formData: FormData): Promise<TableState> {
+  const gridId = gridFrom(formData);
+  if (!gridId) return { phase: "invalid", message: "This page does not name a review table." };
+  const result = await (await getGateway()).tableCancel({ gridId });
   if (!result.ok) return { phase: "failed", error: result.error };
-  // An unknown grid id is a refusal parsed as data; shown as data it crashed the console.
-  if (isRefusal(result.data)) return { phase: "invalid", message: `${result.data.code}: ${result.data.detail}` };
+  if (isRefusal(result.data)) return { phase: "invalid", message: result.data.detail };
   return { phase: "cancelled", data: result.data };
 }

@@ -166,6 +166,8 @@ export interface GatewayProvider {
   tableExport(input: { gridId: string }): Promise<EngineResult<TableExport>>;
   /** Stop scheduling. Answered cells are kept; unrun cells stay PENDING, not failed. */
   tableCancel(input: { gridId: string }): Promise<EngineResult<TableCancel>>;
+  /** The firm's tables this person may open, newest first. 404 on a gateway without the verb. */
+  tableList(input?: { cursor?: string; limit?: number }): Promise<EngineResult<import("./types").TableList>>;
 
   /* ── drafts ─────────────────────────────────────────────────────────────── */
   draftCreate(input: {
