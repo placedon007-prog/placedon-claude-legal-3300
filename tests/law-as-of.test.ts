@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MockGateway } from "../src/lib/gateway/mock";
 import { citationGetOkSchema, turnMetadataSchema } from "../src/lib/gateway/types";
-import { formatLawDate, lawAsOfDetail, LAW_DATE_MIN, indiaToday, pastLawDate } from "../src/lib/law-as-of";
+import { asOfRefusalMessage, AS_OF_OFF_MESSAGE, AS_OF_TASK_MESSAGE, formatLawDate, lawAsOfDetail, LAW_DATE_MIN, indiaToday, pastLawDate } from "../src/lib/law-as-of";
 
 const AGM = "What is the time limit for holding an annual general meeting?";
 
@@ -92,4 +92,9 @@ test("the gateway client sends as_of only when given a date", async () => {
   } finally { globalThis.fetch = original; }
   assert.equal(bodies[0].as_of, "2022-03-12");
   assert.equal("as_of" in bodies[1], false);
+});
+
+test("a past-date refusal is told in plain words: switched off, or not for this task", () => {
+  assert.equal(asOfRefusalMessage("This conversation reads current law only. Ask without as_of."), AS_OF_OFF_MESSAGE);
+  assert.equal(asOfRefusalMessage("Past dates apply only to research questions about the Companies Act. Ask without as_of for this task."), AS_OF_TASK_MESSAGE);
 });

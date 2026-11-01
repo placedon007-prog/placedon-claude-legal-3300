@@ -19,7 +19,7 @@ import { CalendarPlus, Check, Copy, GitBranch, Globe2, History, PenLine } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { documentTypeLabel, passageLocation } from "@/lib/document-location";
 import { DEMO_MISMATCH_NOTICE, parseAnswer, type SourceReport, type DocumentEvidence, type DocumentSummary, type DocumentSummaryUnavailable, type ConversationArtifact, type Envelope, type LawAsOf } from "@/lib/gateway/types";
-import { AS_OF_OFF_MESSAGE, formatLawDate, lawAsOfDetail } from "@/lib/law-as-of";
+import { asOfRefusalMessage, formatLawDate, lawAsOfDetail } from "@/lib/law-as-of";
 import { envelopeKind, failedRegister, isNothingTraced, summaryUnavailableLead, linkCitations, searchedSummary, statusLabel, type CitationGroup, type StatusKind } from "@/lib/thread";
 import { toCaseAnswerRenderModel } from "@/lib/case-answer";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -133,9 +133,9 @@ export function TurnView({
           </button>
         </div>
       ) : s.phase === "refused" && s.code === "AS_OF_UNSUPPORTED" ? (
-        // Not a legal refusal: a past date is not switched on. The question was not saved.
+        // Not a legal refusal: a past date is not switched on, or not for this task. Nothing was saved.
         <div role="status" className="flex flex-col gap-2">
-          <p className="text-read text-fg">{AS_OF_OFF_MESSAGE}</p>
+          <p className="text-read text-fg">{asOfRefusalMessage(s.detail)}</p>
         </div>
       ) : s.phase === "refused" ? (
         <div className="flex flex-col gap-2">
