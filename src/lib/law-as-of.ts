@@ -11,6 +11,16 @@ export const LAW_DATE_MIN = "2014-04-01";
 export const AS_OF_OFF_MESSAGE =
   "Past dates aren’t switched on yet. Your question is back in the box: send it again to read the law as it stands today.";
 
+/** Shown when the gateway takes past dates only for research questions (a review, a draft,
+ *  a question about attached documents). */
+export const AS_OF_TASK_MESSAGE =
+  "Past dates work only for research questions about the Companies Act. Your question is back in the box: send it again to use today\u2019s law.";
+
+/** The gateway's AS_OF_UNSUPPORTED detail, in the reader's words. */
+export function asOfRefusalMessage(detail: string): string {
+  return /only to research questions/i.test(detail) ? AS_OF_TASK_MESSAGE : AS_OF_OFF_MESSAGE;
+}
+
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
