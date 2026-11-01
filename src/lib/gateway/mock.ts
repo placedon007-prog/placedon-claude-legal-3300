@@ -966,6 +966,15 @@ export class MockGateway implements GatewayProvider {
       note: "Queued to be read again. PENDING is not INGESTED: nothing is searchable until a worker has read it." });
   }
 
+  async vaultDelete(input: { documentId: string }): Promise<EngineResult<import("./types").VaultDelete>> {
+    // The backend's answer for an id this firm does not have, deleted or never stored.
+    if (!this.vault.delete(input.documentId)) {
+      return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: `no vault document '${input.documentId}' for this tenant` });
+    }
+    return engineOk({ document_id: input.documentId, deleted: true, bytes_destroyed: false,
+      note: "The document is deleted from this workspace and its searchable chunks are removed." });
+  }
+
   async vaultVerify(input: {
     documentId: string;
   }): Promise<EngineResult<VaultVerify>> {

@@ -749,6 +749,9 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 .vault-text-button:hover { background: var(--c-wash-2); }
 .vault-picker-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; flex: none; padding-top: 12px; border-top: 1px solid var(--c-line); }
 .vault-add-button { min-height: 44px; padding: 8px 16px; border-radius: 6px; background: var(--c-fg); color: var(--c-ground); font-weight: 500; font-size: var(--text-ui); }
+.vault-add-button:disabled { opacity: 0.6; cursor: progress; }
+.vault-delete[data-slot="dialog-content"] { max-width: 480px; }
+.vault-delete .vault-picker-footer { justify-content: flex-end; }
 .vault-scope { width: 100%; min-height: 44px; margin-bottom: 16px; padding: 8px 12px; border: 1px solid var(--c-line-control); border-radius: 6px; background: var(--c-ground); }
 @media (max-width: 480px) {
   .vault-picker[data-slot="dialog-content"] { padding: 18px 14px; gap: 12px; }
