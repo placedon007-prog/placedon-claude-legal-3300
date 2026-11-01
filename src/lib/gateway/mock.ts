@@ -49,6 +49,7 @@ import type {
   TableCreate,
   TableExport,
   TableStatus,
+  TableList,
   UploadResponse,
   VaultFind,
   VaultStatus,
@@ -239,6 +240,31 @@ const MATTERS = mattersListSchema.parse(SOURCES.matters_list.body);
  *  ponytail: per-process and unbounded, like THREADS above. */
 const DEMO_ME = { actor_id: "00000000-0000-4000-8000-00000000d3e0", tenant_id: "demo", email: "demo@placedon.example", role: "admin" as const, label: "Demo admin" };
 const DEMO_MATTERS: Matter[] = [];
+/** Demo review tables, module-level for the same reason as THREADS. ponytail: per-process. */
+type MockTable = {
+  name: string; createdAt: number; kinds: Record<string, string>; cells: TableCell[]; cancelled: boolean;
+  pausedBudget: boolean; pauseReason: string; notScheduled: string[];
+};
+const TABLES = new Map<string, MockTable>();
+/** Demo answers arrive over time so the live table page has something to show. */
+const MOCK_CELL_MS = 2_000;
+const MOCK_VALUE: Record<string, string> = {
+  text: "Laws of India", date: "2028-03-31", amount: "INR 1,50,000", yes_no: "Yes",
+  clause: "Neither party shall solicit the other's employees for twelve months.",
+};
+
+/** Answer the dispatched PENDING cells whose turn has come. Demo data, never a document. */
+function advanceMockTable(t: MockTable, now = Date.now()): void {
+  if (t.cancelled) return;
+  t.cells.forEach((c, i) => {
+    if (c.state !== "PENDING" || i >= t.cells.length - t.notScheduled.length) return;
+    if (now - t.createdAt < MOCK_CELL_MS * (i + 1)) return;
+    t.cells[i] = i % 3 === 2
+      ? { ...c, state: "NOT_FOUND", reason: "read, and the demo document does not say" }
+      : { ...c, state: "FOUND", value: MOCK_VALUE[t.kinds[c.column] ?? "text"] ?? "Demo answer",
+          quote: `Demo passage answering "${c.column}".`, reason: "" };
+  });
+}
 const DEMO_MEMBERS = new Map<string, Membership[]>();
 const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
   "held,vault": ANSWERED, held: ANSWERED,
@@ -1252,24 +1278,14 @@ export class MockGateway implements GatewayProvider {
 
   /* ── review tables ──────────────────────────────────────────────────────── */
 
-  private readonly tables = new Map<
-    string,
-    {
-      name: string;
-      cells: TableCell[];
-      cancelled: boolean;
-      pausedBudget: boolean;
-      pauseReason: string;
-      notScheduled: string[];
-    }
-  >();
+  private readonly tables = TABLES;
 
   async tableCreate(input: {
     name: string;
     documentIds: readonly string[];
     columns: readonly { name: string; kind: string; question: string }[];
   }): Promise<EngineResult<TableCreate>> {
-    const gridId = `mock-grid-${this.tables.size + 1}`;
+    const gridId = `mock-grid-${this.tables.size + 1}-${Date.now().toString(36)}`;
     const cells: TableCell[] = [];
     for (const d of input.documentIds) {
       for (const c of input.columns) {
@@ -1286,13 +1302,15 @@ export class MockGateway implements GatewayProvider {
     // A table over four cells pauses part-way, so the screen can show PAUSED_BUDGET as a
     // STATE with cells either side of it. A mock that never paused would leave that
     // branch undemonstrated and untested.
-    const paused = cells.length > 4;
-    const dispatched = paused ? 4 : cells.length;
+    const paused = cells.length > 8;
+    const dispatched = paused ? 8 : cells.length;
     const notScheduled = paused
       ? cells.slice(dispatched).map((c) => `${gridId}:${c.document_id}:${c.column}`)
       : [];
     this.tables.set(gridId, {
       name: input.name,
+      createdAt: Date.now(),
+      kinds: Object.fromEntries(input.columns.map((c) => [c.name, c.kind])),
       cells,
       cancelled: false,
       pausedBudget: paused,
@@ -1335,7 +1353,26 @@ export class MockGateway implements GatewayProvider {
   }
 
   private tableOr404(gridId: string) {
-    return this.tables.get(gridId);
+    const t = this.tables.get(gridId);
+    if (t) advanceMockTable(t);
+    return t;
+  }
+
+  async tableList(): Promise<EngineResult<TableList>> {
+    const tables = [...this.tables.entries()].reverse().map(([gridId, t]) => {
+      advanceMockTable(t);
+      const pending = t.cells.filter((c) => c.state === "PENDING").length;
+      return {
+        grid_id: gridId, name: t.name, created_at: new Date(t.createdAt).toISOString(),
+        created_by: DEMO_ME.actor_id, mine: true, matter_id: null,
+        table_state: t.cancelled ? "CANCELLED" : t.pausedBudget ? "PAUSED_BUDGET"
+          : pending ? "RUNNING" : "COMPLETE",
+        documents: new Set(t.cells.map((c) => c.document_id)).size,
+        columns: Object.keys(t.kinds).length, cells: t.cells.length, cells_pending: pending,
+      };
+    });
+    return engineOk({ tables: tables.slice(0, 20), next_cursor: null,
+      note: "Review tables you may open, newest first. Names and counts only." });
   }
 
   async tableStatus(input: { gridId: string }): Promise<EngineResult<TableStatus>> {
@@ -1368,6 +1405,9 @@ export class MockGateway implements GatewayProvider {
       cells_detail: t.cells,
       complete: by.PENDING === 0,
       cancelled: t.cancelled,
+      table_state: t.cancelled ? "CANCELLED" : t.pausedBudget ? "PAUSED_BUDGET"
+        : by.PENDING === 0 ? "COMPLETE" : "RUNNING",
+      ...(t.pausedBudget ? { pause_note: `${t.cells.length - t.notScheduled.length} cell(s) were sent and ${t.notScheduled.length} were not, because the spending cap was reached. The unsent cells stay pending; nothing was charged for them.` } : {}),
       note:
         "FAILED cells did not run and say nothing about the document; PENDING cells have " +
         "not been attempted. Neither is a finding.",

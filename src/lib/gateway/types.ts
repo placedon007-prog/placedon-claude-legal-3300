@@ -616,8 +616,34 @@ export const tableStatusSchema = z.object({
   cancelled: z.boolean(),
   note: z.string(),
   spend: tableSpendSchema,
+  /** Backend 022: RUNNING · COMPLETE · CANCELLED · PAUSED_BUDGET. Optional for older gateways. */
+  table_state: z.string().optional(),
+  pause_note: z.string().optional(),
 });
 export type TableStatus = z.infer<typeof tableStatusSchema>;
+
+/** `review_table.list` (backend PR, 2026-11-01): names, dates, state and counts, no answers. */
+export const tableSummarySchema = z.object({
+  grid_id: z.string(),
+  name: z.string(),
+  created_at: z.string(),
+  created_by: z.string().nullable(),
+  mine: z.boolean(),
+  matter_id: z.string().nullable(),
+  table_state: z.string(),
+  documents: z.number().int(),
+  columns: z.number().int(),
+  cells: z.number().int(),
+  cells_pending: z.number().int(),
+});
+export type TableSummary = z.infer<typeof tableSummarySchema>;
+
+export const tableListSchema = z.object({
+  tables: z.array(tableSummarySchema),
+  next_cursor: z.string().nullable(),
+  note: z.string(),
+});
+export type TableList = z.infer<typeof tableListSchema>;
 
 export const tableExportSchema = z.object({
   grid_id: z.string(),
