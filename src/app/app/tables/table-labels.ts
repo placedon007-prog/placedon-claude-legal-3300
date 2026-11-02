@@ -11,3 +11,13 @@ export function tableWhen(value: string): string {
   return Number.isNaN(date.getTime()) ? "Date unavailable"
     : new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
+
+/** A file's row label: the name the server stored, else the one this browser remembers, else its position. */
+export function docLabel(
+  id: string,
+  index: number,
+  server: Readonly<Record<string, string>> | undefined,
+  local: Readonly<Record<string, string>>,
+): string {
+  return server?.[id]?.trim() || local[id]?.trim() || `File ${index + 1}`;
+}

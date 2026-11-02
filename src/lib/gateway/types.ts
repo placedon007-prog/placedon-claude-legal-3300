@@ -628,6 +628,8 @@ export const tableStatusSchema = z.object({
   /** Backend 022: RUNNING · COMPLETE · CANCELLED · PAUSED_BUDGET. Optional for older gateways. */
   table_state: z.string().optional(),
   pause_note: z.string().optional(),
+  /** Backend 034: {sha256: file name}, stored with the table. Absent on older gateways. */
+  document_names: z.record(z.string(), z.string()).optional(),
 });
 export type TableStatus = z.infer<typeof tableStatusSchema>;
 

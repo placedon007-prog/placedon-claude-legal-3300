@@ -5,6 +5,8 @@ import { test } from "node:test";
 import { COLUMN_KINDS, TABLE_TEMPLATES, checkColumns } from "../src/lib/table-columns";
 import { readTableList, readTable, tableCreateAction } from "../src/app/app/tables/actions";
 import { MockGateway } from "../src/lib/gateway/mock";
+import { tableStatusSchema } from "../src/lib/gateway/types";
+import { docLabel } from "../src/app/app/tables/table-labels";
 import { GATEWAY_ROUTES } from "../src/lib/engine/types";
 
 const ENV = ["PLACEDON_DEMO_MODE", "GATEWAY_URL", "PLACEDON_GATEWAY_KEY"] as const;
@@ -51,6 +53,9 @@ test("create goes straight to the table's own page", async () => {
       assert.equal(list.data.tables[0].documents, 2);
       const opened = await readTable(list.data.tables[0].grid_id);
       assert.equal(opened.phase === "status" && opened.data.table_state, "RUNNING");
+      // The server keeps each file's name, so reopening the table anywhere still shows it.
+      assert.deepEqual(opened.phase === "status" && opened.data.document_names,
+        { ["a".repeat(64)]: "mutual-nda.txt", ["b".repeat(64)]: "supply-agreement.pdf" });
     }
   });
 });
@@ -92,4 +97,20 @@ test("no screen asks a person to type a table id", () => {
     assert.doesNotMatch(src, /Table ID/i, file);
     for (const input of src.match(/<input[^>]*name="grid_id"[^>]*>/g) ?? []) assert.match(input, /type="hidden"/, file);
   }
+});
+
+test("a file is labelled by the server's name, then this browser's, then its position", () => {
+  const id = "a".repeat(64);
+  assert.equal(docLabel(id, 0, { [id]: "lease.pdf" }, { [id]: "old.pdf" }), "lease.pdf");
+  assert.equal(docLabel(id, 0, undefined, { [id]: "old.pdf" }), "old.pdf");
+  assert.equal(docLabel(id, 0, { [id]: "  " }, { [id]: "old.pdf" }), "old.pdf");
+  assert.equal(docLabel(id, 2, {}, {}), "File 3");
+});
+
+test("a status from a gateway without document names still parses", () => {
+  const base = { grid_id: "g", name: "T", documents: 0, columns: 0, cells: 0, findings: 0, by_state: {},
+    cells_detail: [], complete: true, cancelled: false, note: "",
+    spend: { total_inr: null, priced_cells: 0, unpriced_cells: 0, pending_cells: 0, is_lower_bound: false, note: "" } };
+  assert.equal(tableStatusSchema.safeParse(base).success, true);
+  assert.equal(tableStatusSchema.safeParse({ ...base, document_names: { x: "a.pdf" } }).success, true);
 });
