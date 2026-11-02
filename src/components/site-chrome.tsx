@@ -96,6 +96,9 @@ export function SiteNav() {
           ))}
         </nav>
         <div className="dnav-actions">
+          <Link href="/login" className="dnav-login" onClick={() => setOpen(false)}>
+            Sign in
+          </Link>
           <Link
             href="/waitlist?intent=pilot"
             className="dbtn dbtn-solid"
@@ -122,6 +125,9 @@ export function SiteNav() {
               {link.label}
             </Link>
           ))}
+          <Link href="/login" onClick={() => setOpen(false)}>
+            Sign in
+          </Link>
           <Link
             href="/waitlist?intent=pilot"
             className="dbtn dbtn-solid"
