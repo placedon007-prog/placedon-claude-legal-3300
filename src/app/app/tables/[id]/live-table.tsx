@@ -7,6 +7,7 @@ import type { CellState, TableStatus } from "@/lib/gateway/types";
 import { rememberTable, useDocNames } from "../../local-store";
 import { tableCancelAction, tableExportAction, type TableState } from "../actions";
 import { TableFailure } from "../table-failure";
+import { docLabel } from "../table-labels";
 
 const idle: TableState = { phase: "idle" };
 const REFRESH_MS = 4_000;
@@ -122,7 +123,7 @@ export function LiveTable({ data }: { data: TableStatus }) {
           <tbody>
             {documents.map((d, i) => (
               <tr key={d}>
-                <th scope="row" className="grid-doc">{names[d] ?? `File ${i + 1}`}</th>
+                <th scope="row" className="grid-doc">{docLabel(d, i, data.document_names, names)}</th>
                 {columns.map((col) => {
                   const cell = data.cells_detail.find((c) => c.document_id === d && c.column === col);
                   if (!cell) return <td key={col}>—</td>;

@@ -261,6 +261,7 @@ const DEMO_MATTERS: Matter[] = [];
 type MockTable = {
   name: string; createdAt: number; kinds: Record<string, string>; cells: TableCell[]; cancelled: boolean;
   pausedBudget: boolean; pauseReason: string; notScheduled: string[];
+  documentNames: Record<string, string>;
 };
 const TABLES = new Map<string, MockTable>();
 /** Demo answers arrive over time so the live table page has something to show. */
@@ -1385,6 +1386,9 @@ export class MockGateway implements GatewayProvider {
         ? "daily cap reached: ₹111.67 spent + ₹4.00 reserved of ₹116.67"
         : "",
       notScheduled,
+      // As the backend does (035): the name is read from the vault at create, not sent.
+      documentNames: Object.fromEntries([...this.vault.values()]
+        .filter((d) => input.documentIds.includes(d.sha256)).map((d) => [d.sha256, d.name])),
     });
     return engineOk({
       grid_id: gridId,
@@ -1470,6 +1474,7 @@ export class MockGateway implements GatewayProvider {
       findings,
       by_state: by,
       cells_detail: t.cells,
+      document_names: t.documentNames,
       complete: by.PENDING === 0,
       cancelled: t.cancelled,
       table_state: t.cancelled ? "CANCELLED" : t.pausedBudget ? "PAUSED_BUDGET"
