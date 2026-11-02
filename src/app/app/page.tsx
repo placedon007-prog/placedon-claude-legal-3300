@@ -1,4 +1,4 @@
-import { demoModeEnabled, sessionKind } from "@/lib/auth/config";
+import { askPastDatesEnabled, demoModeEnabled, sessionKind } from "@/lib/auth/config";
 import { gateEnabled } from "@/lib/auth/session";
 import type { Metadata } from "next";
 import { loadComposerContext, loadMatterHistory, loadThread } from "./actions";
@@ -12,11 +12,12 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   const { c } = await searchParams;
   const composer = await loadComposerContext();
   const demo = demoModeEnabled();
+  const pastDates = askPastDatesEnabled();
   // Only the passcode prototype is anonymous. A signed-in account IS identified, and its
   // matter membership is enforced, so the shared-passcode warning would be untrue there.
   const sharedPasscode = !demo && gateEnabled() && sessionKind() === "passcode";
   if (!c) {
-    return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
+    return <AskWorkspace key="new" demo={demo} pastDates={pastDates} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={null} composer={composer} />;
   }
   const loaded = await loadThread(c);
   if (loaded.phase === "loaded") {
@@ -25,6 +26,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         key={c}
         initialHistory={loaded.matterId ? await loadMatterHistory(loaded.matterId) : null}
         demo={demo}
+        pastDates={pastDates}
         sharedPasscode={sharedPasscode}
         initialConversationId={c}
         initialTurns={conversationTurns(c, loaded.messages)}
@@ -42,5 +44,5 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         ? "That thread is not on this service — it may have been started in a different Placedon workspace. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
       : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
-  return <AskWorkspace key="new" demo={demo} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
+  return <AskWorkspace key="new" demo={demo} pastDates={pastDates} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
 }

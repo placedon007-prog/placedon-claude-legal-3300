@@ -45,10 +45,12 @@ async function lookupDocuments(query: string): Promise<DocumentLookup> {
 }
 
 export function AskWorkspace({ initialConversationId, initialTurns, initialMatterId = null,
-  title = "New conversation", demo = false, sharedPasscode = false, initialHistory = null, loadProblem, composer: initialContext,
+  title = "New conversation", demo = false, pastDates = false, sharedPasscode = false, initialHistory = null, loadProblem, composer: initialContext,
 }: {
   initialHistory?: MatterHistory | null;
   demo?: boolean;
+  /** Past-date answers are switched on for this deployment; otherwise no date chip. */
+  pastDates?: boolean;
   sharedPasscode?: boolean;
   initialConversationId: string | null;
   initialTurns: readonly Turn[];
@@ -291,7 +293,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
     onRetrySources={retrySources}
     chosen={chosen} onToggleSource={(id) => storeSources(toggleSource(chosen, id, bodies))}
     matters={context.matters} matterId={matterId} onMatter={setMatterId} matterLocked={Boolean(conversationId) || pending || Boolean(uncertain)}
-    findDocuments={lookupDocuments} asOf={asOf} onAsOf={setAsOf} className="w-full" />;
+    findDocuments={lookupDocuments} asOf={asOf} onAsOf={pastDates ? setAsOf : undefined} className="w-full" />;
 
   return <div ref={workspaceRef} className="ask-workspace flex min-h-dvh min-w-0 flex-1">
     <div className="flex min-w-0 flex-1 flex-col">

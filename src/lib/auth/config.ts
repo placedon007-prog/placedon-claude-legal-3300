@@ -4,6 +4,15 @@ export function demoModeEnabled(env: Readonly<Record<string, string | undefined>
 }
 
 /**
+ * Ask "as of" a past date. The gateway refuses past dates unless its own PLACEDON_ASK_AS_OF
+ * is on, and it does not tell the browser which way it is set, so the deployment sets the
+ * same variable here. Off (the default) hides the date chip instead of offering a refusal.
+ */
+export function askPastDatesEnabled(env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  return ["1", "true"].includes(env.PLACEDON_ASK_AS_OF?.trim().toLowerCase() ?? "");
+}
+
+/**
  * How people sign in. `passcode` is the prototype gate that works today. `accounts` shows
  * email + password, which signs nobody in until the backend serves `auth.login`: until
  * then it says so, and never accepts a credential it cannot check.
