@@ -581,6 +581,10 @@ input:focus-visible + .file-drop-input { outline: 2px solid var(--c-fg); outline
 .draft-details > section h3 { margin-top: 0.8rem; }
 .transport-failure, .verb-refusal { margin-top: 1rem; padding: 0.9rem 1rem; }
 .transport-failure h3, .verb-refusal h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; }
+.failure-details { margin-top: 0.5rem; font-size: var(--text-caption); color: var(--c-fg-3); }
+.failure-details summary { cursor: pointer; width: fit-content; min-height: 24px; }
+.failure-details summary:focus-visible { outline: 2px solid var(--c-fg); outline-offset: 2px; }
+.failure-details p { margin: 0.35rem 0 0; overflow-wrap: anywhere; }
 .conflict table { margin: 0.5rem 0; }
 .paused-budget { margin-top: 0.9rem; padding: 0.8rem 1rem; }
 .paused-budget h4 { margin: 0 0 0.3rem; font-size: var(--text-body); }

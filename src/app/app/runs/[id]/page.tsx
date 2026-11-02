@@ -4,6 +4,7 @@ import { getGateway } from "@/lib/gateway";
 import type { RunStep } from "@/lib/gateway/types";
 import { isLive, isRefusal } from "@/lib/gateway/types";
 import { RunWatch } from "../run-watch";
+import { FailureNotice } from "../../failure-notice";
 
 export const metadata: Metadata = { title: "Run trace", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -64,13 +65,9 @@ export default async function RunPage({
           />
         </>
       ) : (
-        <section className="panel register-failure" role="alert" aria-label="Engine failure">
-          <span className="register-label">Engine failure · {run.error.kind}</span>
-          <p style={{ marginTop: "0.6rem" }}>
-            <strong>This is not a refusal.</strong> The run could not be read.
-          </p>
-          <p className="quoted">{run.error.message}</p>
-        </section>
+        <FailureNotice error={run.error} title="This run could not be read">
+          <p><strong>This is not a refusal.</strong></p>
+        </FailureNotice>
       )}
 
       {trace.ok ? (
@@ -102,11 +99,7 @@ export default async function RunPage({
           </p>
         </section>
       ) : (
-        <section className="panel register-failure" role="alert" aria-label="Engine failure">
-          <span className="register-label">Engine failure · {trace.error.kind}</span>
-          <p style={{ marginTop: "0.6rem" }}>The trace could not be read.</p>
-          <p className="quoted">{trace.error.message}</p>
-        </section>
+        <FailureNotice error={trace.error} title="The steps could not be read" />
       )}
     </>
   );

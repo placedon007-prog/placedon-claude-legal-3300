@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { loadComposerContext, loadMatterHistory, loadThread } from "./actions";
 import { AskWorkspace } from "./ask-workspace";
 import { conversationTurns } from "@/lib/conversation";
+import { plainFailure } from "@/lib/plain-failure";
 
 export const metadata: Metadata = { title: "Conversation", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -43,6 +44,6 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
       ? loaded.code === "NOT_FOUND"
         ? "That thread is not on this service — it may have been started in a different Placedon workspace. Ask a new question below."
         : `That thread could not be opened (${loaded.code}): ${loaded.detail}`
-      : `That thread did not arrive (${loaded.error.kind}). This is not a refusal — reload to try again.`;
+      : `That thread did not arrive. ${plainFailure(loaded.error)} This is not a refusal.`;
   return <AskWorkspace key="new" demo={demo} pastDates={pastDates} sharedPasscode={sharedPasscode} initialConversationId={null} initialTurns={[]} loadProblem={problem} composer={composer} />;
 }

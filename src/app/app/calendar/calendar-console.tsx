@@ -7,6 +7,7 @@ import type { DueEntry, UnknownEntry } from "@/lib/gateway/types";
 import { STATE, countedFrom, datedState } from "@/lib/calendar-display";
 import { isoDate, type ProfileLoad } from "@/lib/company-facts";
 import { useCompanyFacts } from "../local-store";
+import { FailureNotice } from "../failure-notice";
 
 const initial: CalendarState = { phase: "idle" };
 
@@ -91,18 +92,12 @@ export function CalendarConsole({ profile }: { profile: ProfileLoad }) {
       {/* A transport failure, in its own register. Not an abstention, and not an unknown
           date: the gateway never answered, so there is nothing to be unknown ABOUT. */}
       {state.phase === "failed" && (
-        <div role="alert" className="transport-failure">
-          <h3>Placedon did not answer</h3>
-          <p>{state.error.message}</p>
+        <FailureNotice error={state.error}>
           <p className="meta">
-            {state.error.kind} · {state.error.route}
-            {state.error.status ? ` · HTTP ${state.error.status}` : ""}
+            This is not a finding. Nothing above was read, and no obligation has been
+            assessed either way.
           </p>
-          <p className="meta">
-            This is a transport failure, not a finding. Nothing above was read, and no
-            obligation has been assessed either way.
-          </p>
-        </div>
+        </FailureNotice>
       )}
 
       {state.phase === "loaded" && (

@@ -12,6 +12,8 @@ import {
 } from "../actions";
 import type { DraftVersion, DraftVersions } from "@/lib/gateway/types";
 import { DocxDownload } from "./docx-download";
+import { FailureNotice } from "../../failure-notice";
+import type { FailureLike } from "@/lib/plain-failure";
 
 const draftInitial: DraftState = { phase: "idle" };
 const diffInitial: DiffState = { phase: "idle" };
@@ -46,20 +48,11 @@ function originOf(key: string | undefined) {
   return ORIGIN[key ?? "UNKNOWN"] ?? ORIGIN.UNKNOWN;
 }
 
-function Failure({ error }: { error: { message: string; kind: string; route: string;
-  status?: number } }) {
+function Failure({ error }: { error: FailureLike }) {
   return (
-    <div role="alert" className="transport-failure">
-      <h3>Placedon did not answer</h3>
-      <p>{error.message}</p>
-      <p className="meta">
-        {error.kind} · {error.route}
-        {error.status ? ` · HTTP ${error.status}` : ""}
-      </p>
-      <p className="meta">
-        A transport failure. Nothing was saved, and the draft is unchanged.
-      </p>
-    </div>
+    <FailureNotice error={error}>
+      <p className="meta">Nothing was saved, and the draft is unchanged.</p>
+    </FailureNotice>
   );
 }
 

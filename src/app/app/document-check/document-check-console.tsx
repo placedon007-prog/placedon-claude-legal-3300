@@ -7,6 +7,8 @@ import { documentCheckAction, type DocumentCheckState } from "./actions";
 import { vaultUploadAction, type VaultState } from "../vault/actions";
 import { documentReadinessAction } from "../actions";
 import type { DocumentCheckOk, DocCheckLine } from "@/lib/gateway/types";
+import { FailureDetails } from "../failure-notice";
+import { plainFailure } from "@/lib/plain-failure";
 
 const initial: DocumentCheckState = { phase: "idle" };
 
@@ -211,9 +213,10 @@ export function DocumentCheckConsole({ initialDocumentId = "", initialName = nul
         <div className="panel register-failed" role="alert">
           <span className="register-label">Not an abstention</span>
           <p>
-            The answer never arrived. This is a transport failure, not a finding about the
-            document. <span className="mono">{state.error.kind}</span> — {state.error.message}
+            The answer never arrived. This is not a finding about the document.{" "}
+            {plainFailure(state.error)}
           </p>
+          <FailureDetails error={state.error} />
         </div>
       ) : null}
 

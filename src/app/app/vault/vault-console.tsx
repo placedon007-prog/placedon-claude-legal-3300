@@ -9,6 +9,7 @@ import {
   type VaultState,
 } from "./actions";
 import type { VaultStatus, MattersList } from "@/lib/gateway/types";
+import { FailureNotice } from "../failure-notice";
 
 const initial: VaultState = { phase: "idle" };
 
@@ -90,18 +91,12 @@ function FileList({ data }: { data: VaultStatus }) {
 
 function Failure({ state }: { state: Extract<VaultState, { phase: "failed" }> }) {
   return (
-    <div role="alert" className="transport-failure">
-      <h3>Placedon did not answer</h3>
-      <p>{state.error.message}</p>
-      <p className="meta">
-        {state.error.kind} · {state.error.route}
-        {state.error.status ? ` · HTTP ${state.error.status}` : ""}
-      </p>
+    <FailureNotice error={state.error}>
       <p className="meta">
         The result could not be confirmed. Check the stored files before retrying an upload.
         This is not a finding about the document.
       </p>
-    </div>
+    </FailureNotice>
   );
 }
 
