@@ -1386,7 +1386,7 @@ export class MockGateway implements GatewayProvider {
         ? "daily cap reached: ₹111.67 spent + ₹4.00 reserved of ₹116.67"
         : "",
       notScheduled,
-      // As the backend does (034): the name is read from the vault at create, not sent.
+      // As the backend does (035): the name is read from the vault at create, not sent.
       documentNames: Object.fromEntries([...this.vault.values()]
         .filter((d) => input.documentIds.includes(d.sha256)).map((d) => [d.sha256, d.name])),
     });
