@@ -10,6 +10,7 @@ import { chosenOrDefault, toggleSource } from "@/lib/sources";
 import { conversationPollDelay, conversationTurns, restoreQueued, stillQueued } from "@/lib/conversation";
 import { draftableAnswerKey } from "@/lib/draft-source";
 import { threadDocuments, type ThreadDocument } from "@/lib/thread-documents";
+import { STARTER_QUESTIONS } from "@/lib/starter-questions";
 import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
@@ -312,6 +313,15 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
         {loadProblem ? <p role="status" className="max-w-[560px] rounded-card border border-line-2 bg-wash px-4 py-3 text-body text-fg-2">{loadProblem}</p> : null}
         <Welcome />
         <div className="w-full max-w-[720px]" ref={composerRef}>{input}</div>
+        <section aria-labelledby="starters-heading" className="flex w-full max-w-[720px] flex-col gap-2">
+          <h2 id="starters-heading" className="text-caption text-fg-3">Try a question</h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {STARTER_QUESTIONS.map((q) => <li key={q} className="flex">
+              <button type="button" onClick={() => { setTool("research"); composerApi.current?.setText(q); composerRef.current?.querySelector("textarea")?.focus(); }}
+                className="flex min-h-11 w-full items-start rounded-card border border-line px-3 py-2.5 text-left text-ui text-fg-2 transition-colors hover:border-line-2 hover:bg-wash hover:text-fg focus-visible:outline-2 focus-visible:outline-fg">{q}</button>
+            </li>)}
+          </ul>
+        </section>
         <p className="max-w-[560px] text-center text-ui text-fg-3">{tool === "web" ? "Public reports are research leads. Verify any live court status in official records." : "Research with exact passages. See what was searched, what was used, and what remains unanswered."}</p>
       </div> : <>
         <div className="flex-1 px-4 pt-9 pb-8 md:px-8"><div className="mx-auto flex w-full max-w-[680px] flex-col gap-12">
