@@ -7,6 +7,8 @@ import {
   type CancelState,
   type RunSnapshot,
 } from "../actions";
+import { FailureDetails } from "../failure-notice";
+import { plainFailure } from "@/lib/plain-failure";
 
 const initialCancel: CancelState = { phase: "idle" };
 
@@ -95,11 +97,11 @@ export function RunWatch({ initial }: { initial: RunSnapshot }) {
         </p>
       ) : null}
       {cancelState.phase === "failed" ? (
-        <p className="gate-error" role="alert">
+        <div className="gate-error" role="alert">
           The cancellation did not reach Placedon, so the run may still be going.{" "}
-          <span className="mono">{cancelState.error.kind}</span> —{" "}
-          {cancelState.error.message}
-        </p>
+          {plainFailure(cancelState.error)}
+          <FailureDetails error={cancelState.error} />
+        </div>
       ) : null}
     </div>
   );

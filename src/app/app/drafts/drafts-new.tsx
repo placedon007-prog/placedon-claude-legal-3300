@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { draftCreateAction, type DraftState } from "./actions";
+import { FailureNotice } from "../failure-notice";
 
 const initial: DraftState = { phase: "idle" };
 
@@ -24,14 +25,9 @@ export function NewDraft() {
         <p role="alert" className="invalid">{state.message}</p>
       )}
       {state.phase === "failed" && (
-        <div role="alert" className="transport-failure">
-          <h3>Placedon did not answer</h3>
-          <p>{state.error.message}</p>
-          <p className="meta">
-            {state.error.kind} · {state.error.route}
-          </p>
+        <FailureNotice error={state.error}>
           <p className="meta">No draft was created.</p>
-        </div>
+        </FailureNotice>
       )}
     </>
   );

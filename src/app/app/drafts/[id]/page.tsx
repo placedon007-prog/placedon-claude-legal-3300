@@ -4,6 +4,7 @@ import { readVersions } from "../actions";
 import { sessionKind } from "@/lib/auth/config";
 import { isRefusal } from "@/lib/gateway/types";
 import { DraftConsole } from "./draft-console";
+import { FailureNotice } from "../../failure-notice";
 
 export const metadata: Metadata = { title: "Draft", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -40,18 +41,12 @@ export default async function DraftPage({
         {/* A draft that could not be read is a transport failure, in its own register. It
             is NOT an empty draft: an empty editor here would invite someone to type into a
             document whose current text nobody has seen. */}
-        <div role="alert" className="transport-failure">
-          <h3>This draft could not be read</h3>
-          <p>{read.error.message}</p>
-          <p className="meta">
-            {read.error.kind} · {read.error.route}
-            {read.error.status ? ` · HTTP ${read.error.status}` : ""}
-          </p>
+        <FailureNotice error={read.error} title="This draft could not be read">
           <p className="meta">
             Nothing is shown rather than an empty editor — typing into a draft whose current
             text was never read is how a version gets overwritten.
           </p>
-        </div>
+        </FailureNotice>
         <p>
           <Link href="/app/drafts">Back to drafts</Link>
         </p>

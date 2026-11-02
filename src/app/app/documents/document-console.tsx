@@ -5,6 +5,8 @@ import { useActionState } from "react";
 import { reviewDocumentAction, type DocumentState } from "../actions";
 import { ReviewGate } from "../review-gate";
 import type { DocumentFinding, DocumentStatus } from "@/lib/gateway/types";
+import { FailureDetails } from "../failure-notice";
+import { plainFailure } from "@/lib/plain-failure";
 
 const initial: DocumentState = { phase: "idle" };
 
@@ -89,10 +91,10 @@ export function DocumentConsole() {
         <div className="panel register-failed" role="alert">
           <span className="register-label">Not an abstention</span>
           <p>
-            The answer never arrived. This is a transport failure, not a finding about the
-            document. <span className="mono">{state.error.kind}</span> —{" "}
-            {state.error.message}
+            The answer never arrived. This is not a finding about the document.{" "}
+            {plainFailure(state.error)}
           </p>
+          <FailureDetails error={state.error} />
         </div>
       ) : null}
 

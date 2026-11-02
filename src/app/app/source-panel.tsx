@@ -313,8 +313,8 @@ function Passage({
           </p>
         ) : (
           <p className="text-fg-2">
-            Not re-verified — the re-read did not arrive ({state.error.kind}). This is not a
-            refusal; the stored quote is shown.
+            Not re-verified — the re-read did not arrive. This is not a refusal; the stored
+            quote is shown.
           </p>
         )}
       </div>

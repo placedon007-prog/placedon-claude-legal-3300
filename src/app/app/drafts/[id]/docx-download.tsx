@@ -93,5 +93,5 @@ async function failureMessage(response: Response, type: string): Promise<string>
   } catch {
     // not JSON; use the generic message below
   }
-  return `The Word file could not be downloaded (HTTP ${response.status}). Nothing was changed.`;
+  return "The Word file could not be downloaded. Nothing was changed. Try again in a moment.";
 }

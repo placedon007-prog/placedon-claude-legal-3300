@@ -6,6 +6,7 @@ import { reviewAction, type ReviewState } from "../actions";
 import { ReviewGate } from "../review-gate";
 import { FileDropInput } from "@/components/ui/file-drop-input";
 import type { Finding, FindingStatus } from "@/lib/gateway/types";
+import { FailureNotice } from "../failure-notice";
 
 const initial: ReviewState = { phase: "idle" };
 
@@ -76,20 +77,12 @@ export function ContractConsole() {
         </section>
       ) : null}
       {state.phase === "failed" ? (
-        <section className="panel register-failure" role="alert" aria-label="Engine failure">
-          <div className="panel-head">
-            <span className="register-label">Engine failure · {state.error.kind}</span>
-            <span className="meta">{state.error.route}</span>
-          </div>
+        <FailureNotice error={state.error} title="The review did not run">
           <p>
             <strong>This is not a finding.</strong> The review never ran, so nothing is known
             about this document.
           </p>
-          <p className="quoted" style={{ marginTop: "0.9rem" }}>
-            {state.error.message}
-            {state.error.status ? ` (HTTP ${state.error.status})` : null}
-          </p>
-        </section>
+        </FailureNotice>
       ) : null}
     </>
   );

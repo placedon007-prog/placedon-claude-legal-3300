@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { readDraftList } from "./actions";
 import { sessionKind } from "@/lib/auth/config";
+import { FailureNotice } from "../failure-notice";
 
 export const metadata: Metadata = { title: "Drafts", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -38,12 +39,9 @@ export default async function DraftsPage({
       </div>
 
       {!result.ok ? (
-        <div role="alert" className="transport-failure">
-          <h3>Drafts could not be loaded</h3>
-          <p>{result.error.message}</p>
-          <p className="meta">{result.error.kind} · {result.error.route}</p>
+        <FailureNotice error={result.error} title="Drafts could not be loaded">
           <p><Link href="/app/drafts">Try again</Link></p>
-        </div>
+        </FailureNotice>
       ) : result.data.drafts.length === 0 ? (
         <div className="drafts-empty">
           <h3>{cursor ? "No drafts on this page" : "No drafts yet"}</h3>

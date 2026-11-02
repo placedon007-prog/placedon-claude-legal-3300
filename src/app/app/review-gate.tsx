@@ -3,6 +3,8 @@
 import { useActionState, useId, useState } from "react";
 import { decideAction, type DecisionState } from "./actions";
 import { MIN_REASON_CHARS } from "@/lib/gateway/types";
+import { FailureDetails } from "./failure-notice";
+import { plainFailure } from "@/lib/plain-failure";
 
 const initial: DecisionState = { phase: "idle" };
 
@@ -123,10 +125,10 @@ export function ReviewGate({
         </p>
       ) : null}
       {state.phase === "failed" ? (
-        <p className="gate-error" role="alert">
-          The decision did not reach Placedon, so nothing was recorded.{" "}
-          <span className="mono">{state.error.kind}</span> — {state.error.message}
-        </p>
+        <div className="gate-error" role="alert">
+          The decision did not reach Placedon, so nothing was recorded. {plainFailure(state.error)}
+          <FailureDetails error={state.error} />
+        </div>
       ) : null}
     </form>
   );

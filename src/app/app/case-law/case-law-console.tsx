@@ -4,20 +4,13 @@ import { useState, useTransition, type FormEvent } from "react";
 import type { EngineError } from "@/lib/engine/errors";
 import { judgmentPdfUrl, type CaseLawRenderModel } from "@/lib/case-law";
 import { searchCaseLawAction, type CaseLawSearchState } from "../actions";
+import { FailureNotice } from "../failure-notice";
 
 function Failure({ error }: { error: EngineError }) {
   return (
-    <div role="alert" className="transport-failure">
-      <h3>Placedon did not answer</h3>
-      <p>{error.message}</p>
-      <p className="meta">
-        {error.kind} · {error.route}
-        {error.status ? ` · HTTP ${error.status}` : ""}
-      </p>
-      <p className="meta">
-        A transport failure. No search ran, and this says nothing about any case.
-      </p>
-    </div>
+    <FailureNotice error={error}>
+      <p className="meta">No search ran, and this says nothing about any case.</p>
+    </FailureNotice>
   );
 }
 
