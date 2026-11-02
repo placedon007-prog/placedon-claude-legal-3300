@@ -117,3 +117,24 @@ export async function inviteAction(input: { email: string; role: string }): Prom
   if (isRefusal(result.data)) return { ok: false, message: INVITE_REFUSALS[result.data.code] ?? "No invite was made." };
   return { ok: true, email: result.data.email, token: result.data.token, expiresAt: result.data.expires_at };
 }
+
+const INVITE_ID = z.uuid();
+const GONE_INVITE = "This invite is no longer pending. It may have been used or cancelled already. Refresh the page.";
+
+/** Withdraw an unused invite (backend 036). The row is kept, marked; its link stops working. */
+export async function cancelInviteAction(input: { inviteId: string }): Promise<TeamResult> {
+  if (!(await hasSession())) return { ok: false, message: SIGNED_OUT };
+  const id = INVITE_ID.safeParse(input?.inviteId);
+  if (!id.success) return { ok: false, message: "That is not an invite id." };
+  const result = await (await getGateway()).inviteCancel(id.data);
+  // NOT_FOUND arrives as a refusal on HTTP 404: used, already cancelled, or not this firm's.
+  if ((!result.ok && result.error.status === 404) || (result.ok && isRefusal(result.data) && result.data.code === "NOT_FOUND")) {
+    return { ok: false, message: GONE_INVITE };
+  }
+  if (!result.ok) {
+    return failed(result.error, "Only an admin can cancel an invite.",
+      "The cancellation could not be confirmed. Refresh the page to check whether the invite is still pending.");
+  }
+  if (isRefusal(result.data)) return { ok: false, message: "The invite was not cancelled. Nothing was changed." };
+  return { ok: true, message: "Invite cancelled. Its link no longer works." };
+}

@@ -252,6 +252,10 @@ export interface GatewayProvider {
   /** The token in the answer is shown once and never stored; do not log it. */
   inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>>;
   usageStatus(): Promise<EngineResult<import("./types").UsageStatus>>;
+  /** Backend 036, ADMIN. An older backend answers 404 for all three. */
+  peopleList(): Promise<EngineResult<import("./types").PeopleList>>;
+  invitesList(): Promise<EngineResult<import("./types").InvitesList>>;
+  inviteCancel(inviteId: string): Promise<EngineResult<import("./types").InviteCancel>>;
   conversationList(matterId: string): Promise<EngineResult<import("./types").ConversationList>>;
   conversationGet(conversationId: string): Promise<EngineResult<ConversationGet>>;
   /** One citation for the source panel, its quote re-read from the corpus at call time. */

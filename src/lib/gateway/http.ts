@@ -45,6 +45,9 @@ import {
   matterGrantSchema,
   matterRevokeSchema,
   inviteCreateSchema,
+  peopleListSchema,
+  invitesListSchema,
+  inviteCancelSchema,
   usageStatusSchema,
   type SourcesList,
   type SourcesSearch,
@@ -549,6 +552,19 @@ export class HttpGateway implements GatewayProvider {
   inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>> {
     return this.call(GATEWAY_ROUTES.invitesCreate, GATEWAY_ROUTES.invitesCreate, inviteCreateSchema,
       { method: "POST", refusalOn200: true, body: { email: input.email, role: input.role } });
+  }
+
+  peopleList(): Promise<EngineResult<import("./types").PeopleList>> {
+    return this.call(GATEWAY_ROUTES.peopleList, GATEWAY_ROUTES.peopleList, peopleListSchema, { method: "POST", body: {} });
+  }
+
+  invitesList(): Promise<EngineResult<import("./types").InvitesList>> {
+    return this.call(GATEWAY_ROUTES.invitesList, GATEWAY_ROUTES.invitesList, invitesListSchema, { method: "POST", body: {} });
+  }
+
+  inviteCancel(inviteId: string): Promise<EngineResult<import("./types").InviteCancel>> {
+    return this.call(GATEWAY_ROUTES.invitesCancel, GATEWAY_ROUTES.invitesCancel, inviteCancelSchema,
+      { method: "POST", refusalOn200: true, body: { invite_id: inviteId } });
   }
 
   usageStatus(): Promise<EngineResult<import("./types").UsageStatus>> {

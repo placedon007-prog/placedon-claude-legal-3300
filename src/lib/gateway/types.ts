@@ -1423,6 +1423,33 @@ export const inviteCreateSchema = z.union([
 ]);
 export type InviteCreate = z.infer<typeof inviteCreateSchema>;
 
+/** `people.list` (ADMIN, backend 036): everyone in this firm who signs in. No passwords. */
+export const personSchema = z.object({
+  actor_id: z.string(), name: z.string(), email: z.string().nullable(), role: accountRoleSchema,
+  joined_at: z.string().nullable().optional(), disabled: z.boolean().optional(),
+});
+export type Person = z.infer<typeof personSchema>;
+export const peopleListSchema = z.object({ people: z.array(personSchema) });
+export type PeopleList = z.infer<typeof peopleListSchema>;
+
+/** `invites.list` (ADMIN, backend 036): invites not accepted, cancelled or expired.
+ *  The backend never returns the token, so a pending invite's link cannot be shown again. */
+export const pendingInviteSchema = z.object({
+  invite_id: z.string(), email: z.string(), role: accountRoleSchema,
+  invited_by: z.string().nullable().optional(), created_at: z.string().nullable().optional(), expires_at: z.string(),
+});
+export type PendingInvite = z.infer<typeof pendingInviteSchema>;
+export const invitesListSchema = z.object({ invites: z.array(pendingInviteSchema) });
+export type InvitesList = z.infer<typeof invitesListSchema>;
+
+/** `invites.cancel` (ADMIN, backend 036). Marks the invite; the link stops working. A gone
+ *  invite (used, cancelled, another firm's) is NOT_FOUND, HTTP 404. */
+export const inviteCancelSchema = z.union([
+  z.object({ status: z.literal("cancelled"), invite_id: z.string() }),
+  verbRefusalSchema,
+]);
+export type InviteCancel = z.infer<typeof inviteCancelSchema>;
+
 /** `usage.status` (LAWYER). Figures are rupees; a missing scope is `null`, never 0. */
 export const usageStatusSchema = z.union([
   z.object({

@@ -284,6 +284,16 @@ function advanceMockTable(t: MockTable, now = Date.now()): void {
   });
 }
 const DEMO_MEMBERS = new Map<string, Membership[]>();
+/** Demo firm (036). Synthetic people at example domains; per-process like the rest. */
+const DEMO_PEOPLE: import("./types").Person[] = [
+  { actor_id: DEMO_ME.actor_id, name: DEMO_ME.label, email: DEMO_ME.email, role: "admin", joined_at: "2026-10-01T05:30:00Z", disabled: false },
+  { actor_id: "00000000-0000-4000-8000-00000000d3e1", name: "lawyer@firm.example", email: "lawyer@firm.example", role: "lawyer", joined_at: "2026-10-14T06:10:00Z", disabled: false },
+];
+let DEMO_INVITES: import("./types").PendingInvite[] = [
+  { invite_id: "00000000-0000-4000-8000-00000000d3f0", email: "associate@firm.example", role: "lawyer",
+    invited_by: DEMO_ME.actor_id, created_at: new Date(Date.now() - 86_400_000).toISOString(),
+    expires_at: new Date(Date.now() + 6 * 86_400_000).toISOString() },
+];
 /** The demo's firm-wide company profile: module state, like the demo's threads. */
 const DEMO_PROFILE: ProfileFact[] = [];
 const BY_SOURCES: Record<string, ReturnType<typeof conversationSendOkSchema.parse>> = {
@@ -610,8 +620,26 @@ export class MockGateway implements GatewayProvider {
 
   async inviteCreate(input: { email: string; role: import("./types").AccountRole }): Promise<EngineResult<import("./types").InviteCreate>> {
     // A demo token: invites.accept fails closed in demo, so this link can never create an account.
-    return engineOk({ invite_id: crypto.randomUUID(), email: input.email, role: input.role,
-      expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(), token: "demo-invite-cannot-be-accepted" });
+    const invite = { invite_id: crypto.randomUUID(), email: input.email, role: input.role,
+      expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString() };
+    DEMO_INVITES = [{ ...invite, invited_by: DEMO_ME.actor_id, created_at: new Date().toISOString() }, ...DEMO_INVITES];
+    return engineOk({ ...invite, token: "demo-invite-cannot-be-accepted" });
+  }
+
+  async peopleList(): Promise<EngineResult<import("./types").PeopleList>> {
+    return engineOk({ people: [...DEMO_PEOPLE] });
+  }
+
+  async invitesList(): Promise<EngineResult<import("./types").InvitesList>> {
+    return engineOk({ invites: [...DEMO_INVITES] });
+  }
+
+  async inviteCancel(inviteId: string): Promise<EngineResult<import("./types").InviteCancel>> {
+    if (!DEMO_INVITES.some((i) => i.invite_id === inviteId)) {
+      return engineOk({ status: "REFUSED" as const, code: "NOT_FOUND", detail: "There is no pending invite with that id in this firm." });
+    }
+    DEMO_INVITES = DEMO_INVITES.filter((i) => i.invite_id !== inviteId);
+    return engineOk({ status: "cancelled" as const, invite_id: inviteId });
   }
 
   async usageStatus(): Promise<EngineResult<import("./types").UsageStatus>> {

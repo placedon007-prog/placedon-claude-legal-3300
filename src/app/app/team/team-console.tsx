@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import type { AccountRole, Matter, Membership } from "@/lib/gateway/types";
+import type { AccountRole, Matter, Membership, PendingInvite, Person } from "@/lib/gateway/types";
 import { formatIST } from "@/lib/format";
-import { canManagePeople, canOpenMatters, MATTER_ROLE_WORDS } from "@/lib/team";
+import { canManagePeople, canOpenMatters, MATTER_ROLE_WORDS, type TeamList } from "@/lib/team";
 import {
-  createMatterAction, grantAccessAction, inviteAction, matterMembersAction, revokeAccessAction,
+  cancelInviteAction, createMatterAction, grantAccessAction, inviteAction, matterMembersAction, revokeAccessAction,
   type InviteResult, type TeamResult,
 } from "./actions";
 
@@ -17,8 +17,12 @@ async function attempt<T extends { ok: boolean }>(run: () => Promise<T>): Promis
   try { return await run(); } catch { return { ok: false, message: UNCONFIRMED }; }
 }
 
-export function TeamConsole({ role, actorId, matters, mattersError }: {
+const ROLE_SHORT: Record<AccountRole, string> = { viewer: "Viewer", lawyer: "Lawyer", admin: "Admin" };
+const NOT_YET = "Not available yet on this workspace.";
+
+export function TeamConsole({ role, actorId, matters, mattersError, people = null, invites = null }: {
   role: AccountRole | null; actorId: string | null; matters: Matter[]; mattersError: string | null;
+  people?: TeamList<Person> | null; invites?: TeamList<PendingInvite> | null;
 }) {
   const admin = canManagePeople(role);
   return (
@@ -34,6 +38,8 @@ export function TeamConsole({ role, actorId, matters, mattersError }: {
           : matters.length === 0 ? <p className="team-note">{admin || canOpenMatters(role) ? "No matters yet. Open one above." : "You have not been given access to a matter yet. Ask an admin."}</p>
           : <ul className="team-list">{matters.map((m) => <MatterRow key={m.matter_id} matter={m} admin={admin} actorId={actorId} />)}</ul>}
       </section>
+      {admin && people ? <People list={people} actorId={actorId} /> : null}
+      {admin && invites ? <PendingInvites list={invites} /> : null}
       {admin ? <Invite /> : null}
     </div>
   );
@@ -183,6 +189,7 @@ function Grant({ matterId, onDone }: { matterId: string; onDone: (m: string) => 
 }
 
 function Invite() {
+  const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState<InviteResult | null>(null);
   const [copied, setCopied] = React.useState("");
@@ -195,7 +202,7 @@ function Invite() {
     const r = await attempt(() => inviteAction({ email: String(data.get("email") ?? ""), role: String(data.get("role") ?? "") }));
     setBusy(false);
     setResult(r);
-    if (r.ok) form.reset();
+    if (r.ok) { form.reset(); router.refresh(); }
   }
   const link = result?.ok ? `${window.location.origin}/invite?token=${encodeURIComponent(result.token)}` : "";
   return (
@@ -229,5 +236,85 @@ function Invite() {
         ) : null}
       </div>
     </section>
+  );
+}
+
+function People({ list, actorId }: { list: TeamList<Person>; actorId: string | null }) {
+  return (
+    <section aria-labelledby="team-people">
+      <h2 id="team-people" className="team-h2">People</h2>
+      <p className="text-caption text-fg-3">Everyone who signs in to this firm, and their role.</p>
+      {list.state === "unavailable" ? <p className="team-note">{NOT_YET}</p>
+        : list.state === "error" ? <p role="alert" className="team-note">People could not be loaded. {list.message}</p>
+        : list.items.length === 0 ? <p className="team-note">Nobody has accepted an invite yet.</p>
+        : <ul className="team-list" aria-label="People in this firm">{list.items.map((p) => (
+            <li key={p.actor_id}>
+              <div className="team-row">
+                <span className="team-row-main">
+                  <span className="text-body font-medium text-fg">{p.email ?? p.name}{p.actor_id === actorId ? " · You" : ""}</span>
+                  <span className="text-caption text-fg-3">
+                    {ROLE_SHORT[p.role]}{p.disabled ? " · Signed out for good" : ""}
+                    {p.joined_at ? <> · Joined <span className="mono">{formatIST(p.joined_at)}</span></> : null}
+                  </span>
+                  <code className="team-id">{p.actor_id}</code>
+                </span>
+              </div>
+            </li>))}
+          </ul>}
+    </section>
+  );
+}
+
+function PendingInvites({ list }: { list: TeamList<PendingInvite> }) {
+  const [notice, setNotice] = React.useState("");
+  return (
+    <section aria-labelledby="team-pending">
+      <h2 id="team-pending" className="team-h2">Pending invites</h2>
+      <p className="text-caption text-fg-3">Invites not yet used. A link is shown only once, when it is made; to send a new one, cancel the invite and invite the person again.</p>
+      <p role="status" className="team-note">{notice}</p>
+      {list.state === "unavailable" ? <p className="team-note">{NOT_YET}</p>
+        : list.state === "error" ? <p role="alert" className="team-note">Pending invites could not be loaded. {list.message}</p>
+        : list.items.length === 0 ? <p className="team-note">No pending invites.</p>
+        : <ul className="team-list" aria-label="Pending invites">{list.items.map((i) =>
+            <PendingRow key={i.invite_id} invite={i} onDone={setNotice} />)}</ul>}
+    </section>
+  );
+}
+
+function PendingRow({ invite, onDone }: { invite: PendingInvite; onDone: (message: string) => void }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [refusal, setRefusal] = React.useState<string | null>(null);
+  async function cancel(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    const r = await attempt(() => cancelInviteAction({ inviteId: invite.invite_id }));
+    setBusy(false);
+    if (!r.ok) { setRefusal(r.message); return; }
+    onDone(`${r.message} (${invite.email})`);
+    router.refresh();
+  }
+  return (
+    <li>
+      <div className="team-row">
+        <span className="team-row-main">
+          <span className="text-body font-medium text-fg">{invite.email}</span>
+          <span className="text-caption text-fg-3">{ROLE_SHORT[invite.role]} · Expires <span className="mono">{formatIST(invite.expires_at)}</span></span>
+        </span>
+        {!confirming ? <button type="button" className="vault-text-button" aria-label={`Cancel the invite to ${invite.email}`}
+          onClick={() => setConfirming(true)}>Cancel invite</button> : null}
+      </div>
+      {confirming ? (
+        <form className="team-form" onSubmit={cancel} aria-label={`Confirm cancelling the invite to ${invite.email}`}>
+          <p className="text-body text-fg">Cancel the invite to {invite.email}? Their link stops working. You can invite them again afterwards.</p>
+          {refusal ? <p role="alert" className="team-note">Not cancelled. {refusal}</p> : null}
+          <div className="team-actions">
+            <button type="button" className="vault-text-button" disabled={busy} onClick={() => { setConfirming(false); setRefusal(null); }}>Keep invite</button>
+            <button type="submit" disabled={busy} aria-busy={busy}>{busy ? "Cancelling…" : "Cancel invite"}</button>
+          </div>
+        </form>
+      ) : null}
+    </li>
   );
 }
