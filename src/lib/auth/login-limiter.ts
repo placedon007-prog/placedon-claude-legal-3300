@@ -7,11 +7,15 @@ export interface LoginLimit {
 }
 
 /**
- * Trust no forwarding header by default. Configure a header only behind an ingress that
- * strips the incoming value, sets one client IP, and prevents direct access to this app.
+ * Off Vercel, trust no forwarding header by default. Configure a header only behind an ingress
+ * that strips the incoming value, sets one client IP, and prevents direct access to this app.
+ * On Vercel the default is `x-real-ip`, which Vercel's edge sets and a client cannot spoof.
  */
 export function trustedClientAddress(requestHeaders: Pick<Headers, "get">, configuredHeader?: string): string | null {
-  const header = configuredHeader?.trim().toLowerCase();
+  // On Vercel, `x-real-ip` is set by Vercel's edge (a client-sent value is overwritten), so
+  // it is safe to trust there when nothing else is configured. Without it, the gateway's
+  // sign-in lockout can only count per email, never per client address.
+  const header = (configuredHeader?.trim() || (process.env.VERCEL ? "x-real-ip" : "")).toLowerCase();
   if (!header || !/^[a-z0-9-]+$/.test(header)) return null;
   const value = requestHeaders.get(header)?.trim();
   // Lists, ports, opaque strings and missing headers do not create attacker-chosen buckets.
