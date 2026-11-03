@@ -14,6 +14,21 @@ test("a client address is read only from the configured header, and only as one 
   }
 });
 
+test("on Vercel, with nothing configured, the edge-set x-real-ip is trusted (one IP only)", () => {
+  const before = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    assert.equal(trustedClientAddress(h({ "x-real-ip": "198.51.100.9" })), "198.51.100.9");
+    assert.equal(trustedClientAddress(h({ "x-real-ip": "198.51.100.9" }), ""), "198.51.100.9", "an empty setting is unset");
+    assert.equal(trustedClientAddress(h({ "x-real-ip": "198.51.100.9, 10.0.0.1" })), null);
+    assert.equal(trustedClientAddress(h({ "x-real-ip": "198.51.100.9", "cf-connecting-ip": "203.0.113.1" }), "cf-connecting-ip"),
+      "203.0.113.1", "an explicit setting still wins");
+  } finally {
+    if (before === undefined) delete process.env.VERCEL; else process.env.VERCEL = before;
+  }
+  assert.equal(trustedClientAddress(h({ "x-real-ip": "198.51.100.9" })), null, "off Vercel, still trust nothing by default");
+});
+
 test("sign-in forwards the client address to the gateway, and sends no header without one", async () => {
   const original = globalThis.fetch;
   const seen: (string | null)[] = [];
