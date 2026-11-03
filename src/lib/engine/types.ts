@@ -64,6 +64,10 @@ export const GATEWAY_ROUTES = {
   mattersGrant: "/v2/matters/grant",
   mattersRevoke: "/v2/matters/revoke",
   invitesCreate: "/v2/invites/create",
+  // 036 (ADMIN): the firm's people, its pending invites, and withdrawing one.
+  peopleList: "/v2/people/list",
+  invitesList: "/v2/invites/list",
+  invitesCancel: "/v2/invites/cancel",
   usageStatus: "/v2/usage/status",
   // `vault.share` (LAWYER): the uploader shares an UNFILED document with the whole firm, or stops.
   vaultShare: "/v2/vault/share",
