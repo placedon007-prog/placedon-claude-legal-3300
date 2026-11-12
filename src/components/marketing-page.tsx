@@ -20,22 +20,34 @@ import { ScrollReveal } from "./scroll-reveal";
 export function MarketingPage({
   page,
   children,
+  reveal = true,
 }: {
   page: PageContent;
   children?: ReactNode;
+  /** Set false to render the page fully visible, with no reveal-on-scroll animation. */
+  reveal?: boolean;
 }) {
+  const content = (
+    <>
+      <PageHero page={page} />
+      {page.sections.map((section) => (
+        <ReadingSection key={section.id} section={section} />
+      ))}
+      {children}
+    </>
+  );
   return (
     <div className="dash">
       <SiteNav />
-      <main id="main-content" className="marketing-main">
-        <ScrollReveal selector=".page-hero > *, .reading-section, [data-reveal-block]">
-          <PageHero page={page} />
-          {page.sections.map((section) => (
-            <ReadingSection key={section.id} section={section} />
-          ))}
-          {children}
-        </ScrollReveal>
-      </main>
+      <div className="marketing-main">
+        {reveal ? (
+          <ScrollReveal selector=".page-hero > *, .reading-section, [data-reveal-block]">
+            {content}
+          </ScrollReveal>
+        ) : (
+          content
+        )}
+      </div>
       <SiteFooter />
     </div>
   );

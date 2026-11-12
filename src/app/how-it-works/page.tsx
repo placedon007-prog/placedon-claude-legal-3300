@@ -88,7 +88,7 @@ function AnswerClassExplainer() {
 
 export default function HowItWorksPage() {
   return (
-    <MarketingPage page={howItWorksContent}>
+    <MarketingPage page={howItWorksContent} reveal={false}>
       <AnswerClassExplainer />
     </MarketingPage>
   );

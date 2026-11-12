@@ -5,9 +5,11 @@
    requested). Monochrome on the dark .dash surface; corners use the 3px
    --radius token; no decorative shadow. */
 
+/* Same rhythm as `.reading-section` (64px, 32px under 760px) — this block sits
+   directly below those sections, so an odd 50px read as a misaligned seam. */
 .pricing-tiers {
   border-top: 1px solid var(--border);
-  padding-block: 50px;
+  padding-block: 64px;
 }
 
 .pricing-tiers-head {
@@ -43,7 +45,8 @@
 
 .pricing-tier-name {
   font-size: 22px;
-  line-height: 1.2;
+  line-height: 1.25;
+  letter-spacing: var(--track-m);
   margin: 0;
 }
 
@@ -84,7 +87,8 @@
 }
 
 .pricing-note dt {
-  font-size: 10px;
+  /* 11px, matching `.eyebrow` — 10px uppercase at 0.1em was under the floor. */
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-2, var(--muted));
@@ -99,6 +103,9 @@
 }
 
 @media (max-width: 760px) {
+  .pricing-tiers {
+    padding-block: 32px;
+  }
   .pricing-tier-grid,
   .pricing-notes {
     grid-template-columns: 1fr;

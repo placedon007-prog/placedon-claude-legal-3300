@@ -40,7 +40,10 @@ export function SurfaceShell({
   return (
     <div className="dash">
       <SiteNav />
-      <main id="main-content" className="surface">
+      {/* No <main id="main-content"> here: layout.tsx already renders the
+          single page-level <main>, and a second one nested inside it made the
+          skip link's target id ambiguous. Plain wrapper. */}
+      <div className="surface">
         <div className="dash-container surface-head">
           <p className="eyebrow">{eyebrow}</p>
           <h1>
@@ -66,7 +69,7 @@ export function SurfaceShell({
           </nav>
         </div>
         <div className="dash-container surface-body">{children}</div>
-      </main>
+      </div>
       <SiteFooter />
     </div>
   );

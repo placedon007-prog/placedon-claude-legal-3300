@@ -9,6 +9,7 @@ import {
   useReducedMotion,
   type Variants,
 } from "framer-motion";
+import Balancer from "react-wrap-balancer";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
@@ -18,18 +19,24 @@ import "./dashboard.css";
    every word to opacity 0 first, so on a five-word heading the last word was
    still invisible three quarters of a second in — the headline read as a
    fragment ("How…") for most of the reveal. A mask wipe paints each word at
-   full contrast or not at all. */
+   full contrast or not at all.
+
+   Budget: a seven-word heading used to take 0.42s + 6 × 0.045s ≈ 0.69s, and it
+   replayed on every scroll pass — seven headings each running a sub-second
+   choreography, which is not "one orchestrated moment, everywhere else
+   ≤250ms". Now 0.24s per word at a 0.028s stagger (≈0.41s worst case) and it
+   plays once per session. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
 
 const h2Container: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.045 } },
+  show: { transition: { staggerChildren: 0.028 } },
 };
 const h2Word: Variants = {
   hidden: { y: "110%" },
   show: {
     y: "0%",
-    transition: { duration: 0.42, ease: EASE },
+    transition: { duration: 0.24, ease: EASE },
   },
 };
 function AnimatedH2({ children }: { children: string }) {
@@ -41,7 +48,7 @@ function AnimatedH2({ children }: { children: string }) {
       variants={h2Container}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: false, margin: "-70px" }}
+      viewport={{ once: true, margin: "-70px" }}
     >
       {words.map((w, i) => (
         <Fragment key={i}>
@@ -57,19 +64,33 @@ function AnimatedH2({ children }: { children: string }) {
   );
 }
 
-/* ---------------------------------------- hero video (autoplay on view) */
+/* ---------------------------------------- hero video (autoplay on view)
+   Autoplay is driven entirely from the effect, not the `autoPlay` attribute,
+   for two reasons:
+   - prefers-reduced-motion. A looping video is motion, and the global CSS
+     reduced-motion reset cannot reach a <video>. Under `reduce` the clip is
+     never started automatically; it stays on its first frame and the play
+     button is the only way to run it.
+   - It keeps the markup identical on the server and the client, so reading
+     the media query costs no hydration mismatch.
+   The observer also honours an explicit pause: once the reader presses pause,
+   scrolling away and back does not restart the clip against their intent. */
 function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
   const [muted, setMuted] = useState(true);
+  /* Set when the reader pauses by hand; suppresses the scroll-into-view play. */
+  const pausedByReader = useRef(false);
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     v.muted = true; // ensure muted so autoplay is allowed
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) v.play().catch(() => {});
-        else v.pause();
+        if (e.isIntersecting) {
+          if (!pausedByReader.current) v.play().catch(() => {});
+        } else v.pause();
       },
       { threshold: 0.2 },
     );
@@ -79,22 +100,31 @@ function HeroVideo() {
   const togglePlay = () => {
     const v = ref.current;
     if (!v) return;
-    if (v.paused) v.play().catch(() => {});
-    else v.pause();
+    if (v.paused) {
+      pausedByReader.current = false;
+      v.play().catch(() => {});
+    } else {
+      pausedByReader.current = true;
+      v.pause();
+    }
   };
   const toggleMute = () => {
     const v = ref.current;
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
-    if (!v.muted && v.paused) v.play().catch(() => {});
+    if (!v.muted && v.paused) {
+      // Unmuting is an explicit request to hear the clip, so it also clears
+      // an earlier manual pause rather than leaving playback suppressed.
+      pausedByReader.current = false;
+      v.play().catch(() => {});
+    }
   };
   return (
     <div className="dhero-video">
       <video
         ref={ref}
         src="/media/hero.mp4"
-        autoPlay
         muted
         loop
         playsInline
@@ -180,7 +210,7 @@ function Reveal({
         show: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.32, delay, ease: EASE },
+          transition: { duration: 0.22, delay, ease: EASE },
         },
       };
 
@@ -190,7 +220,7 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: false, margin: "-70px" }}
+      viewport={{ once: true, margin: "-70px" }}
     >
       {children}
     </motion.div>
@@ -692,7 +722,9 @@ export default function DashboardPage() {
             <aside className="daside">
               <div className="daside-title">Evidence over confidence</div>
               <div className="daside-chips">
-                <span className="chip chip-met">Verified</span>
+                {/* The base `.chip` filled square IS the verified treatment;
+                    "attaches" and "abstain" are the two modifiers. */}
+                <span className="chip">Verified</span>
                 <span className="chip chip-attaches">Attaches</span>
                 <span className="chip chip-abstain">Abstained</span>
               </div>
@@ -748,10 +780,15 @@ export default function DashboardPage() {
                 <motion.div
                   key={tab}
                   className="ddoc-paper"
-                  initial={reduce ? false : { opacity: 0, y: 10, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={reduce ? undefined : { opacity: 0, y: -8, filter: "blur(6px)" }}
-                  transition={{ duration: 0.34, ease: [0.2, 0, 0, 1] }}
+                  /* Opacity + a short lift only. The earlier version morphed
+                     a blur(6px) in and out, which left a statutory extract
+                     legible-but-smeared for a third of a second on every tab
+                     press — the same readability failure the Reveal floor
+                     exists to prevent. */
+                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2, ease: EASE }}
                 >
                   <h4>{active.title}</h4>
                   <div className="ddoc-meta mono">{active.meta}</div>
@@ -864,7 +901,9 @@ export default function DashboardPage() {
           {resources.map((r, i) => (
             <Reveal key={r.title} delay={(i % 3) * 0.05} className="dres-card">
               <div className="dres-foot">
-                <div className="dres-title">{r.title}</div>
+                <div className="dres-title">
+                  <Balancer>{r.title}</Balancer>
+                </div>
                 <span className="dres-kind">
                   {r.kind}
                 </span>

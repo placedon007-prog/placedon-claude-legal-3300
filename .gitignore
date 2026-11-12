@@ -48,3 +48,6 @@ brand-kit/*.zip
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local worktrees (machine-local, never committed)
+.claude/worktrees/
