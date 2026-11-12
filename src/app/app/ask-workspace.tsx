@@ -11,7 +11,7 @@ import { conversationPollDelay, conversationTurns, restoreQueued, stillQueued } 
 import { draftableAnswerKey } from "@/lib/draft-source";
 import { threadDocuments, type ThreadDocument } from "@/lib/thread-documents";
 import { STARTER_QUESTIONS } from "@/lib/starter-questions";
-import { documentReadinessAction, findDocumentsAction, loadComposerContext, loadThread, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type TurnState } from "./actions";
+import { documentReadinessAction, findDocumentsAction, loadComposerContext, sendAction, webResearchAction, type ComposerContext, type MatterHistory, type ThreadLoad, type TurnState } from "./actions";
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
@@ -44,6 +44,9 @@ async function lookupDocuments(query: string): Promise<DocumentLookup> {
   if (result.phase === "found") return { ok: true, hits: result.hits, note: "Search covers your organisation's documents. Matter access is checked when you send." };
   return { ok: false, message: result.phase === "refused" ? result.detail : "Document search is temporarily unavailable. Try again." };
 }
+
+/** One answer check may not hold the poll longer than this; a slow one is retried. */
+const POLL_TIMEOUT_MS = 20_000;
 
 export function AskWorkspace({ initialConversationId, initialTurns, initialMatterId = null,
   title = "New conversation", demo = false, pastDates = false, sharedPasscode = false, initialHistory = null, loadProblem, composer: initialContext,
@@ -127,7 +130,10 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
       let busySeconds: number | undefined;
       if (document.visibilityState !== "hidden") {
         try {
-          const loaded = await loadThread(conversationId);
+          const response = await fetch(`/app/thread/${encodeURIComponent(conversationId)}`, {
+            cache: "no-store", signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
+          });
+          const loaded = await response.json() as ThreadLoad;
           if (live && loaded.phase === "loaded") {
             const fresh = conversationTurns(conversationId, loaded.messages);
             setTurns((current) => current.map((turn) => {
