@@ -782,8 +782,17 @@ export async function loadComposerContext(): Promise<ComposerContext> {
   // These reads are independent: an optional matter-list failure must not turn a healthy
   // source catalogue into a failed composer context, and one rejected read must not hide
   // the other result.
+  // The gateway admits two control reads per firm at once; right after an answer the page's
+  // other reads can hold both, and sources.list comes back 429. One retry after the gateway's
+  // Retry-After (2s) clears it instead of showing a "busy" banner on a healthy service.
+  const sourcesWithRetry = async () => {
+    const first = await gateway.sourcesList();
+    if (first.ok || first.error.status !== 429) return first;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return gateway.sourcesList();
+  };
   const [sourceResult, matterResult] = await Promise.allSettled([
-    gateway.sourcesList(),
+    sourcesWithRetry(),
     gateway.mattersList(),
   ]);
   const sources = sourceResult.status === "fulfilled" ? sourceResult.value : null;
