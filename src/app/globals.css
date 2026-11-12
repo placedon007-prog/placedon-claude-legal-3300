@@ -19,27 +19,28 @@
   --radius: 3px;
   color-scheme: light;
 
-  /* ---- type axes ----------------------------------------------------------
-     Fraunces-Variable fvar (parsed from the .ttf, not assumed):
-       opsz 9..144  DEFAULT 9    <- the caption cut. Left unset it renders
-                                    a 9px design at 88px. Set it per tier.
-       wght 100..900 DEFAULT 900
-       SOFT 0..100  DEFAULT 0
-       WONK 0..1    DEFAULT 1    <- quirky alternates ON by default.
-     WONK/SOFT are set once on `body` and inherit, so every Fraunces element
-     agrees. Only `opsz` varies, and it tracks the rendered size.            */
-  --opsz-body: 15;
-  --opsz-s: 18;
-  --opsz-m: 24;
-  --opsz-l: 54;
-  --opsz-xl: 88;
+  /* ---- type -----------------------------------------------------------
+     The display face is Redaction (next/font/google, self-hosted at build
+     time). It is a STATIC font: two weights, 400 and 700, and no variable
+     axes. There is no 600 — a heading asking for one gets synthesised or
+     snapped, so write 700 for bold display type and 400 for regular.
+
+     The previous face, Fraunces, was variable and carried opsz/SOFT/WONK
+     axes that every heading had to set by hand. Those declarations are gone;
+     do not reintroduce `font-variation-settings` for the display face.
+     Inter (body) remains variable 100..900, so its intermediate weights
+     are still real.
+
+     The old --opsz-* tokens are gone with the axes they fed; nothing
+     references them any more. */
 
   /* Tracking loosens as size drops; leading tightens as size grows.
      --track-s is the 16–20px display-serif tier and is therefore the LOOSEST
-     of the set: Fraunces' small-size cut needs air, not a display tier's
-     negative tracking. (It previously sat at -0.01em — tighter than --track-m
-     — which inverted the whole scale and is why small serif titles read
-     cramped.) */
+     of the set: a small-size serif needs air, not a display tier's negative
+     tracking. (It previously sat at -0.01em — tighter than --track-m — which
+     inverted the whole scale and is why small serif titles read cramped.)
+     These were tuned for Fraunces; re-check them against Redaction, whose
+     proportions differ. */
   --track-xl: -0.022em;
   --track-l: -0.016em;
   --track-m: -0.008em;
@@ -120,14 +121,6 @@ body {
   font-size: 15px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
-  /* Inherited by everything: one personality for Fraunces site-wide.
-     Previously only h1/h2 zeroed WONK, so the wordmark and every smaller
-     display element rendered quirky alternates beside a headline without
-     them. Inter ignores the axes it does not have. */
-  font-variation-settings:
-    "opsz" var(--opsz-body),
-    "SOFT" 0,
-    "WONK" 0;
   font-variant-numeric: tabular-nums;
 }
 h1,
@@ -146,33 +139,21 @@ h3 {
 }
 h1 {
   font-size: clamp(48px, 6.4vw, 88px);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: var(--track-xl);
   line-height: var(--lead-xl);
-  font-variation-settings:
-    "opsz" var(--opsz-xl),
-    "SOFT" 0,
-    "WONK" 0;
 }
 h2 {
   font-size: clamp(34px, 4vw, 54px);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: var(--track-l);
   line-height: var(--lead-l);
-  font-variation-settings:
-    "opsz" var(--opsz-l),
-    "SOFT" 0,
-    "WONK" 0;
 }
 h3 {
   font-size: 18px;
-  font-weight: 620;
+  font-weight: 700;
   line-height: var(--lead-m);
   letter-spacing: var(--track-s);
-  font-variation-settings:
-    "opsz" var(--opsz-s),
-    "SOFT" 0,
-    "WONK" 0;
 }
 p {
   max-width: 70ch;
@@ -570,9 +551,12 @@ code {
    Every route renders inside `.dash`, so `.dash h1/h2/h3` (dashboard.css, which
    loads after this file) ties on specificity with a bare `.foo h2` here and
    wins on source order. Interior-page heading rules must therefore carry the
-   `.dash` prefix or they are silently dead: this hero clamp was being
-   overridden back up to the homepage's 88px, and the three rules below were
-   losing their size, leading, tracking and optical size the same way. */
+   `.dash` prefix (or some other second class) or they are silently dead: this
+   hero clamp was being overridden back up to the homepage's 88px, and
+   `.section-aside h2`, `.legal-body h2` and `.dialog-heading h2` below were all
+   losing their size, leading, tracking and optical size the same way. Note that
+   media queries add no specificity — the narrow-screen overrides at the bottom
+   of this file need the prefix too. */
 .dash .page-hero h1 {
   max-width: 1000px;
   font-size: clamp(44px, 5.6vw, 76px);
@@ -609,14 +593,12 @@ code {
   line-height: 1.2;
   letter-spacing: var(--track-m);
   max-width: 400px;
-  font-variation-settings:
-    "opsz" 32,
-    "SOFT" 0,
-    "WONK" 0;
 }
+/* The basis paragraph under each claim — the bulk of the reading on every
+   marketing page. 14px was a caption size for copy people have to read. */
 .section-body > p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
 }
 .section-body > p.claim {
   font-size: 19px;
@@ -635,12 +617,13 @@ code {
   border-top: 1px solid var(--border);
 }
 .reading-items p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--muted);
   margin-top: 8px;
 }
+/* Matches the `.small` token (13px) instead of shaving another pixel off it. */
 .reading-items p.small {
-  font-size: 12px;
+  font-size: 13px;
 }
 .system-page {
   padding-block: 100px 140px;
@@ -652,10 +635,6 @@ code {
   font-size: 55px;
   max-width: 800px;
   letter-spacing: var(--track-l);
-  font-variation-settings:
-    "opsz" 56,
-    "SOFT" 0,
-    "WONK" 0;
 }
 .system-page > p {
   margin-block: 25px;
@@ -692,10 +671,6 @@ code {
   font-size: 30px;
   letter-spacing: var(--track-m);
   line-height: 1.18;
-  font-variation-settings:
-    "opsz" 32,
-    "SOFT" 0,
-    "WONK" 0;
 }
 .dialog-content p {
   font-size: 14px;
@@ -906,10 +881,6 @@ code {
   line-height: 1.18;
   margin: 40px 0 20px;
   scroll-margin-top: 115px;
-  font-variation-settings:
-    "opsz" 32,
-    "SOFT" 0,
-    "WONK" 0;
 }
 .legal-body h3 {
   margin: 20px 0;
@@ -967,11 +938,13 @@ code {
    by default for fingerprint resistance. The client sets data-reveal="out" only
    on blocks BELOW the fold, so above-the-fold text never flashes and legal copy
    stays readable if JS or motion is unavailable. Text lifts from the 0.55
-   contrast floor — never invisible. */
+   contrast floor — never invisible. Duration is --dur-2 (220ms), inside the
+   250ms budget and matched to the framer `Reveal` on the homepage so the two
+   reveal systems read as one. */
 [data-reveal] {
   transition:
-    opacity var(--dur-3) var(--ease),
-    transform var(--dur-3) var(--ease);
+    opacity var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
 }
 [data-reveal="out"] {
   opacity: var(--reveal-floor);
@@ -1095,10 +1068,6 @@ code {
      same `.dash` prefix as their base rules or `.dash h1/h2` keeps winning. */
   .dash .page-hero h1 {
     font-size: 48px;
-    font-variation-settings:
-      "opsz" 48,
-      "SOFT" 0,
-      "WONK" 0;
   }
   .page-intro {
     font-size: 15px;

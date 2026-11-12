@@ -107,10 +107,6 @@
   text-transform: uppercase;
   line-height: 1.5;
   margin: 32px 0 16px;
-  font-variation-settings:
-    "opsz" var(--opsz-body),
-    "SOFT" 0,
-    "WONK" 0;
 }
 
 /* Obligation rows */
@@ -143,10 +139,6 @@
 .surface-watch h2 {
   font-weight: 620;
   letter-spacing: var(--track-s);
-  font-variation-settings:
-    "opsz" var(--opsz-s),
-    "SOFT" 0,
-    "WONK" 0;
 }
 .ob-row-head h3 {
   font-size: 17px;
@@ -263,10 +255,6 @@
   margin: 10px 0 12px;
   letter-spacing: var(--track-m);
   line-height: 1.25;
-  font-variation-settings:
-    "opsz" var(--opsz-m),
-    "SOFT" 0,
-    "WONK" 0;
 }
 .surface-error p {
   font-size: 14px;

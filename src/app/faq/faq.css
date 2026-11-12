@@ -89,10 +89,6 @@
   font-size: 18px;
   line-height: 1.45;
   letter-spacing: var(--track-s, 0em);
-  font-variation-settings:
-    "opsz" var(--opsz-s, 18),
-    "SOFT" 0,
-    "WONK" 0;
 }
 /* The question text already rests at --cream (inherited from .faq-q-btn), so a
    `:hover { color: var(--cream) }` on it was a no-op — the row had a declared

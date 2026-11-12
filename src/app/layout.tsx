@@ -9,11 +9,27 @@ import { SmoothScroll } from "@/components/smooth-scroll";
 import "lenis/dist/lenis.css";
 import "./globals.css";
 
-const fraunces = localFont({
-  src: "../../brand-kit/fonts/Fraunces-Variable.ttf",
+// Display face. Redaction, vendored into brand-kit/fonts as woff2 (latin
+// subset) and served from our own origin like every other face here.
+//
+// It is on Google Fonts, but `next/font/google` does not know it — Next's
+// bundled font manifest predates it, so importing `{ Redaction }` is a
+// type error. Vendoring is the better outcome regardless: a <link> to
+// fonts.googleapis.com would disclose every visitor's IP to a third party
+// on page load, before the consent banner is answered, contradicting the
+// privacy policy and the consent-gated analytics.
+//
+// Redaction is STATIC: 400 and 700 only (plus italic 400). There is no 600
+// and no variable axis — write 700 for bold display type, and never add
+// font-variation-settings to a display element.
+const redaction = localFont({
+  src: [
+    { path: "../../brand-kit/fonts/Redaction-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../../brand-kit/fonts/Redaction-Italic.woff2", weight: "400", style: "italic" },
+    { path: "../../brand-kit/fonts/Redaction-Bold.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-display",
   display: "swap",
-  weight: "100 900",
 });
 const inter = localFont({
   src: "../../brand-kit/fonts/Inter-Variable.ttf",
@@ -50,7 +66,7 @@ export default function RootLayout({
     <html
       lang="en-IN"
       data-theme="dark"
-      className={`${fraunces.variable} ${inter.variable} ${mono.variable}`}
+      className={`${redaction.variable} ${inter.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
       <body>

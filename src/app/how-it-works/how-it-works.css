@@ -58,7 +58,8 @@
 }
 
 .hiw-class-tag {
-  font-size: 10px;
+  /* 11px, matching `.eyebrow` — 10px uppercase at 0.1em was under the floor. */
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 3px 8px;
@@ -70,12 +71,13 @@
 
 .hiw-class h3 {
   font-size: 22px;
-  line-height: 1.2;
+  line-height: 1.25;
+  letter-spacing: var(--track-m);
   margin: 0;
 }
 
 .hiw-class-short {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -93,7 +95,7 @@
 }
 
 .hiw-class dt {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-2, var(--muted));

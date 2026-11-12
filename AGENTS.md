@@ -13,9 +13,23 @@ change — check them before you consider any task done.
   a neutral warm-grey scale. **Accent = Brass Gold `#C9A24B`, ≤10% of any screen, ONE accent element
   per view.** `--gold-muted #9F743B` for citations only. Cool Grey `#5B6472` is reserved **only** for
   the "abstained / unknown" state — never decorative. No navy-dominant, no second accent colour.
-- **Fonts (self-hosted from `brand-kit/fonts/` via `next/font/local`):** Fraunces (display serif) ·
-  IBM Plex Mono (every section reference `s.96(1)`, figure `₹10,00,00,000`, instrument `G.S.R. 880(E)`,
-  and date) · Inter/Archivo (body). Mono citations are the brand signature — never paraphrase a section.
+- **Fonts — all self-hosted, no runtime third-party font requests:**
+  **Redaction** (display serif: every `h1`/`h2`/`h3`, the wordmark, card titles), vendored as
+  woff2 in `brand-kit/fonts/Redaction-{Regular,Bold,Italic}.woff2` and loaded with
+  `next/font/local`. It is on Google Fonts, but `next/font/google` does **not** export it (Next's
+  bundled manifest predates it — importing `{ Redaction }` is a type error). A `<link>` to
+  `fonts.googleapis.com`/`fonts.gstatic.com` is **forbidden** regardless — it would disclose each
+  visitor's IP to Google on page load, before the consent banner is answered, contradicting the
+  privacy policy and the consent-gated analytics.
+  ⚠ **Redaction is a STATIC font: only 400 and 700** (plus italic 400). There is no 600 — write
+  `700` for bold display type. It has **no variable axes**; never add `font-variation-settings`
+  to a display element. (It replaced Fraunces, which was variable and carried opsz/SOFT/WONK;
+  all of those declarations were removed. `brand-kit/fonts/Fraunces-*` is retained only for the
+  OG-image route.)
+  **IBM Plex Mono** — every section reference `s.96(1)`, figure `₹10,00,00,000`, instrument
+  `G.S.R. 880(E)`, and date. Mono citations are the brand signature — never paraphrase a section.
+  **Inter** (body) — still variable 100..900, so its intermediate weights are real.
+  Both are self-hosted from `brand-kit/fonts/` via `next/font/local`.
 - **Logo:** use the files in `brand-kit/logo/` (white on dark, ink/gold on light); inline SVG where possible.
 - Everything reads from central design tokens. No hard-coded hex in components.
 
@@ -71,7 +85,7 @@ change — check them before you consider any task done.
 
 ## Before you call anything done
 Run the checklist: monochrome + ≤10% gold held on every screen · abstain-grey used only for abstention ·
-mono on every statute reference · brand fonts self-hosted · custom brand icons present · copy real,
+mono on every statute reference · brand fonts self-hosted (no Google CDN link) · custom brand icons present · copy real,
 grammatical, on-voice, no banned words, self-explanatory · a11y AA · reduced-motion respected ·
 responsive to 360px · no overclaiming · no invented figures.
 
