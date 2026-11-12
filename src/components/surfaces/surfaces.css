@@ -94,12 +94,23 @@
   color: var(--muted);
 }
 
+/* An <h2>, but it reads as a divider label, not as display type. It was being
+   drawn as 15px UPPERCASE Fraunces at the 54px optical size in --muted-2 —
+   display hairlines at label size, the hardest-to-read text on these surfaces.
+   Labels are Inter here, same as `.dash .eyebrow`. */
 .surface-section-h {
-  font-size: 15px;
-  color: var(--muted-2);
-  letter-spacing: 0.02em;
+  font-family: var(--font-body), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1.5;
   margin: 32px 0 16px;
+  font-variation-settings:
+    "opsz" var(--opsz-body),
+    "SOFT" 0,
+    "WONK" 0;
 }
 
 /* Obligation rows */
@@ -122,6 +133,20 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
+}
+/* Small-serif tier, used by every 16–18px Fraunces title on these surfaces.
+   `.dash h3` is sized for 22–27px, so inheriting its opsz-24 and negative
+   tracking down here is what made these row titles read cramped and thin. */
+.ob-row-head h3,
+.evt-card h3,
+.aff-row h3,
+.surface-watch h2 {
+  font-weight: 620;
+  letter-spacing: var(--track-s);
+  font-variation-settings:
+    "opsz" var(--opsz-s),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .ob-row-head h3 {
   font-size: 17px;
@@ -236,6 +261,12 @@
 .surface-error h2 {
   font-size: 22px;
   margin: 10px 0 12px;
+  letter-spacing: var(--track-m);
+  line-height: 1.25;
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .surface-error p {
   font-size: 14px;

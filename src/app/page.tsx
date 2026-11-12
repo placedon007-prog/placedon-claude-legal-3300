@@ -9,6 +9,7 @@ import {
   useReducedMotion,
   type Variants,
 } from "framer-motion";
+import Balancer from "react-wrap-balancer";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
@@ -564,7 +565,9 @@ export default function DashboardPage() {
             <aside className="daside">
               <div className="daside-title">Evidence over confidence</div>
               <div className="daside-chips">
-                <span className="chip chip-met">Verified</span>
+                {/* The base `.chip` filled square IS the verified treatment;
+                    "attaches" and "abstain" are the two modifiers. */}
+                <span className="chip">Verified</span>
                 <span className="chip chip-attaches">Attaches</span>
                 <span className="chip chip-abstain">Abstained</span>
               </div>
@@ -736,7 +739,9 @@ export default function DashboardPage() {
           {resources.map((r, i) => (
             <Reveal key={r.title} delay={(i % 3) * 0.05} className="dres-card">
               <div className="dres-foot">
-                <div className="dres-title">{r.title}</div>
+                <div className="dres-title">
+                  <Balancer>{r.title}</Balancer>
+                </div>
                 <span className="dres-kind">
                   {r.kind}
                 </span>

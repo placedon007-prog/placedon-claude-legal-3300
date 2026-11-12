@@ -5,9 +5,11 @@
    requested). Monochrome on the dark .dash surface; corners use the 3px
    --radius token; no decorative shadow. */
 
+/* Same rhythm as `.reading-section` (64px, 32px under 760px) — this block sits
+   directly below those sections, so an odd 50px read as a misaligned seam. */
 .pricing-tiers {
   border-top: 1px solid var(--border);
-  padding-block: 50px;
+  padding-block: 64px;
 }
 
 .pricing-tiers-head {
@@ -99,6 +101,9 @@
 }
 
 @media (max-width: 760px) {
+  .pricing-tiers {
+    padding-block: 32px;
+  }
   .pricing-tier-grid,
   .pricing-notes {
     grid-template-columns: 1fr;

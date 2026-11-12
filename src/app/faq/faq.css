@@ -21,7 +21,7 @@
 }
 
 .faq-chip {
-  min-height: 36px;
+  min-height: 44px; /* AA target size */
   padding: 7px 14px;
   font-size: 13px;
   color: var(--muted);
@@ -82,13 +82,24 @@
   font-family: inherit;
   transition: color var(--dur-2) var(--ease);
 }
+/* The question is the heading of its row, so it gets the small-serif tier:
+   opsz tracking its own 18px rather than the h3 rule's 24, and --track-s
+   (now 0) rather than the tightest tracking on the scale. */
 .faq-q-text {
-  font-size: 17px;
-  line-height: 1.4;
-  letter-spacing: var(--track-s, -0.01em);
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: var(--track-s, 0em);
+  font-variation-settings:
+    "opsz" var(--opsz-s, 18),
+    "SOFT" 0,
+    "WONK" 0;
 }
-.faq-q-btn:hover .faq-q-text {
-  color: var(--cream);
+/* The question text already rests at --cream (inherited from .faq-q-btn), so a
+   `:hover { color: var(--cream) }` on it was a no-op — the row had a declared
+   hover state and no visible response. The chevron carries it instead, which is
+   the same signal the open state already uses. */
+.faq-q-btn:hover .faq-q-chevron::before {
+  border-color: var(--cream);
 }
 .faq-q-btn:focus-visible {
   outline: 2px solid var(--cream);
@@ -137,11 +148,12 @@
   min-height: 0;
 }
 .faq-a-inner p {
-  font-size: 14px;
+  /* 15px, the site body size — these answers are the page's actual reading copy. */
+  font-size: 15px;
   line-height: 1.7;
   color: var(--muted);
   margin: 0 0 14px;
-  max-width: 68ch;
+  max-width: 66ch;
 }
 .faq-item[data-open="true"] .faq-a-inner {
   padding-bottom: 20px;

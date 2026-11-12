@@ -14,5 +14,5 @@ export function generateMetadata() {
  * states a proposed standard, it does not certify a deployed environment.
  */
 export default function SecurityPage() {
-  return <MarketingPage page={securityContent} />;
+  return <MarketingPage page={securityContent} reveal={false} />;
 }

@@ -5,9 +5,11 @@
    Monochrome on the dark .dash surface; citations remain the only accent.
    Corners inherit the 3px --radius token; no decorative shadow. */
 
+/* Same rhythm as `.reading-section` (64px, 32px under 760px) — this block sits
+   directly below those sections, so an odd 50px read as a misaligned seam. */
 .hiw-classes {
   border-top: 1px solid var(--border);
-  padding-block: 50px;
+  padding-block: 64px;
 }
 
 .hiw-classes-head {
@@ -108,5 +110,11 @@
 @media (max-width: 900px) {
   .hiw-class-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hiw-classes {
+    padding-block: 32px;
   }
 }

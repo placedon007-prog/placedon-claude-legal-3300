@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@/components/analytics";
+import { SmoothScroll } from "@/components/smooth-scroll";
+// Lenis's own stylesheet — required by the library, not optional: it sets
+// `html.lenis body { height: auto }` and the overscroll containment for
+// `[data-lenis-prevent]` subtrees. Without it, nested scrollers leak their
+// scroll to the page.
+import "lenis/dist/lenis.css";
 import "./globals.css";
 
 const fraunces = localFont({
@@ -51,7 +57,9 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <main id="main-content">{children}</main>
+        <SmoothScroll>
+          <main id="main-content">{children}</main>
+        </SmoothScroll>
         <Analytics />
       </body>
     </html>
