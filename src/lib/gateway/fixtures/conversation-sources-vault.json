@@ -1,0 +1,58 @@
+{
+    "conversation_id": "8f6cbf26-21f0-4bce-90fb-7a12289abc14",
+    "message_id": "7fa93bff-b237-46d0-a5c7-426620726a74",
+    "classification": {
+        "task": "RESEARCH_QUESTION",
+        "alternatives": [
+            "EVENT_ASSESS",
+            "LAW_CHANGES"
+        ],
+        "reason": "it is shaped as a question about the law, and nothing is attached to review",
+        "decided_by": "rules",
+        "rule": "question_shape"
+    },
+    "run_id": "e83458cb-6135-4f24-bc36-fc655f8e0855",
+    "envelope": {
+        "schema": "answer_envelope.v1",
+        "status": "ANSWERED",
+        "task": "RESEARCH_QUESTION",
+        "as_of": "2026-10-12",
+        "text_blocks": [
+            {
+                "text": "See the findings.",
+                "citation_ids": []
+            }
+        ],
+        "bodies": [
+            {
+                "body_id": "CA2013",
+                "name": "Companies Act, 2013",
+                "status": "NEED_FACT",
+                "note": "held, and nothing on point was found for this question"
+            }
+        ],
+        "citations": [],
+        "files": [],
+        "run_id": "e83458cb-6135-4f24-bc36-fc655f8e0855",
+        "trace_url": "/v2/runs/e83458cb-6135-4f24-bc36-fc655f8e0855/trace"
+    },
+    "sources": {
+        "picked": [
+            "vault"
+        ],
+        "searched": [
+            "vault"
+        ],
+        "report": [
+            {
+                "id": "vault",
+                "tier": "PUBLIC",
+                "status": "available",
+                "outcome": "SEARCHED_EMPTY",
+                "hits": 0,
+                "reason": ""
+            }
+        ],
+        "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+    }
+}

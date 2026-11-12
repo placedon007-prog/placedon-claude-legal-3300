@@ -1,0 +1,90 @@
+{
+  "_recorded": "2026-10-13 against the real gateway (backend PR #94, claude/abstain-states) on placedon_app_local. Not composed. Azure creds removed so the router had no provider → NO_MODEL.",
+  "conversation_id": "fe3f9def-76b3-47b0-8b2d-2c3ebe6a0e2a",
+  "message_id": "ff08824d-3041-4fdf-94c3-419a6b975c8e",
+  "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+      "EVENT_ASSESS",
+      "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+  },
+  "run_id": "170a3cd1-0734-4550-addb-6ab951e41b75",
+  "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "FAILED",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-13",
+    "text_blocks": [
+      {
+        "text": "The model was unavailable — this is not a finding about the law. Try again.",
+        "citation_ids": []
+      }
+    ],
+    "bodies": [],
+    "citations": [],
+    "files": [],
+    "run_id": "170a3cd1-0734-4550-addb-6ab951e41b75",
+    "trace_url": "/v2/runs/170a3cd1-0734-4550-addb-6ab951e41b75/trace"
+  },
+  "metadata": {
+    "schema": "conversation_turn.v1",
+    "request_id": "391108dd-dcbd-4c01-9e80-d6742edbc673",
+    "classification": {
+      "task": "RESEARCH_QUESTION",
+      "alternatives": [
+        "EVENT_ASSESS",
+        "LAW_CHANGES"
+      ],
+      "reason": "it is shaped as a question about the law, and nothing is attached to review",
+      "decided_by": "rules",
+      "rule": "question_shape"
+    },
+    "artifacts": [],
+    "files": [],
+    "as_of": "2026-10-13",
+    "accepted_at": "2026-10-13T15:29:42Z",
+    "sources": {
+      "picked": [
+        "held"
+      ],
+      "searched": [
+        "held"
+      ],
+      "report": [
+        {
+          "id": "held",
+          "tier": "HELD",
+          "status": "available",
+          "outcome": "SEARCHED_HITS",
+          "hits": 1,
+          "reason": ""
+        }
+      ],
+      "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+    }
+  },
+  "sources": {
+    "picked": [
+      "held"
+    ],
+    "searched": [
+      "held"
+    ],
+    "report": [
+      {
+        "id": "held",
+        "tier": "HELD",
+        "status": "available",
+        "outcome": "SEARCHED_HITS",
+        "hits": 1,
+        "reason": ""
+      }
+    ],
+    "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+  },
+  "code": "NO_MODEL"
+}

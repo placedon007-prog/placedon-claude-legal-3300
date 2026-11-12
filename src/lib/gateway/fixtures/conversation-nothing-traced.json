@@ -1,0 +1,109 @@
+{
+  "_recorded": "2026-10-13 against the real gateway (backend PR #94, claude/abstain-states) on placedon_app_local. Not composed. s.242 — the model answered but no sentence byte-traced.",
+  "conversation_id": "f28883dd-7374-4a7f-aeee-df67b79f83d5",
+  "message_id": "2b7f8d40-848f-461e-b007-eea97b8ae204",
+  "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+      "EVENT_ASSESS",
+      "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+  },
+  "run_id": "d8af2760-a5fa-4adf-a46f-a1be961282da",
+  "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "ABSTAINED",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-13",
+    "text_blocks": [
+      {
+        "text": "Relevant provisions were found, but no sentence could be traced to them, so nothing generated is shown.",
+        "citation_ids": [
+          "c1"
+        ]
+      }
+    ],
+    "bodies": [
+      {
+        "body_id": "CA2013",
+        "name": "Companies Act, 2013",
+        "status": "NEED_FACT",
+        "note": "relevant provisions were found, but no sentence could be traced to them"
+      }
+    ],
+    "citations": [
+      {
+        "id": "c1",
+        "instrument": "Companies Act 2013",
+        "provision": "s.242",
+        "source": "corpus/companies_act/49168.json",
+        "fetched_at": "2026-08-18T22:18:32+00:00",
+        "sha256": "b08558cce70be9ac99f6a584d1d1d2778318e2e2ab68dbf053fc4b66284b6d27",
+        "quote": "(1) If, on any application made under section 241, the Tribunal is of the\nopinion--\n(a) that the company's affairs have been or are being conducted in a manner prejudicial or\noppressive to any member"
+      }
+    ],
+    "files": [],
+    "run_id": "d8af2760-a5fa-4adf-a46f-a1be961282da",
+    "trace_url": "/v2/runs/d8af2760-a5fa-4adf-a46f-a1be961282da/trace"
+  },
+  "metadata": {
+    "schema": "conversation_turn.v1",
+    "request_id": "fee3327d-92d9-4722-97f7-460b12ee41c6",
+    "classification": {
+      "task": "RESEARCH_QUESTION",
+      "alternatives": [
+        "EVENT_ASSESS",
+        "LAW_CHANGES"
+      ],
+      "reason": "it is shaped as a question about the law, and nothing is attached to review",
+      "decided_by": "rules",
+      "rule": "question_shape"
+    },
+    "artifacts": [],
+    "files": [],
+    "as_of": "2026-10-13",
+    "accepted_at": "2026-10-13T15:28:46Z",
+    "sources": {
+      "picked": [
+        "held"
+      ],
+      "searched": [
+        "held"
+      ],
+      "report": [
+        {
+          "id": "held",
+          "tier": "HELD",
+          "status": "available",
+          "outcome": "SEARCHED_HITS",
+          "hits": 1,
+          "reason": ""
+        }
+      ],
+      "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+    }
+  },
+  "sources": {
+    "picked": [
+      "held"
+    ],
+    "searched": [
+      "held"
+    ],
+    "report": [
+      {
+        "id": "held",
+        "tier": "HELD",
+        "status": "available",
+        "outcome": "SEARCHED_HITS",
+        "hits": 1,
+        "reason": ""
+      }
+    ],
+    "note": "searched-empty is not not-searched: an empty search ran; a not-searched source did not. Only HELD rows can make an answer VERIFIED."
+  },
+  "code": "NOTHING_TRACED"
+}

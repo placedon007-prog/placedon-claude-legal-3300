@@ -1,0 +1,41 @@
+/* Request page layout — form + guidance aside. Scoped to .waitlist-*. */
+
+.waitlist-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 56px;
+  align-items: start;
+  padding-bottom: 100px;
+}
+
+.waitlist-aside {
+  position: sticky;
+  top: 120px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-left: 1px solid var(--line);
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.waitlist-aside-note {
+  color: var(--muted-2);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .waitlist-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .waitlist-aside {
+    position: static;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+}

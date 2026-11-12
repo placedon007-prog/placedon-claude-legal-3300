@@ -1,0 +1,148 @@
+/* FAQ accordion — scoped to .faq-* ; reuses global tokens, no shared-file edits. */
+
+.faq-wrap {
+  padding-bottom: 40px;
+}
+
+.faq-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.faq-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.faq-chip {
+  min-height: 36px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    background-color var(--dur-2) var(--ease);
+}
+.faq-chip:hover {
+  color: var(--cream);
+  border-color: var(--line-strong, var(--muted-2));
+}
+.faq-chip[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--cream);
+  border-color: var(--cream);
+}
+.faq-chip:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+.faq-expand {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.faq-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq-q {
+  margin: 0;
+}
+.faq-q-btn {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 4px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--cream);
+  font-family: inherit;
+  transition: color var(--dur-2) var(--ease);
+}
+.faq-q-text {
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: var(--track-s, -0.01em);
+}
+.faq-q-btn:hover .faq-q-text {
+  color: var(--cream);
+}
+.faq-q-btn:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Chevron drawn from borders; rotates when the item is open. */
+.faq-q-chevron {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  position: relative;
+  transform: rotate(0deg);
+  transition: transform var(--dur-2) var(--ease);
+}
+.faq-q-chevron::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg);
+  transition: border-color var(--dur-2) var(--ease);
+}
+.faq-item[data-open="true"] .faq-q-chevron {
+  transform: rotate(180deg);
+}
+.faq-item[data-open="true"] .faq-q-chevron::before {
+  border-color: var(--cream);
+}
+
+/* Collapse via animatable grid rows; snaps under reduced motion. */
+.faq-a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-3) var(--ease);
+}
+.faq-item[data-open="true"] .faq-a {
+  grid-template-rows: 1fr;
+}
+.faq-a-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.faq-a-inner p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0 0 14px;
+  max-width: 68ch;
+}
+.faq-item[data-open="true"] .faq-a-inner {
+  padding-bottom: 20px;
+}

@@ -1,0 +1,672 @@
+{
+  "provenance": "Generated from local FastAPI routes; deterministic synthetic worker, no live model.",
+  "queued": {
+    "conversation_id": "b749efc4-6da9-43d7-b3d7-b4216a805ef4",
+    "message_id": "0f10b6fd-08f3-4a01-955e-02d84dcf2aa9",
+    "task": "RESEARCH_QUESTION",
+    "run_id": "441d2076-43bc-441a-9f9f-4e1e4003ac34",
+    "envelope": null,
+    "classification": {
+      "task": "RESEARCH_QUESTION",
+      "alternatives": [
+        "EVENT_ASSESS",
+        "LAW_CHANGES"
+      ],
+      "reason": "it is shaped as a question about the law, and nothing is attached to review",
+      "decided_by": "rules",
+      "rule": "question_shape"
+    },
+    "metadata": {
+      "schema": "conversation_turn.v1",
+      "request_id": "e0b48fa3-cba0-48c8-8160-01447d3cbab8",
+      "classification": {
+        "task": "RESEARCH_QUESTION",
+        "alternatives": [
+          "EVENT_ASSESS",
+          "LAW_CHANGES"
+        ],
+        "reason": "it is shaped as a question about the law, and nothing is attached to review",
+        "decided_by": "rules",
+        "rule": "question_shape"
+      },
+      "artifacts": [],
+      "files": [],
+      "as_of": "2026-10-10",
+      "accepted_at": "2026-10-10T11:45:40Z"
+    },
+    "files": []
+  },
+  "completed": {
+    "conversation": {
+      "conversation_id": "b749efc4-6da9-43d7-b3d7-b4216a805ef4",
+      "title": "What is the quorum under section 174 of the Companies Act?",
+      "created_at": null,
+      "updated_at": null,
+      "matter_id": null
+    },
+    "messages": [
+      {
+        "message_id": "7e3c12dd-f7dc-44e3-a10e-1877d40fd605",
+        "conversation_id": "b749efc4-6da9-43d7-b3d7-b4216a805ef4",
+        "ordinal": 0,
+        "role": "user",
+        "text": "What is the quorum under section 174 of the Companies Act?",
+        "file_ids": [],
+        "task": null,
+        "run_id": null,
+        "envelope": null,
+        "metadata": null
+      },
+      {
+        "message_id": "0f10b6fd-08f3-4a01-955e-02d84dcf2aa9",
+        "conversation_id": "b749efc4-6da9-43d7-b3d7-b4216a805ef4",
+        "ordinal": 1,
+        "role": "assistant",
+        "text": "",
+        "file_ids": [],
+        "task": "RESEARCH_QUESTION",
+        "run_id": "441d2076-43bc-441a-9f9f-4e1e4003ac34",
+        "envelope": {
+          "schema": "answer_envelope.v1",
+          "status": "PARTIAL",
+          "task": "RESEARCH_QUESTION",
+          "as_of": "2026-10-10",
+          "text_blocks": [
+            {
+              "text": "Synthetic integration response. Some evidence remains unavailable.",
+              "citation_ids": []
+            }
+          ],
+          "bodies": [
+            {
+              "body_id": "CA2013",
+              "name": "Companies Act, 2013",
+              "status": "NEED_FACT",
+              "note": "held, and nothing on point was found for this question"
+            }
+          ],
+          "citations": [],
+          "files": [],
+          "run_id": "441d2076-43bc-441a-9f9f-4e1e4003ac34",
+          "trace_url": "/v2/runs/441d2076-43bc-441a-9f9f-4e1e4003ac34/trace"
+        },
+        "metadata": {
+          "schema": "conversation_turn.v1",
+          "request_id": "e0b48fa3-cba0-48c8-8160-01447d3cbab8",
+          "classification": {
+            "task": "RESEARCH_QUESTION",
+            "alternatives": [
+              "EVENT_ASSESS",
+              "LAW_CHANGES"
+            ],
+            "reason": "it is shaped as a question about the law, and nothing is attached to review",
+            "decided_by": "rules",
+            "rule": "question_shape"
+          },
+          "artifacts": [],
+          "files": [],
+          "as_of": "2026-10-10",
+          "accepted_at": "2026-10-10T11:45:40Z",
+          "sources": {
+            "picked": [
+              "held"
+            ],
+            "searched": [
+              "held"
+            ],
+            "report": [
+              {
+                "id": "held",
+                "tier": "HELD",
+                "status": "available",
+                "outcome": "SEARCHED_HITS",
+                "hits": 1,
+                "reason": ""
+              }
+            ],
+            "note": "Synthetic integration fixture."
+          }
+        }
+      }
+    ]
+  },
+  "replayed": {
+    "conversation_id": "b749efc4-6da9-43d7-b3d7-b4216a805ef4",
+    "message_id": "0f10b6fd-08f3-4a01-955e-02d84dcf2aa9",
+    "task": "RESEARCH_QUESTION",
+    "run_id": "441d2076-43bc-441a-9f9f-4e1e4003ac34",
+    "envelope": {
+      "schema": "answer_envelope.v1",
+      "status": "PARTIAL",
+      "task": "RESEARCH_QUESTION",
+      "as_of": "2026-10-10",
+      "text_blocks": [
+        {
+          "text": "Synthetic integration response. Some evidence remains unavailable.",
+          "citation_ids": []
+        }
+      ],
+      "bodies": [
+        {
+          "body_id": "CA2013",
+          "name": "Companies Act, 2013",
+          "status": "NEED_FACT",
+          "note": "held, and nothing on point was found for this question"
+        }
+      ],
+      "citations": [],
+      "files": [],
+      "run_id": "441d2076-43bc-441a-9f9f-4e1e4003ac34",
+      "trace_url": "/v2/runs/441d2076-43bc-441a-9f9f-4e1e4003ac34/trace"
+    },
+    "classification": {
+      "task": "RESEARCH_QUESTION",
+      "alternatives": [
+        "EVENT_ASSESS",
+        "LAW_CHANGES"
+      ],
+      "reason": "it is shaped as a question about the law, and nothing is attached to review",
+      "decided_by": "rules",
+      "rule": "question_shape"
+    },
+    "metadata": {
+      "schema": "conversation_turn.v1",
+      "request_id": "e0b48fa3-cba0-48c8-8160-01447d3cbab8",
+      "classification": {
+        "task": "RESEARCH_QUESTION",
+        "alternatives": [
+          "EVENT_ASSESS",
+          "LAW_CHANGES"
+        ],
+        "reason": "it is shaped as a question about the law, and nothing is attached to review",
+        "decided_by": "rules",
+        "rule": "question_shape"
+      },
+      "artifacts": [],
+      "files": [],
+      "as_of": "2026-10-10",
+      "accepted_at": "2026-10-10T11:45:40Z",
+      "sources": {
+        "picked": [
+          "held"
+        ],
+        "searched": [
+          "held"
+        ],
+        "report": [
+          {
+            "id": "held",
+            "tier": "HELD",
+            "status": "available",
+            "outcome": "SEARCHED_HITS",
+            "hits": 1,
+            "reason": ""
+          }
+        ],
+        "note": "Synthetic integration fixture."
+      }
+    },
+    "files": [],
+    "sources": {
+      "picked": [
+        "held"
+      ],
+      "searched": [
+        "held"
+      ],
+      "report": [
+        {
+          "id": "held",
+          "tier": "HELD",
+          "status": "available",
+          "outcome": "SEARCHED_HITS",
+          "hits": 1,
+          "reason": ""
+        }
+      ],
+      "note": "Synthetic integration fixture."
+    }
+  },
+  "sources": {
+    "tiers": [
+      "HELD",
+      "OFFICIAL_LIVE",
+      "LICENSED",
+      "COMPANY_FACT",
+      "CLIENT"
+    ],
+    "adapters": [
+      {
+        "source_id": "held",
+        "name": "Companies Act 2013 (our corpus)",
+        "tier": "HELD",
+        "may_fetch": true,
+        "may_fetch_reason": "ours, hash-stamped; the only tier that can VERIFY"
+      },
+      {
+        "source_id": "client",
+        "name": "Your uploaded documents",
+        "tier": "CLIENT",
+        "may_fetch": true,
+        "may_fetch_reason": "the tenant's own document, under review"
+      }
+    ],
+    "external": [
+      {
+        "source_id": "aws_hc_judgments",
+        "name": "Indian High Court Judgments (AWS Open Data, Dattam Labs)",
+        "terms_url": "https://registry.opendata.aws/indian-high-court-judgments/",
+        "terms_read": "2026-10-05",
+        "robots": [
+          {
+            "origin": "https://indian-high-court-judgments.s3.ap-south-1.amazonaws.com",
+            "state": "NOT_FOUND",
+            "http": 404
+          }
+        ],
+        "may_fetch": true,
+        "may_fetch_reason": "robots permit, terms read 2026-10-05",
+        "may_cache": true,
+        "may_cache_reason": "Share \u2014 copy and redistribute the material in any medium or format",
+        "clauses": {
+          "CACHING": "READ",
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "aws_sc_judgments",
+        "name": "Indian Supreme Court Judgments (AWS Open Data, Dattam Labs)",
+        "terms_url": "https://registry.opendata.aws/indian-supreme-court-judgments/",
+        "terms_read": "2026-10-05",
+        "robots": [
+          {
+            "origin": "https://indian-supreme-court-judgments.s3.ap-south-1.amazonaws.com",
+            "state": "NOT_FOUND",
+            "http": 404
+          }
+        ],
+        "may_fetch": true,
+        "may_fetch_reason": "robots permit, terms read 2026-10-05",
+        "may_cache": true,
+        "may_cache_reason": "Share \u2014 copy and redistribute the material in any medium or format",
+        "clauses": {
+          "CACHING": "READ",
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "bse",
+        "name": "BSE (Bombay Stock Exchange) announcements",
+        "terms_url": "",
+        "terms_read": null,
+        "robots": [
+          {
+            "origin": "https://www.bseindia.com",
+            "state": "BLOCKED",
+            "http": 403
+          }
+        ],
+        "may_fetch": false,
+        "may_fetch_reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+        "may_cache": false,
+        "may_cache_reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "data_gov_in",
+        "name": "data.gov.in / Open Government Data platform (GODL)",
+        "terms_url": "",
+        "terms_read": null,
+        "robots": [
+          {
+            "origin": "https://www.data.gov.in",
+            "state": "BLOCKED",
+            "http": 403
+          },
+          {
+            "origin": "https://data.gov.in",
+            "state": "ACCESSIBLE",
+            "http": 200
+          },
+          {
+            "origin": "https://api.data.gov.in",
+            "state": "UNREACHABLE",
+            "http": -1
+          }
+        ],
+        "may_fetch": false,
+        "may_fetch_reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+        "may_cache": false,
+        "may_cache_reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+        "clauses": {
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "CACHING": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "egazette",
+        "name": "e-Gazette (Department of Publication)",
+        "terms_url": "",
+        "terms_read": null,
+        "robots": [
+          {
+            "origin": "https://egazette.gov.in",
+            "state": "NOT_FOUND",
+            "http": 404
+          }
+        ],
+        "may_fetch": false,
+        "may_fetch_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "may_cache": false,
+        "may_cache_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "indiankanoon",
+        "name": "Indian Kanoon API",
+        "terms_url": "https://api.indiankanoon.org/terms/",
+        "terms_read": "2026-09-30",
+        "robots": [
+          {
+            "origin": "https://api.indiankanoon.org",
+            "state": "ACCESSIBLE",
+            "http": 200
+          },
+          {
+            "origin": "https://indiankanoon.org",
+            "state": "ACCESSIBLE",
+            "http": 200
+          }
+        ],
+        "may_fetch": true,
+        "may_fetch_reason": "robots permit, terms read 2026-09-30",
+        "may_cache": false,
+        "may_cache_reason": "caching is OPEN for indiankanoon: Read the whole terms page and it does not address whether WE may store what we fetch. The only occurrence of the word is about IKanoon's own caching causing result differences, which is not a grant. DECISION_harvey_parity's reversal condition turns on this exact question, so it must be asked, not assumed: until then S3 quotes at request time and stores nothing.",
+        "clauses": {
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "READ",
+          "RATE_LIMIT": "OPEN",
+          "CACHING": "OPEN"
+        }
+      },
+      {
+        "source_id": "nse",
+        "name": "NSE (National Stock Exchange) announcements",
+        "terms_url": "",
+        "terms_read": null,
+        "robots": [
+          {
+            "origin": "https://www.nseindia.com",
+            "state": "ACCESSIBLE",
+            "http": 200
+          }
+        ],
+        "may_fetch": false,
+        "may_fetch_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "may_cache": false,
+        "may_cache_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "clauses": {
+          "CACHING": "OPEN",
+          "ATTRIBUTION": "OPEN",
+          "COMMERCIAL_USE": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "rbi",
+        "name": "Reserve Bank of India",
+        "terms_url": "https://www.rbi.org.in/Scripts/Disclaimer.aspx",
+        "terms_read": "2026-09-30",
+        "robots": [
+          {
+            "origin": "https://www.rbi.org.in",
+            "state": "BLOCKED",
+            "http": 418
+          }
+        ],
+        "may_fetch": false,
+        "may_fetch_reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+        "may_cache": false,
+        "may_cache_reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+        "clauses": {
+          "CACHING": "PROHIBITED",
+          "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+          "ATTRIBUTION": "OPEN",
+          "RATE_LIMIT": "OPEN"
+        }
+      },
+      {
+        "source_id": "sebi",
+        "name": "SEBI (Securities and Exchange Board of India)",
+        "terms_url": "https://www.sebi.gov.in/website-policy.html",
+        "terms_read": "2026-09-30",
+        "robots": [
+          {
+            "origin": "https://www.sebi.gov.in",
+            "state": "ACCESSIBLE",
+            "http": 200
+          }
+        ],
+        "may_fetch": true,
+        "may_fetch_reason": "robots permit, terms read 2026-09-30",
+        "may_cache": false,
+        "may_cache_reason": "caching is OPEN for sebi: Not addressed. Storing a fetched circular is arguably the 'reproduction' the copyright clause gates on permission, which is a reading and not a quote -- so it stays OPEN and the owner asks.",
+        "clauses": {
+          "ATTRIBUTION": "READ",
+          "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+          "RATE_LIMIT": "OPEN",
+          "CACHING": "OPEN"
+        }
+      }
+    ],
+    "fetchable": [
+      "aws_hc_judgments",
+      "aws_sc_judgments",
+      "indiankanoon",
+      "sebi"
+    ],
+    "cacheable": [
+      "aws_hc_judgments",
+      "aws_sc_judgments"
+    ],
+    "picker": [
+      {
+        "id": "held",
+        "label": "Companies Act 2013 (held corpus)",
+        "tier": "HELD",
+        "status": "available",
+        "reason": "held and hash-stamped; the only tier that can make an answer VERIFIED",
+        "switchable": true,
+        "terms": {}
+      },
+      {
+        "id": "vault",
+        "label": "Your documents (vault)",
+        "tier": "PUBLIC",
+        "status": "available",
+        "reason": "the tenant's own uploaded documents, searched as support, never VERIFIED",
+        "switchable": true,
+        "terms": {}
+      },
+      {
+        "id": "aws_hc_judgments",
+        "label": "Indian High Court Judgments (AWS Open Data, Dattam Labs)",
+        "tier": "LICENSED",
+        "status": "available",
+        "reason": "robots permit, terms read 2026-10-05",
+        "switchable": true,
+        "terms": {
+          "url": "https://registry.opendata.aws/indian-high-court-judgments/",
+          "read": "2026-10-05",
+          "clauses": {
+            "CACHING": "READ",
+            "ATTRIBUTION": "READ",
+            "COMMERCIAL_USE": "READ",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "aws_sc_judgments",
+        "label": "Indian Supreme Court Judgments (AWS Open Data, Dattam Labs)",
+        "tier": "LICENSED",
+        "status": "available",
+        "reason": "robots permit, terms read 2026-10-05",
+        "switchable": true,
+        "terms": {
+          "url": "https://registry.opendata.aws/indian-supreme-court-judgments/",
+          "read": "2026-10-05",
+          "clauses": {
+            "CACHING": "READ",
+            "ATTRIBUTION": "READ",
+            "COMMERCIAL_USE": "READ",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "bse",
+        "label": "BSE (Bombay Stock Exchange) announcements",
+        "tier": "PUBLIC",
+        "status": "BLOCKED",
+        "reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+        "switchable": false,
+        "terms": {
+          "url": null,
+          "read": null,
+          "clauses": {
+            "CACHING": "OPEN",
+            "ATTRIBUTION": "OPEN",
+            "COMMERCIAL_USE": "OPEN",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "data_gov_in",
+        "label": "data.gov.in / Open Government Data platform (GODL)",
+        "tier": "PUBLIC",
+        "status": "BLOCKED",
+        "reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+        "switchable": false,
+        "terms": {
+          "url": null,
+          "read": null,
+          "clauses": {
+            "ATTRIBUTION": "OPEN",
+            "COMMERCIAL_USE": "OPEN",
+            "CACHING": "OPEN",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "egazette",
+        "label": "e-Gazette (Department of Publication)",
+        "tier": "PUBLIC",
+        "status": "NOT_ACQUIRED",
+        "reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "switchable": false,
+        "terms": {
+          "url": null,
+          "read": null,
+          "clauses": {
+            "CACHING": "OPEN",
+            "ATTRIBUTION": "OPEN",
+            "COMMERCIAL_USE": "OPEN",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "indiankanoon",
+        "label": "Indian Kanoon API",
+        "tier": "LICENSED",
+        "status": "KEY_MISSING",
+        "reason": "PLACEDON_INDIANKANOON_KEY is not set; the source permits us but no API key is configured",
+        "switchable": false,
+        "terms": {
+          "url": "https://api.indiankanoon.org/terms/",
+          "read": "2026-09-30",
+          "clauses": {
+            "ATTRIBUTION": "READ",
+            "COMMERCIAL_USE": "READ",
+            "RATE_LIMIT": "OPEN",
+            "CACHING": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "nse",
+        "label": "NSE (National Stock Exchange) announcements",
+        "tier": "PUBLIC",
+        "status": "NOT_ACQUIRED",
+        "reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+        "switchable": false,
+        "terms": {
+          "url": null,
+          "read": null,
+          "clauses": {
+            "CACHING": "OPEN",
+            "ATTRIBUTION": "OPEN",
+            "COMMERCIAL_USE": "OPEN",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "rbi",
+        "label": "Reserve Bank of India",
+        "tier": "PUBLIC",
+        "status": "BLOCKED",
+        "reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+        "switchable": false,
+        "terms": {
+          "url": "https://www.rbi.org.in/Scripts/Disclaimer.aspx",
+          "read": "2026-09-30",
+          "clauses": {
+            "CACHING": "PROHIBITED",
+            "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+            "ATTRIBUTION": "OPEN",
+            "RATE_LIMIT": "OPEN"
+          }
+        }
+      },
+      {
+        "id": "sebi",
+        "label": "SEBI (Securities and Exchange Board of India)",
+        "tier": "PUBLIC",
+        "status": "available",
+        "reason": "robots permit, terms read 2026-09-30",
+        "switchable": true,
+        "terms": {
+          "url": "https://www.sebi.gov.in/website-policy.html",
+          "read": "2026-09-30",
+          "clauses": {
+            "ATTRIBUTION": "READ",
+            "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+            "RATE_LIMIT": "OPEN",
+            "CACHING": "OPEN"
+          }
+        }
+      }
+    ],
+    "note": "Only HELD can make an answer VERIFIED (PLAN_26 \u00a72). External sources are listed with what their own terms permit, read on the date shown; an unread term is OPEN, and OPEN is not permission."
+  }
+}

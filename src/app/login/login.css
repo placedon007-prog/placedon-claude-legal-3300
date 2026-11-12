@@ -1,0 +1,181 @@
+/* /login — the console's front door, in the console's design system (AGENTS.md "/app
+   console"): black and white, IBM Plex Sans with Plex Mono only for identifiers, tokens from
+   app.css, no colour, no left-border accent, no all-caps tracked labels, motion ≤160ms.
+   The whole page is `.console`, so every value below is a token. */
+
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--c-ground);
+}
+@media (min-width: 960px) {
+  .auth { grid-template-columns: minmax(380px, 0.9fr) minmax(0, 1.1fr); }
+}
+
+/* ---- statement panel: the console inverted ---------------------------------------- */
+.auth-brand {
+  --brand-ink: var(--c-fg);
+  --brand-paper: var(--c-ground);
+  --brand-dim: color-mix(in srgb, var(--brand-paper) 74%, var(--brand-ink));
+  --brand-rule: color-mix(in srgb, var(--brand-paper) 16%, var(--brand-ink));
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: clamp(2rem, 4vw, 3.5rem);
+  background: var(--brand-ink);
+  color: var(--brand-paper);
+}
+@media (min-width: 960px) { .auth-brand { display: flex; } }
+
+.auth-brand-top { display: flex; align-items: center; gap: 0.7rem; }
+/* The mark draws its tile in currentColor and its planes in --c-ground: paper tile, ink planes. */
+.auth-mark { width: 32px; height: 32px; flex: none; color: var(--brand-paper); --c-ground: var(--brand-ink); }
+.auth-wordmark { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; }
+
+.auth-claim { max-width: 30rem; }
+.auth-headline {
+  margin: 0 0 2.25rem;
+  font-size: clamp(2.25rem, 3.6vw, 3rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+.auth-proofs { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.auth-proofs li {
+  display: grid;
+  grid-template-columns: 5.25rem 1fr;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--brand-rule);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  color: var(--brand-dim);
+}
+.auth-proof-key { color: var(--brand-paper); font-weight: 600; }
+.auth-foot { margin: 0; font-size: var(--text-caption); line-height: 1.5; color: var(--brand-dim); }
+
+/* ---- form panel ------------------------------------------------------------------- */
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 16px 1.5rem;
+}
+.auth-card { width: 100%; max-width: 24rem; margin: auto 0; }
+.auth-card-mark { margin-bottom: 1.75rem; }
+.auth-mark-sm { width: 36px; height: 36px; color: var(--c-fg); }
+@media (min-width: 960px) { .auth-card-mark { display: none; } }
+
+.auth-title { margin: 0 0 0.4rem; font-size: var(--text-display); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.auth-lede { margin: 0 0 1.75rem; color: var(--c-fg-2); font-size: var(--text-body); line-height: 1.6; }
+
+.auth-form { display: grid; gap: 1.1rem; }
+.auth-field label { margin-bottom: 0.45rem; color: var(--c-fg); font-size: var(--text-ui); font-weight: 500; }
+.auth-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.auth-hint { margin-bottom: 0.45rem; font-size: var(--text-caption); color: var(--c-fg-3); }
+
+/* Email is not in the console's input list; it gets the same box here. */
+.auth-form input[type="email"],
+.auth-form input[type="password"],
+.auth-form input[type="text"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.8rem;
+  background: var(--c-ground);
+  border: 1px solid var(--c-line-control);
+  border-radius: 8px;
+  color: var(--c-fg);
+  font: inherit;
+  font-size: var(--text-body);
+  transition: border-color var(--c-dur) var(--c-ease);
+}
+.auth-form input:hover { border-color: var(--c-fg-3); }
+/* Invalid is shown by weight and by the words under it, never by colour. */
+.auth-form input[aria-invalid="true"] { border: 2px solid var(--c-fg); padding: calc(0.6rem - 1px) calc(0.8rem - 1px); }
+
+.auth-password { position: relative; }
+.auth-password input { padding-right: 4.75rem; }
+.auth-password input[aria-invalid="true"] { padding-right: calc(4.75rem - 1px); }
+.auth-reveal {
+  position: absolute; top: 0; right: 0;
+  min-height: 44px; min-width: 44px;
+  padding: 0 0.9rem;
+  border: 0; border-radius: 8px;
+  background: transparent;
+  color: var(--c-fg-2);
+  font: inherit; font-size: var(--text-ui); font-weight: 500;
+  cursor: pointer;
+}
+.auth-reveal:hover { color: var(--c-fg); text-decoration: underline; text-underline-offset: 3px; }
+
+.auth-submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.35rem;
+  border: 1px solid var(--c-fg);
+  border-radius: 8px;
+  background: var(--c-fg);
+  color: var(--c-ground);
+  font: inherit; font-size: var(--text-body); font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--c-dur) var(--c-ease);
+}
+.auth-submit:hover { opacity: 0.88; }
+.auth-submit:disabled { cursor: progress; opacity: 0.7; }
+
+/* A refusal of the input: a full hairline box and a leading word, never colour alone. */
+.auth-error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--c-fg);
+  border-radius: 8px;
+  background: var(--c-wash-2);
+  color: var(--c-fg);
+  font-size: var(--text-ui);
+  font-weight: 500;
+  line-height: 1.5;
+}
+/* A state of the system, not a mistake by the person, and labelled as such. */
+.auth-status, .auth-note {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--c-line-2);
+  border-radius: 8px;
+  background: var(--c-wash);
+  color: var(--c-fg-2);
+  font-size: var(--text-ui);
+  line-height: 1.55;
+}
+.auth-note { margin-top: 1.25rem; }
+.auth-status-key, .auth-note-key { display: block; margin-bottom: 0.15rem; color: var(--c-fg); font-weight: 600; }
+
+.auth-alt { margin-top: 1.5rem; padding-top: 0.5rem; border-top: 1px solid var(--c-line); }
+.auth-alt summary {
+  display: flex; align-items: center;
+  min-height: 44px;
+  color: var(--c-fg-2);
+  font-size: var(--text-ui); font-weight: 500;
+  cursor: pointer;
+}
+.auth-alt summary::-webkit-details-marker { display: none; }
+/* The disclosure says which way it will go, in a glyph that is not colour. */
+.auth-alt summary::before { content: "+"; display: inline-block; width: 1.1rem; color: var(--c-fg); font-weight: 600; }
+.auth-alt[open] summary::before { content: "−"; }
+.auth-alt summary:hover { color: var(--c-fg); }
+.auth-alt[open] summary { margin-bottom: 0.5rem; }
+
+.auth-help { margin: 1.75rem 0 0; color: var(--c-fg-3); font-size: var(--text-ui); line-height: 1.55; }
+.auth-help a { color: var(--c-fg); text-decoration: underline; text-underline-offset: 3px; }
+.auth-legal {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem;
+  margin-top: 2.5rem;
+  color: var(--c-fg-3);
+  font-size: var(--text-caption);
+}
+.auth-legal a { display: inline-flex; align-items: center; min-height: 24px; color: var(--c-fg-3); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form input, .auth-submit { transition: none; }
+}

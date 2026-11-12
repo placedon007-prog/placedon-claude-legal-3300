@@ -1,0 +1,848 @@
+{
+ "_recorded": "2026-10-08 against the real gateway (backend PR #84, 6faa79d) on its in-memory store. Not composed.",
+ "sources_list": {
+  "http": 200,
+  "body": {
+   "tiers": [
+    "HELD",
+    "OFFICIAL_LIVE",
+    "LICENSED",
+    "COMPANY_FACT",
+    "CLIENT"
+   ],
+   "adapters": [
+    {
+     "source_id": "held",
+     "name": "Companies Act 2013 (our corpus)",
+     "tier": "HELD",
+     "may_fetch": true,
+     "may_fetch_reason": "ours, hash-stamped; the only tier that can VERIFY"
+    },
+    {
+     "source_id": "client",
+     "name": "Your uploaded documents",
+     "tier": "CLIENT",
+     "may_fetch": true,
+     "may_fetch_reason": "the tenant's own document, under review"
+    }
+   ],
+   "external": [
+    {
+     "source_id": "aws_hc_judgments",
+     "name": "Indian High Court Judgments (AWS Open Data, Dattam Labs)",
+     "terms_url": "https://registry.opendata.aws/indian-high-court-judgments/",
+     "terms_read": "2026-10-05",
+     "robots": [
+      {
+       "origin": "https://indian-high-court-judgments.s3.ap-south-1.amazonaws.com",
+       "state": "NOT_FOUND",
+       "http": 404
+      }
+     ],
+     "may_fetch": true,
+     "may_fetch_reason": "robots permit, terms read 2026-10-05",
+     "may_cache": true,
+     "may_cache_reason": "Share — copy and redistribute the material in any medium or format",
+     "clauses": {
+      "CACHING": "READ",
+      "ATTRIBUTION": "READ",
+      "COMMERCIAL_USE": "READ",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "aws_sc_judgments",
+     "name": "Indian Supreme Court Judgments (AWS Open Data, Dattam Labs)",
+     "terms_url": "https://registry.opendata.aws/indian-supreme-court-judgments/",
+     "terms_read": "2026-10-05",
+     "robots": [
+      {
+       "origin": "https://indian-supreme-court-judgments.s3.ap-south-1.amazonaws.com",
+       "state": "NOT_FOUND",
+       "http": 404
+      }
+     ],
+     "may_fetch": true,
+     "may_fetch_reason": "robots permit, terms read 2026-10-05",
+     "may_cache": true,
+     "may_cache_reason": "Share — copy and redistribute the material in any medium or format",
+     "clauses": {
+      "CACHING": "READ",
+      "ATTRIBUTION": "READ",
+      "COMMERCIAL_USE": "READ",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "bse",
+     "name": "BSE (Bombay Stock Exchange) announcements",
+     "terms_url": "",
+     "terms_read": null,
+     "robots": [
+      {
+       "origin": "https://www.bseindia.com",
+       "state": "BLOCKED",
+       "http": 403
+      }
+     ],
+     "may_fetch": false,
+     "may_fetch_reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+     "may_cache": false,
+     "may_cache_reason": "robots: https://www.bseindia.com BLOCKED HTTP 403",
+     "clauses": {
+      "CACHING": "OPEN",
+      "ATTRIBUTION": "OPEN",
+      "COMMERCIAL_USE": "OPEN",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "data_gov_in",
+     "name": "data.gov.in / Open Government Data platform (GODL)",
+     "terms_url": "",
+     "terms_read": null,
+     "robots": [
+      {
+       "origin": "https://www.data.gov.in",
+       "state": "BLOCKED",
+       "http": 403
+      },
+      {
+       "origin": "https://data.gov.in",
+       "state": "ACCESSIBLE",
+       "http": 200
+      },
+      {
+       "origin": "https://api.data.gov.in",
+       "state": "UNREACHABLE",
+       "http": -1
+      }
+     ],
+     "may_fetch": false,
+     "may_fetch_reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+     "may_cache": false,
+     "may_cache_reason": "robots: https://www.data.gov.in BLOCKED HTTP 403; https://api.data.gov.in UNREACHABLE HTTP -1",
+     "clauses": {
+      "ATTRIBUTION": "OPEN",
+      "COMMERCIAL_USE": "OPEN",
+      "CACHING": "OPEN",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "egazette",
+     "name": "e-Gazette (Department of Publication)",
+     "terms_url": "",
+     "terms_read": null,
+     "robots": [
+      {
+       "origin": "https://egazette.gov.in",
+       "state": "NOT_FOUND",
+       "http": 404
+      }
+     ],
+     "may_fetch": false,
+     "may_fetch_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+     "may_cache": false,
+     "may_cache_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+     "clauses": {
+      "CACHING": "OPEN",
+      "ATTRIBUTION": "OPEN",
+      "COMMERCIAL_USE": "OPEN",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "indiankanoon",
+     "name": "Indian Kanoon API",
+     "terms_url": "https://api.indiankanoon.org/terms/",
+     "terms_read": "2026-09-30",
+     "robots": [
+      {
+       "origin": "https://api.indiankanoon.org",
+       "state": "ACCESSIBLE",
+       "http": 200
+      },
+      {
+       "origin": "https://indiankanoon.org",
+       "state": "ACCESSIBLE",
+       "http": 200
+      }
+     ],
+     "may_fetch": true,
+     "may_fetch_reason": "robots permit, terms read 2026-09-30",
+     "may_cache": false,
+     "may_cache_reason": "caching is OPEN for indiankanoon: Read the whole terms page and it does not address whether WE may store what we fetch. The only occurrence of the word is about IKanoon's own caching causing result differences, which is not a grant. DECISION_harvey_parity's reversal condition turns on this exact question, so it must be asked, not assumed: until then S3 quotes at request time and stores nothing.",
+     "clauses": {
+      "ATTRIBUTION": "READ",
+      "COMMERCIAL_USE": "READ",
+      "RATE_LIMIT": "OPEN",
+      "CACHING": "OPEN"
+     }
+    },
+    {
+     "source_id": "nse",
+     "name": "NSE (National Stock Exchange) announcements",
+     "terms_url": "",
+     "terms_read": null,
+     "robots": [
+      {
+       "origin": "https://www.nseindia.com",
+       "state": "ACCESSIBLE",
+       "http": 200
+      }
+     ],
+     "may_fetch": false,
+     "may_fetch_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+     "may_cache": false,
+     "may_cache_reason": "terms unread -- an unread term is OPEN, and OPEN is not permission",
+     "clauses": {
+      "CACHING": "OPEN",
+      "ATTRIBUTION": "OPEN",
+      "COMMERCIAL_USE": "OPEN",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "rbi",
+     "name": "Reserve Bank of India",
+     "terms_url": "https://www.rbi.org.in/Scripts/Disclaimer.aspx",
+     "terms_read": "2026-09-30",
+     "robots": [
+      {
+       "origin": "https://www.rbi.org.in",
+       "state": "BLOCKED",
+       "http": 418
+      }
+     ],
+     "may_fetch": false,
+     "may_fetch_reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+     "may_cache": false,
+     "may_cache_reason": "robots: https://www.rbi.org.in BLOCKED HTTP 418",
+     "clauses": {
+      "CACHING": "PROHIBITED",
+      "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+      "ATTRIBUTION": "OPEN",
+      "RATE_LIMIT": "OPEN"
+     }
+    },
+    {
+     "source_id": "sebi",
+     "name": "SEBI (Securities and Exchange Board of India)",
+     "terms_url": "https://www.sebi.gov.in/website-policy.html",
+     "terms_read": "2026-09-30",
+     "robots": [
+      {
+       "origin": "https://www.sebi.gov.in",
+       "state": "ACCESSIBLE",
+       "http": 200
+      }
+     ],
+     "may_fetch": true,
+     "may_fetch_reason": "robots permit, terms read 2026-09-30",
+     "may_cache": false,
+     "may_cache_reason": "caching is OPEN for sebi: Not addressed. Storing a fetched circular is arguably the 'reproduction' the copyright clause gates on permission, which is a reading and not a quote -- so it stays OPEN and the owner asks.",
+     "clauses": {
+      "ATTRIBUTION": "READ",
+      "COMMERCIAL_USE": "PERMISSION_REQUIRED",
+      "RATE_LIMIT": "OPEN",
+      "CACHING": "OPEN"
+     }
+    }
+   ],
+   "bodies": [
+    {
+     "id": "CA2013",
+     "name": "Companies Act, 2013",
+     "short": "CA2013",
+     "issuer": "MCA",
+     "status": "IN_CORPUS",
+     "covers": "incorporation, governance, board and member meetings, accounts, audit, related-party transactions, loans to directors, KMP, filings",
+     "note": "527 sections held and hash-stamped. Delegated rules acquired one at a time under the two-human-check route; three remain unresolved.",
+     "selectable": true,
+     "default_on": true,
+     "available": true
+    },
+    {
+     "id": "LLP2008",
+     "name": "Limited Liability Partnership Act, 2008",
+     "short": "LLP",
+     "issuer": "MCA",
+     "status": "DECLARED",
+     "covers": "LLP incorporation, partner obligations, annual filings",
+     "note": "Choosing it is refused, with the reason: Limited Liability Partnership Act, 2008 (MCA) is within scope — it covers LLP incorporation, partner obligations, annual filings — but no instrument has been acquired, so nothing here can be decided. No instrument acquired. An LLP question must be refused, not answered from Companies Act reasoning -- the two regimes differ on almost every obligation that matters. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "SEBI_LODR",
+     "name": "SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015",
+     "short": "SEBI_LODR",
+     "issuer": "SEBI",
+     "status": "CURRENT_ONLY",
+     "covers": "continuous disclosure, board composition, related-party approval and reporting for listed entities",
+     "note": "Choosing it is refused, with the reason: SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015 (SEBI): the current consolidated text is held, but it is a snapshot, not a history. A question about what this body required on a past date cannot be answered from it. SEBI's own consolidation is held (amended up to 14-07-2026, SEBI/LAD-NRO/GN/2015-16/013), PENDING_HUMAN_REVIEW. It answers what the law is NOW and is silent on every earlier date, because SEBI publishes a consolidation where MCA publishes discrete amending notifications. Dated LODR questions stay refused until those notifications are acquired individually. No obligation is wired to it yet.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "SEBI_OTHER",
+     "name": "SEBI ICDR, SAST, PIT and Buyback Regulations",
+     "short": "SEBI_OTHER",
+     "issuer": "SEBI",
+     "status": "DECLARED",
+     "covers": "issue of capital, takeovers, insider trading, buyback",
+     "note": "Choosing it is refused, with the reason: SEBI ICDR, SAST, PIT and Buyback Regulations (SEBI) is within scope — it covers issue of capital, takeovers, insider trading, buyback — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "FEMA1999",
+     "name": "Foreign Exchange Management Act, 1999 and the FDI rules",
+     "short": "FEMA",
+     "issuer": "RBI / DPIIT",
+     "status": "DECLARED",
+     "covers": "foreign investment, sectoral caps, reporting (FC-GPR, FC-TRS), downstream investment",
+     "note": "Choosing it is refused, with the reason: Foreign Exchange Management Act, 1999 and the FDI rules (RBI / DPIIT) is within scope — it covers foreign investment, sectoral caps, reporting (FC-GPR, FC-TRS), downstream investment — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. Sectoral caps change by press note, which is a different acquisition problem from a Gazette rule. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "IBC2016",
+     "name": "Insolvency and Bankruptcy Code, 2016",
+     "short": "IBC",
+     "issuer": "IBBI / NCLT",
+     "status": "DECLARED",
+     "covers": "insolvency resolution, liquidation, director conduct in the twilight period",
+     "note": "Choosing it is refused, with the reason: Insolvency and Bankruptcy Code, 2016 (IBBI / NCLT) is within scope — it covers insolvency resolution, liquidation, director conduct in the twilight period — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. NCLT and IBBI orders are natively text PDFs, so the acquisition route is clearer here than most. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "COMP2002",
+     "name": "Competition Act, 2002",
+     "short": "COMP2002",
+     "issuer": "CCI",
+     "status": "DECLARED",
+     "covers": "combination notification thresholds, anti-competitive agreements",
+     "note": "Choosing it is refused, with the reason: Competition Act, 2002 (CCI) is within scope — it covers combination notification thresholds, anti-competitive agreements — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "CONTRACT1872",
+     "name": "Indian Contract Act, 1872",
+     "short": "CONTRACT1872",
+     "issuer": "Parliament of India",
+     "status": "DECLARED",
+     "covers": "formation, consideration, free consent, void and voidable agreements, restraint of trade, remedies for breach",
+     "note": "Choosing it is refused, with the reason: Indian Contract Act, 1872 (Parliament of India) is within scope — it covers formation, consideration, free consent, void and voidable agreements, restraint of trade, remedies for breach — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. F12 reviews a contract against a COMPANY PLAYBOOK, which is a commercial standard and not a legal test. Any question about whether a clause is valid, enforceable or void reaches this body and is refused by name until it is held. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "ARBITRATION1996",
+     "name": "Arbitration and Conciliation Act, 1996",
+     "short": "ARBITRATION1996",
+     "issuer": "Parliament of India",
+     "status": "DECLARED",
+     "covers": "arbitration agreements, seat and venue, interim relief, enforcement of awards",
+     "note": "Choosing it is refused, with the reason: Arbitration and Conciliation Act, 1996 (Parliament of India) is within scope — it covers arbitration agreements, seat and venue, interim relief, enforcement of awards — but no instrument has been acquired, so nothing here can be decided. Nothing acquired. Reached by the dispute-resolution clause of almost every commercial contract, which is why declaring it matters more here than its acquisition priority suggests. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "STAMP",
+     "name": "Stamp duty — Indian Stamp Act, 1899 and State amendments",
+     "short": "STAMP",
+     "issuer": "State governments",
+     "status": "DECLARED",
+     "covers": "instrument stamping on share transfers, debentures, agreements",
+     "note": "Choosing it is refused, with the reason: Stamp duty — Indian Stamp Act, 1899 and State amendments (State governments) is within scope — it covers instrument stamping on share transfers, debentures, agreements — but no instrument has been acquired, so nothing here can be decided. Declared with a warning: rates vary across 25+ States and Union Territories, so a single national answer is wrong by construction. Any answer here must be State-qualified or refused. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "DPDP2023",
+     "name": "Digital Personal Data Protection Act, 2023",
+     "short": "DPDP",
+     "issuer": "MeitY / DPB",
+     "status": "DECLARED",
+     "covers": "personal data obligations falling on a company as Data Fiduciary",
+     "note": "Choosing it is refused, with the reason: Digital Personal Data Protection Act, 2023 (MeitY / DPB) is within scope — it covers personal data obligations falling on a company as Data Fiduciary — but no instrument has been acquired, so nothing here can be decided. Previously recorded OUT_OF_SCOPE on 2026-08-16, when the product was Companies Act only. The widening to corporate-law compliance brings it back in scope as a declared area. Nothing acquired, and the SDF designation remains a gazette lookup, never a computed threshold. This is a statement about what we hold, not a finding that no obligation applies.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "POSH",
+     "name": "Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013",
+     "short": "POSH",
+     "issuer": "—",
+     "status": "OUT_OF_SCOPE",
+     "covers": "internal committee, complaint handling",
+     "note": "Choosing it is refused, with the reason: Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013 is outside this product's scope. Retired product direction, not a gap. See docs/product/RETIRED_POSH.md.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "AI_LAW",
+     "name": "AI regulation",
+     "short": "AI_LAW",
+     "issuer": "—",
+     "status": "OUT_OF_SCOPE",
+     "covers": "—",
+     "note": "Choosing it is refused, with the reason: AI regulation is outside this product's scope. Excluded until an enacted Indian statute exists to verify against. There is nothing to hold, so there is nothing to refuse from.",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "client_documents",
+     "name": "Your documents (Wall System)",
+     "short": "DOCS",
+     "issuer": "your firm",
+     "status": "CLIENT",
+     "covers": "documents this firm uploaded to Wall System",
+     "note": "a research question reads held law only; your documents are read by Document Check and review tables, not by this search",
+     "selectable": true,
+     "default_on": false,
+     "available": true
+    },
+    {
+     "id": "web",
+     "name": "The web",
+     "short": "WEB",
+     "issuer": "—",
+     "status": "UNAVAILABLE",
+     "covers": "—",
+     "note": "web text cannot make an answer VERIFIED",
+     "selectable": false,
+     "default_on": false,
+     "available": false,
+     "reason": "web text cannot make an answer VERIFIED"
+    }
+   ],
+   "fetchable": [
+    "aws_hc_judgments",
+    "aws_sc_judgments",
+    "indiankanoon",
+    "sebi"
+   ],
+   "cacheable": [
+    "aws_hc_judgments",
+    "aws_sc_judgments"
+   ],
+   "note": "Only HELD can make an answer VERIFIED (PLAN_26 §2). External sources are listed with what their own terms permit, read on the date shown; an unread term is OPEN, and OPEN is not permission."
+  }
+ },
+ "send_default": {
+  "http": 200,
+  "body": {
+   "conversation_id": "d9c196e9-8145-4835-8d11-a5c68f811d04",
+   "message_id": "2c55744c-8154-4cfc-b4ab-0fb855f70d70",
+   "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+     "EVENT_ASSESS",
+     "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+   },
+   "run_id": "a60ac890-c99f-4933-9786-ec6e73805fff",
+   "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "ANSWERED",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-08",
+    "text_blocks": [
+     {
+      "text": "[1 of 4 sentence(s) the model wrote did not trace to admitted evidence and are not part of this summary. They are preserved in full below.]\n\n1. Not more than fifteen months shall elapse between the date of one annual general meeting of a company and that of the next.\n   — Companies Act 2013, s.96 [226:348]\n2. The first annual general meeting shall be held within a period of nine months from the date of closing of the first financial year of the company.\n   — Companies Act 2013, s.96 [364:524]\n3. The Registrar may extend the time within which any annual general meeting, other than the first annual general meeting, shall be held, by a period not exceeding three months.\n   — Companies Act 2013, s.96 [845:1043]",
+      "citation_ids": [
+       "c1",
+       "c2",
+       "c3"
+      ]
+     }
+    ],
+    "bodies": [
+     {
+      "body_id": "CA2013",
+      "name": "Companies Act, 2013",
+      "status": "ANSWERED",
+      "note": "held and read as at the date shown"
+     }
+    ],
+    "citations": [
+     {
+      "id": "c1",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "not more than fifteen months shall elapse\nbetween the date of one annual general meeting of a company and that of the next"
+     },
+     {
+      "id": "c2",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "in case of the first annual general meeting, it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company"
+     },
+     {
+      "id": "c3",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths"
+     }
+    ],
+    "files": [],
+    "run_id": "a60ac890-c99f-4933-9786-ec6e73805fff",
+    "trace_url": "/v2/runs/a60ac890-c99f-4933-9786-ec6e73805fff/trace",
+    "searched": {
+     "bodies": [
+      {
+       "id": "CA2013",
+       "status": "IN_CORPUS",
+       "read": true
+      }
+     ],
+     "as_of": "2026-10-08",
+     "defaulted": true
+    }
+   }
+  }
+ },
+ "send_ca_llp": {
+  "http": 200,
+  "body": {
+   "conversation_id": "f62bbcb1-c01e-4dae-9a22-0f0964e4bbaf",
+   "message_id": "20c62ae9-16cb-4874-a077-40a42efe0529",
+   "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+     "EVENT_ASSESS",
+     "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+   },
+   "run_id": "e8e4ed8c-682a-4682-9fd7-5ca55d3fd537",
+   "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "PARTIAL",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-08",
+    "text_blocks": [
+     {
+      "text": "[1 of 4 sentence(s) the model wrote did not trace to admitted evidence and are not part of this summary. They are preserved in full below.]\n\n1. Not more than fifteen months shall elapse between the date of one annual general meeting of a company and that of the next.\n   — Companies Act 2013, s.96 [226:348]\n2. The first annual general meeting shall be held within a period of nine months from the date of closing of the first financial year of the company.\n   — Companies Act 2013, s.96 [409:524]\n3. The Registrar may extend the time within which any annual general meeting, other than the first annual general meeting, shall be held, by a period not exceeding three months.\n   — Companies Act 2013, s.96 [845:1043]",
+      "citation_ids": [
+       "c1",
+       "c2",
+       "c3"
+      ]
+     }
+    ],
+    "bodies": [
+     {
+      "body_id": "CA2013",
+      "name": "Companies Act, 2013",
+      "status": "ANSWERED",
+      "note": "held and read as at the date shown"
+     },
+     {
+      "body_id": "LLP2008",
+      "name": "Limited Liability Partnership Act, 2008",
+      "status": "NOT_HELD",
+      "note": "Limited Liability Partnership Act, 2008 (MCA) is within scope — it covers LLP incorporation, partner obligations, annual filings — but no instrument has been acquired, so nothing here can be decided. No instrument acquired. An LLP question must be refused, not answered from Companies Act reasoning -- the two regimes differ on almost every obligation that matters. This is a statement about what we hold, not a finding that no obligation applies."
+     }
+    ],
+    "citations": [
+     {
+      "id": "c1",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "not more than fifteen months shall elapse\nbetween the date of one annual general meeting of a company and that of the next"
+     },
+     {
+      "id": "c2",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company"
+     },
+     {
+      "id": "c3",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths"
+     }
+    ],
+    "files": [],
+    "run_id": "e8e4ed8c-682a-4682-9fd7-5ca55d3fd537",
+    "trace_url": "/v2/runs/e8e4ed8c-682a-4682-9fd7-5ca55d3fd537/trace",
+    "searched": {
+     "bodies": [
+      {
+       "id": "CA2013",
+       "status": "IN_CORPUS",
+       "read": true
+      },
+      {
+       "id": "LLP2008",
+       "status": "DECLARED",
+       "read": false
+      }
+     ],
+     "as_of": "2026-10-08",
+     "defaulted": false
+    }
+   }
+  }
+ },
+ "send_llp_only": {
+  "http": 200,
+  "body": {
+   "conversation_id": "c8e0a9e9-8d96-4f46-b3b1-4bf0a840a38b",
+   "message_id": "c0177001-17c6-4828-83c5-e0d32d74b782",
+   "classification": {
+    "task": "RESEARCH_QUESTION",
+    "alternatives": [
+     "EVENT_ASSESS",
+     "LAW_CHANGES"
+    ],
+    "reason": "it is shaped as a question about the law, and nothing is attached to review",
+    "decided_by": "rules",
+    "rule": "question_shape"
+   },
+   "run_id": "292e76bc-10a1-41d9-ac1d-8f483f0ead06",
+   "envelope": {
+    "schema": "answer_envelope.v1",
+    "status": "ABSTAINED",
+    "task": "RESEARCH_QUESTION",
+    "as_of": "2026-10-08",
+    "text_blocks": [
+     {
+      "text": "See the findings.",
+      "citation_ids": []
+     }
+    ],
+    "bodies": [
+     {
+      "body_id": "CA2013",
+      "name": "Companies Act, 2013",
+      "status": "NOT_ENGAGED",
+      "note": "not chosen as a source for this question, so the Companies Act was not searched"
+     },
+     {
+      "body_id": "LLP2008",
+      "name": "Limited Liability Partnership Act, 2008",
+      "status": "NOT_HELD",
+      "note": "Limited Liability Partnership Act, 2008 (MCA) is within scope — it covers LLP incorporation, partner obligations, annual filings — but no instrument has been acquired, so nothing here can be decided. No instrument acquired. An LLP question must be refused, not answered from Companies Act reasoning -- the two regimes differ on almost every obligation that matters. This is a statement about what we hold, not a finding that no obligation applies."
+     }
+    ],
+    "citations": [],
+    "files": [],
+    "run_id": "292e76bc-10a1-41d9-ac1d-8f483f0ead06",
+    "trace_url": "/v2/runs/292e76bc-10a1-41d9-ac1d-8f483f0ead06/trace",
+    "searched": {
+     "bodies": [
+      {
+       "id": "LLP2008",
+       "status": "DECLARED",
+       "read": false
+      }
+     ],
+     "as_of": "2026-10-08",
+     "defaulted": false
+    }
+   }
+  }
+ },
+ "send_unknown": {
+  "http": 400,
+  "body": {
+   "status": "REFUSED",
+   "code": "BAD_REQUEST",
+   "detail": "'NOPE' is not a source. The ids are listed by sources.list: CA2013, LLP2008, SEBI_LODR, SEBI_OTHER, FEMA1999, IBC2016, COMP2002, CONTRACT1872, ARBITRATION1996, STAMP, DPDP2023, POSH, AI_LAW, client_documents, web"
+  }
+ },
+ "matters_list": {
+  "http": 200,
+  "body": {
+   "matters": []
+  }
+ },
+ "vault_status": {
+  "http": 200,
+  "body": {
+   "documents": 0,
+   "by_state": {},
+   "deleted": 0,
+   "unsearchable": 0,
+   "note": "0 document(s). 0 cannot be searched -- they are PENDING or CANNOT_READ, and a search answers from the rest. 0 have been deleted; their rows remain and their bytes do not."
+  }
+ },
+ "run": {
+  "http": 200,
+  "body": {
+   "id": "a60ac890-c99f-4933-9786-ec6e73805fff",
+   "intent": "research_question",
+   "status": "PARTIAL",
+   "refusal_code": null,
+   "law_versions": {
+    "corpus/companies_act/1287.json": "3d3a43fc04a4e3b9209c05e7a0ec056f81108ed4"
+   },
+   "nonconformity": null,
+   "nonconformity_note": "not computed: 3 of 4 sentence(s) byte-matched, but this path produces no entailment verdict (checker/lawyer_summary.py declares ENTAILED reserved and never returned), and the score needs both. Scoring from the byte match alone would be a different measurement under the same name.",
+   "critic_enabled": false,
+   "result": {
+    "status": "PARTIAL",
+    "question": "What is the time limit for holding an annual general meeting under section 96?",
+    "code": null,
+    "reason": "3 sentence(s) traced, 1 dropped as unsupported",
+    "provisions": [
+     "Companies Act 2013, s.96"
+    ],
+    "dropped": 1,
+    "model": "azure/llama-3-3-70b",
+    "degraded": true,
+    "citations": [
+     {
+      "id": "c1",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "not more than fifteen months shall elapse\nbetween the date of one annual general meeting of a company and that of the next"
+     },
+     {
+      "id": "c2",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "in case of the first annual general meeting, it shall be held within a period of nine\nmonths from the date of closing of the first financial year of the company"
+     },
+     {
+      "id": "c3",
+      "instrument": "Companies Act 2013",
+      "provision": "s.96",
+      "source": "corpus/companies_act/1287.json",
+      "fetched_at": "2026-08-18T22:16:51+00:00",
+      "sha256": "f9a5251b8cd0f98049d030733323000e76ce8d3a4e867634c7fb1b66d85490fe",
+      "quote": "the Registrar may, for any special reason, extend the time within which any annual\ngeneral meeting, other than the first annual general meeting, shall be held, by a period not exceeding three\nmonths"
+     }
+    ],
+    "answer": "[1 of 4 sentence(s) the model wrote did not trace to admitted evidence and are not part of this summary. They are preserved in full below.]\n\n1. Not more than fifteen months shall elapse between the date of one annual general meeting of a company and that of the next.\n   — Companies Act 2013, s.96 [226:348]\n2. The first annual general meeting shall be held within a period of nine months from the date of closing of the first financial year of the company.\n   — Companies Act 2013, s.96 [364:524]\n3. The Registrar may extend the time within which any annual general meeting, other than the first annual general meeting, shall be held, by a period not exceeding three months.\n   — Companies Act 2013, s.96 [845:1043]",
+    "sources": [
+     "CA2013"
+    ],
+    "sources_defaulted": true
+   },
+   "failure_category": "verifier_reject",
+   "failure_reason": "status PARTIAL: something was proposed and not admitted",
+   "propositions": [
+    {
+     "status": "VERIFIED",
+     "source_ref": null,
+     "span_start": null,
+     "span_end": null
+    },
+    {
+     "status": "VERIFIED",
+     "source_ref": null,
+     "span_start": null,
+     "span_end": null
+    },
+    {
+     "status": "UNVERIFIED",
+     "source_ref": null,
+     "span_start": null,
+     "span_end": null
+    },
+    {
+     "status": "VERIFIED",
+     "source_ref": null,
+     "span_start": null,
+     "span_end": null
+    }
+   ]
+  }
+ },
+ "vault_find": {
+  "http": 200,
+  "body": {
+   "hits": [],
+   "searched_documents": 0,
+   "searched_chunks": 0,
+   "unsearchable": 0,
+   "note": "nothing is indexed for this tenant. That is not 'no document matches': it is 'there is nothing to match against'",
+   "scope": "tenant",
+   "scope_note": "searched the whole firm's vault, not one matter. Listing is per matter (8b); searching is per tenant, which is what V1 specifies and what answers 'have we ever agreed to this'"
+  }
+ },
+ "trace_default": {
+  "http": 200,
+  "body": {
+   "run_id": "a60ac890-c99f-4933-9786-ec6e73805fff",
+   "steps": [
+    {
+     "capability": "intake",
+     "engine_capability": null,
+     "status": "ANSWERED",
+     "model": null,
+     "degraded": false,
+     "provider": null,
+     "region": null,
+     "cost_inr": null,
+     "cost_note": "no model was called on this step, so there is nothing to price. This is not a cost of zero.",
+     "idempotency_key": null
+    },
+    {
+     "capability": "research",
+     "engine_capability": "law.acquisition_exposure",
+     "status": "PARTIAL",
+     "model": "azure/llama-3-3-70b",
+     "degraded": true,
+     "provider": "azure",
+     "region": "UAE North",
+     "cost_inr": 0.0748,
+     "cost_note": "priced from 852+254 tokens at https://prices.azure.com/api/retail/prices?$filter=armRegionName eq 'uaenorth' and contains(meterName,'Llama 3.3 70B') (2026-09-29)",
+     "idempotency_key": null
+    }
+   ],
+   "critic_enabled": false,
+   "critic_note": "the critic was OFF when this run was written, so nothing was removed by it"
+  }
+ }
+}
