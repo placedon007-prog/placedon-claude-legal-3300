@@ -380,7 +380,7 @@ function Answered({
   const servedProse = parsed.sentences.length > 0 ? (
         // One paragraph per cited sentence: each is a separate served claim, and run together
         // they read as one blurred block.
-        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read text-fg">
+        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read tracking-[0.005em] text-fg">
           {parsed.sentences.map((s, i) => {
             const n = refs[i];
             const group = n === null ? null : groups[n - 1];
@@ -408,7 +408,7 @@ function Answered({
       ) : first ? (
         // Unparsed: verbatim. A reconstruction would be this app writing law.
         // Split on blank lines so multi-paragraph responses don't render as a wall.
-        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read text-fg">
+        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read tracking-[0.005em] text-fg">
           {first.text.split(/\n{2,}/).map((chunk, i) => (
             <p key={i} className={i === 0 ? "font-medium" : undefined}>{chunk}</p>
           ))}
@@ -499,8 +499,10 @@ function Answered({
         </Link>
       ))}
 
-      <ResultLine envelope={envelope} />
-      <Actions envelope={envelope} />
+      <footer className="flex flex-col gap-1 border-t border-line pt-3">
+        <ResultLine envelope={envelope} />
+        <Actions envelope={envelope} />
+      </footer>
     </article>
   );
 }
@@ -528,7 +530,13 @@ function CaseAnswered({
         {abstained ? "Case law search — no supporting authority found" : "Supporting authority — not a verified statutory answer"}
       </p>
 
-      {first ? <p className="max-w-[68ch] whitespace-pre-wrap text-read text-fg">{first.text}</p> : null}
+      {first ? (
+        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read tracking-[0.005em] text-fg">
+          {first.text.split(/\n{2,}/).map((chunk, i) => (
+            <p key={i} className={i === 0 ? "font-medium" : undefined}>{chunk}</p>
+          ))}
+        </div>
+      ) : null}
       {rest.map((b, i) => (
         <p key={i} className="max-w-[68ch] text-body text-fg-2">{b.text}</p>
       ))}
@@ -561,8 +569,10 @@ function CaseAnswered({
       {envelope.bodies.length > 0 ? <Bodies envelope={envelope} /> : null}
       {sources ? <Searched report={sources} /> : null}
 
-      <ResultLine envelope={envelope} />
-      <Actions envelope={envelope} />
+      <footer className="flex flex-col gap-1 border-t border-line pt-3">
+        <ResultLine envelope={envelope} />
+        <Actions envelope={envelope} />
+      </footer>
     </article>
   );
 }
@@ -740,10 +750,10 @@ function RunLink({ runId }: { runId: string }) {
 
 export function StatusLine({ kind, extra }: { kind: StatusKind; extra?: string }) {
   return (
-    <p className="flex items-center gap-2 text-ui text-fg-2">
+    <p className="flex items-center gap-2 text-body text-fg-2">
       <StatusIcon kind={kind} />
-      <span className="font-medium text-fg">{statusLabel(kind)}</span>
-      {extra ? <span className={cn(kind === "refused" && "font-mono text-caption")}>· {extra}</span> : null}
+      <span className="font-semibold text-fg">{statusLabel(kind)}</span>
+      {extra ? <span className={cn("text-ui", kind === "refused" && "font-mono text-caption")}>· {extra}</span> : null}
     </p>
   );
 }
