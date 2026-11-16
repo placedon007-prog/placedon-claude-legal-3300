@@ -385,7 +385,7 @@ function Answered({
             const n = refs[i];
             const group = n === null ? null : groups[n - 1];
             return (
-              <p key={s.n}>
+              <p key={s.n} className={i === 0 ? "font-medium" : undefined}>
                 {/* The last word and its marker never part across a line break. */}
                 {lead(s.text)}
                 <span className="whitespace-nowrap">
@@ -407,7 +407,12 @@ function Answered({
         </div>
       ) : first ? (
         // Unparsed: verbatim. A reconstruction would be this app writing law.
-        <p className="max-w-[68ch] text-read whitespace-pre-wrap text-fg">{first.text}</p>
+        // Split on blank lines so multi-paragraph responses don't render as a wall.
+        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read text-fg">
+          {first.text.split(/\n{2,}/).map((chunk, i) => (
+            <p key={i} className={i === 0 ? "font-medium" : undefined}>{chunk}</p>
+          ))}
+        </div>
       ) : null;
 
   const failure = failedRegister(documentSummaryUnavailable);
@@ -461,7 +466,7 @@ function Answered({
         return text ? <p key={i} className="max-w-[68ch] text-body text-fg-2">{text}</p> : null;
       })}
 
-      {groups.length > 0 && !setAside ? <Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /> : null}
+      {groups.length > 0 && !setAside ? <div className="border-t border-line pt-4"><Sources groups={groups} title={nothingTraced ? "Provisions found — no sentence could be traced to them" : undefined} onOpen={(g) => open(g, null)} /></div> : null}
       {onDraft && kind === "answered" && !demoMismatch && envelope.citations.length > 0 ? <button type="button" onClick={onDraft}
         className="flex min-h-11 items-center gap-2 self-start rounded-chip border border-line-control px-3 text-ui text-fg hover:bg-wash">
         <PenLine className="size-4" aria-hidden />Create draft from latest cited answer
