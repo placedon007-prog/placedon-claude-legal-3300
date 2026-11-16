@@ -91,7 +91,7 @@ export function TurnView({
       : <ResearchActivity kind="web" />}
   </section>;
   return (
-    <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
+    <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-4">
       <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">
         {turn.question}
       </h2>
@@ -380,7 +380,7 @@ function Answered({
   const servedProse = parsed.sentences.length > 0 ? (
         // One paragraph per cited sentence: each is a separate served claim, and run together
         // they read as one blurred block.
-        <div className="flex max-w-[68ch] flex-col gap-3 text-read text-fg">
+        <div className="flex max-w-[68ch] flex-col gap-[1.15em] text-read text-fg">
           {parsed.sentences.map((s, i) => {
             const n = refs[i];
             const group = n === null ? null : groups[n - 1];
@@ -441,7 +441,7 @@ function Answered({
   }
 
   return (
-    <article className="flex flex-col gap-4">
+    <article className="flex flex-col gap-5">
       {/* A demo recording shown for another question must not say this question was answered. */}
       <StatusLine
         kind={demoMismatch ? "refused" : kind}
@@ -518,7 +518,7 @@ function CaseAnswered({
   const { hits } = toCaseAnswerRenderModel(envelope, sources);
   const [first, ...rest] = envelope.text_blocks;
   return (
-    <article className="flex flex-col gap-4">
+    <article className="flex flex-col gap-5">
       <p className="text-ui font-medium text-fg">
         {abstained ? "Case law search — no supporting authority found" : "Supporting authority — not a verified statutory answer"}
       </p>
