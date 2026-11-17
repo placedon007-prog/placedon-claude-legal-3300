@@ -7,7 +7,7 @@ import type { WebResearchState } from "./actions";
 function ResearchSources({ citations, heading }: { citations: NonNullable<Extract<WebResearchState, { phase: "result" }>['result']['citations']>; heading: string }) {
   if (!citations.length) return null;
   return <>
-    <h4 className="mt-6 text-ui font-medium">{heading}</h4>
+    <h4 className="mt-6 text-ui font-medium text-fg">{heading}</h4>
     <ol className="mt-2 list-decimal space-y-3 pl-6 marker:text-fg-3">
       {citations.map((citation, index) => (
         <li key={`${citation.url}-${index}`} className="rounded-card border border-line p-4">
@@ -45,8 +45,8 @@ export function ResearchState({ state, query }: { state: WebResearchState; query
             <Clock3 className="size-3.5" aria-hidden /> Searched {result.queried_at ? new Date(result.queried_at).toLocaleString() : "time not recorded"}
           </span>
         </div>
-        <p className="mt-3 text-caption text-fg-3">Provider-generated public-web summary. Claims are unverified and do not establish law or live docket status. Review linked sources.</p>
-        <p className="mt-4 whitespace-pre-wrap text-read leading-7">{result.answer}</p>
+        <p className="mt-3 max-w-[68ch] text-caption text-fg-3">Provider-generated public-web summary. Claims are unverified and do not establish law or live docket status. Review linked sources.</p>
+        <p className="mt-4 max-w-[68ch] whitespace-pre-wrap text-read tracking-[0.005em] text-fg">{result.answer}</p>
         {result.portals?.length ? <div className="mt-4 rounded-card border border-line p-4">
           <p className="text-ui font-medium">Verify the court record</p>
           <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">{result.portals.map((portal) => (
