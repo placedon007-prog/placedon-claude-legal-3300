@@ -774,9 +774,12 @@
     color 0.16s ease,
     background 0.16s ease;
 }
+/* The selected tab was cream on the cream ground — the pill was invisible,
+   so as the panel rotated nothing showed which case was on screen. It is
+   now the ink pill, which also makes the rotation legible at a glance. */
 .ddemo-tab[data-active="true"] {
-  color: var(--ink);
-  background: var(--cream);
+  color: var(--cream);
+  background: var(--ink);
 }
 .ddemo-stage {
   display: grid;

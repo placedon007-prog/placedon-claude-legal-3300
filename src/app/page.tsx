@@ -500,7 +500,7 @@ export default function DashboardPage() {
   const reduce = useReducedMotion();
   const active = demos[tab];
 
-  /* The tabs advance themselves every 3 seconds — AGM timing, board
+  /* The tabs advance themselves every 2 seconds — AGM timing, board
      meetings, and on — while the section is on screen.
 
      Two things keep that from trapping the reader, which is what WCAG 2.2.2
@@ -520,7 +520,7 @@ export default function DashboardPage() {
     if (!demoInView || demoHovered || demoTakenOver || reduce) return;
     const id = setInterval(() => {
       setTab((t) => (t + 1) % demos.length);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(id);
   }, [demoInView, demoHovered, demoTakenOver, reduce]);
 
