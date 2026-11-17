@@ -214,7 +214,7 @@ function SectionView({
       </SheetDescriptionOrText>
       {/* Display only: hard wraps from the source PDF are joined (joinWrappedLines); a new
           sub-section or proviso keeps its line. The words are the held text, unchanged. */}
-      <div className="mt-4 rounded-card border border-line-2 p-4 text-read whitespace-pre-line text-fg">
+      <div className="mt-4 rounded-card border border-line-2 p-4 text-read tracking-[0.005em] whitespace-pre-line text-fg">
         {segmentSection(text, ranges).map((seg, i) =>
           seg.kind === "text" ? (
             <React.Fragment key={i}>{joinWrappedLines(seg.text)}</React.Fragment>
@@ -285,7 +285,7 @@ function Passage({
       className={cn("rounded-card border p-4", active ? "border-fg" : "border-line-2")}
     >
       {/* Newlines in a quote are the PDF's hard wraps, not paragraphs; the words are unchanged. */}
-      <blockquote className="text-read text-fg">
+      <blockquote className="text-read tracking-[0.005em] text-fg">
         {active && verified ? <mark className="quote-mark text-fg">{quote}</mark> : quote}
       </blockquote>
 

@@ -85,14 +85,14 @@ export function TurnView({
   const asksForCurrentCase = /\b(?:case|court|lawsuit|litigation|dispute)\b/i.test(turn.question)
     && /\b(?:current|latest|recent|today|news|update)\b/i.test(turn.question);
   if (turn.web) return <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-3">
-    <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">{turn.question}</h2>
+    <h2 id={`q-${turn.key}`} className="text-pretty text-title font-semibold tracking-[-0.01em] text-fg">{turn.question}</h2>
     <p className="text-caption text-fg-3">Public web · {turn.web.mode === "CASE_DISCOVERY" ? "cases and reporting" : "general search"} · This result is not saved to the legal conversation.</p>
     {turn.web.state ? <ResearchState state={turn.web.state} query={turn.question} />
       : <ResearchActivity kind="web" />}
   </section>;
   return (
     <section aria-labelledby={`q-${turn.key}`} className="group/turn flex flex-col gap-4">
-      <h2 id={`q-${turn.key}`} className="text-title font-semibold tracking-[-0.01em] text-fg">
+      <h2 id={`q-${turn.key}`} className="text-pretty text-title font-semibold tracking-[-0.01em] text-fg">
         {turn.question}
       </h2>
       {s?.phase === "answered" && (s.envelope.resource === "case" || asksForCurrentCase) ? (
