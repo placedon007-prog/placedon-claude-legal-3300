@@ -1,10 +1,51 @@
+"use client";
+
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { LegalText } from "./brand";
 import type {
   ContentLink,
   ContentSection,
   PageContent,
 } from "@/lib/placedon-content/content/types";
+
+/* Text settles as the reader arrives on the page.
+
+   One short rise, played once, on the hero headline and on each section
+   heading as it comes into view. It is deliberately not a word-by-word
+   stagger: a headline assembling itself one word at a time performs rather
+   than states, which is the wrong register for a page about statutory
+   evidence.
+
+   It starts at --reveal-floor (0.55), never at opacity 0 — below roughly
+   alpha 0.48 the text drops under the 4.5:1 AA floor, so a fade from zero
+   puts an unreadable heading on screen for the length of the transition
+   and server-renders it invisible. */
+const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
+const REVEAL_FLOOR = 0.55;
+
+function Settle({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
+  const reduce = useReducedMotion();
+  if (reduce) return <>{children}</>;
+  return (
+    <motion.span
+      style={{ display: "inline-block" }}
+      initial={{ opacity: REVEAL_FLOOR, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.24, delay, ease: EASE }}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
 export function Action({
   action,
   secondary = false,
@@ -21,12 +62,18 @@ export function Action({
 export function PageHero({ page }: { page: PageContent }) {
   return (
     <div className="container page-hero">
-      <p className="eyebrow">{page.eyebrow}</p>
+      <p className="eyebrow">
+        <Settle>{page.eyebrow}</Settle>
+      </p>
       <h1>
-        <LegalText>{page.headline}</LegalText>
+        <Settle delay={0.05}>
+          <LegalText>{page.headline}</LegalText>
+        </Settle>
       </h1>
       <p className="page-intro">
-        <LegalText>{page.subhead}</LegalText>
+        <Settle delay={0.1}>
+          <LegalText>{page.subhead}</LegalText>
+        </Settle>
       </p>
       <div className="action-row">
         <Action action={page.primaryCta} />
@@ -45,12 +92,16 @@ export function ReadingSection({
       <div className="container reading-grid">
         <div className="section-aside">
           <h2>
-            <LegalText>{section.heading}</LegalText>
+            <Settle>
+              <LegalText>{section.heading}</LegalText>
+            </Settle>
           </h2>
         </div>
         <div className="section-body">
         <p className="claim">
-          <LegalText>{section.claim}</LegalText>
+          <Settle delay={0.05}>
+            <LegalText>{section.claim}</LegalText>
+          </Settle>
         </p>
         <p>
           <LegalText>{section.basis}</LegalText>

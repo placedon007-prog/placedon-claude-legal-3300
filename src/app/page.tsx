@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
 import {
   motion,
@@ -356,6 +355,46 @@ const features: Feature[] = [
   },
 ];
 
+/**
+ * Sideways entrance, used by the resources row.
+ *
+ * Same contract as Reveal: it never starts below the --reveal-floor opacity,
+ * it plays once rather than on every scroll pass, and reduced motion renders
+ * the final state with no movement at all.
+ */
+function SlideIn({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  const variants: Variants = reduce
+    ? { hidden: { opacity: 1, x: 0 }, show: { opacity: 1, x: 0 } }
+    : {
+        hidden: { opacity: REVEAL_FLOOR, x: 34 },
+        show: {
+          opacity: 1,
+          x: 0,
+          transition: { duration: 0.24, delay, ease: EASE },
+        },
+      };
+  return (
+    <motion.div
+      className={className}
+      variants={variants}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-70px" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 const principles = [
   {
     step: "01 · Explain",
@@ -622,19 +661,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* HERO — image backdrop, text left, actions top-right */}
+      {/* HERO — centred type on the cream ground, no photograph and no
+          entrance animation. It is the first thing on the page: there is
+          nothing to reveal it from, and a hero that fades in delays the one
+          statement the site exists to make. */}
       <section className="dhero-img dsection-flush">
-        <Image
-          className="dhero-img-photo"
-          src="/media/hero-chamber.jpg"
-          alt="A grand, empty classical legislative chamber, the seat of the record."
-          fill
-          priority
-          sizes="100vw"
-        />
-        <div className="dhero-img-scrim" aria-hidden="true" />
         <div className="dash-container dhero-img-inner">
-          <Reveal className="dhero-img-text">
+          <div className="dhero-img-text">
             <span className="eyebrow">
               Research · Compliance · Monitoring · Drafting
             </span>
@@ -662,7 +695,7 @@ export default function DashboardPage() {
                 See the evidence
               </Link>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -897,9 +930,14 @@ export default function DashboardPage() {
             <AnimatedH2>Evidence &amp; resources</AnimatedH2>
           </div>
         </Reveal>
+        {/* The cards slide in from the side, one after another, rather than
+            simply fading up. This is the "sliding" the resources row used to
+            have as a 38s infinite marquee — kept as a single entrance on
+            scroll instead of perpetual motion, so a title can never drift
+            away mid-read and there is nothing to have to pause. */}
         <div className="dres-grid">
           {resources.map((r, i) => (
-            <Reveal key={r.title} delay={(i % 3) * 0.05} className="dres-card">
+            <SlideIn key={r.title} delay={(i % 3) * 0.08} className="dres-card">
               <div className="dres-foot">
                 <div className="dres-title">
                   <Balancer>{r.title}</Balancer>
@@ -908,7 +946,7 @@ export default function DashboardPage() {
                   {r.kind}
                 </span>
               </div>
-            </Reveal>
+            </SlideIn>
           ))}
         </div>
       </section>

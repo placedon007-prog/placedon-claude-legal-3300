@@ -147,31 +147,14 @@
     box-shadow var(--dur-2) var(--ease),
     background-color var(--dur-2) var(--ease);
 }
-/* A light sweep that crosses once on hover — a moment of motion, not a loop. */
-.dbtn-solid::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.85) 50%,
-    transparent 100%
-  );
-  transform: skewX(-18deg);
-  pointer-events: none;
-}
+/* A small lift. There used to be a 600ms skewed white gradient sweeping
+   across the button on hover — 2.4x the motion budget, a hard-coded white
+   rather than a token, and no transition on un-hover so it snapped back
+   when the cursor left. The lift and shadow are the whole response now. */
 .dbtn-solid:hover {
-  background: #fff;
+  opacity: 0.88;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
-}
-.dbtn-solid:hover::after {
-  transition: left var(--dur-2) var(--ease);
-  left: 140%;
 }
 .dbtn-solid:active {
   transform: translateY(0) scale(0.97);
@@ -181,9 +164,6 @@
   .dbtn-solid:hover,
   .dbtn-solid:active {
     transform: none;
-  }
-  .dbtn-solid::after {
-    display: none;
   }
 }
 .dbtn-ghost {
@@ -449,10 +429,15 @@
   display: flex;
   gap: 12px;
   margin-top: 36px;
+  justify-content: center;
 }
+/* Centred, now that the chamber photograph is gone — there is no longer a
+   right half for an image to occupy, so left-aligned type left the section
+   visibly lopsided. The measure caps still apply. */
 .dhero-img-text {
-  max-width: 760px;
-  text-align: left;
+  max-width: 880px;
+  margin-inline: auto;
+  text-align: center;
 }
 .dhero-img-text .eyebrow {
   display: block;
@@ -478,12 +463,15 @@
     padding-block: 20px;
   }
   .dhero-img-actions {
-    align-self: stretch;
-    justify-content: flex-start;
+    /* Centred like the rest of the hero. This said flex-start (plus an inert
+       align-self: stretch — the parent is not a flex container), left over
+       from the left-aligned photo hero, so on a phone the centred headline
+       sat above two flush-left buttons. */
+    justify-content: center;
     flex-wrap: wrap;
   }
   .dhero-img-text h1 {
-    font-size: clamp(34px, 9.5vw, 52px);
+    font-size: clamp(38px, 10vw, 58px);
     letter-spacing: var(--track-l);
   }
 }
@@ -798,6 +786,9 @@
    RESOURCES (blank card grid)
    ============================================================ */
 .dres-grid {
+  /* The cards slide in from the right; clip so the entrance can never
+     produce a horizontal scrollbar on narrow screens. */
+  overflow-x: clip;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
