@@ -547,7 +547,7 @@ function CaseAnswered({
             <li key={hit.id} className="flex min-h-11 items-start gap-3 px-1 py-2.5">
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-body font-semibold text-fg">{hit.title}</span>
-                <span className="text-caption text-fg-2">{hit.parties.join(" v. ")} · {hit.year} · {hit.court}</span>
+                <span className="text-caption text-fg-3">{hit.parties.join(" v. ")} · {hit.year} · {hit.court}</span>
               </span>
               <TierBadge tier={hit.tier} />
               {/* aria-disabled keeps it focusable so the label can say why it does nothing —

@@ -7,16 +7,16 @@ export function DocumentEvidenceAnswer({ evidence }: { evidence: DocumentEvidenc
   return (
     <article aria-label="Document research result" className="flex min-w-0 flex-col gap-4">
       <h3 className="text-title font-semibold text-fg">{documentEvidenceLabel(evidence)}</h3>
-      <p className="max-w-[68ch] text-read text-fg-2">{documentEvidenceExplanation(evidence)}</p>
+      <p className="max-w-[68ch] text-read tracking-[0.005em] text-fg-2">{documentEvidenceExplanation(evidence)}</p>
       {evidence.history_query ? (
         // Shown, not tucked into the limitations: it is why these excerpts answer a short follow-up.
-        <p className="max-w-[68ch] text-body text-fg-2">Read together with your previous question: “{evidence.history_query}”</p>
+        <p className="max-w-[68ch] text-ui text-fg-2">Read together with your previous question: “{evidence.history_query}”</p>
       ) : null}
       {found ? <ol aria-label="Document excerpts" className="space-y-6">
         {evidence.passages.map((passage, index) => (
           <li key={passage.id} className="min-w-0 space-y-2">
             <h4 className="text-body font-medium break-words text-fg">{index + 1}. {passage.name}{passage.page ? ` · Page ${passage.page}` : ""}</h4>
-            <blockquote className="max-w-[68ch] text-read whitespace-pre-wrap break-words text-fg">{passage.text}</blockquote>
+            <blockquote className="max-w-[68ch] text-read tracking-[0.005em] whitespace-pre-wrap break-words text-fg">{passage.text}</blockquote>
             <details className="text-ui text-fg-2">
               <summary className="flex min-h-11 cursor-pointer items-center rounded-chip underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg">Excerpt details</summary>
               <div className="space-y-2 pb-2">
