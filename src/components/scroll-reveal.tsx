@@ -48,17 +48,18 @@ export function ScrollReveal({
       el.setAttribute("data-reveal", rect.top >= viewportH ? "out" : "in");
     });
 
-    // Reveal once, then stop observing. This used to toggle in/out forever,
-    // so scrolling back up re-hid content the reader had already read. It
-    // also disagreed with the framer reveals inside these same blocks, which
-    // play once: on a second pass the hero block would dim while the heading
-    // inside it stayed put. A reveal marks arrival; it does not repeat.
+    // Replay: toggle in/out as blocks enter and leave, so the reveal plays
+    // again each time the reader scrolls back to a section. Safe to repeat
+    // because the reveal floors at 0.55 opacity — a re-hidden block stays
+    // readable rather than blinking out. This matches the framer reveals
+    // inside these same blocks, which also replay.
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.setAttribute("data-reveal", "in");
-          observer.unobserve(entry.target);
+          entry.target.setAttribute(
+            "data-reveal",
+            entry.isIntersecting ? "in" : "out",
+          );
         }
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },

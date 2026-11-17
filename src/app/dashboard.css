@@ -36,6 +36,10 @@
 .dhero-video,
 .dfeature-example,
 .daside,
+/* .dcard is a dark panel too (--ink-2 ground, cream text) but was missing
+   from this list, so its label and border resolved to the LIGHT context's
+   near-black tokens — dark ink on a dark card, i.e. invisible. */
+.dcard,
 .dhero2 {
   --line: rgba(244, 239, 230, 0.12);
   --line-strong: rgba(244, 239, 230, 0.22);
@@ -692,7 +696,16 @@
   border-radius: 14px;
   overflow: hidden;
 }
+/* The 1px gap lets the grid's --line ground through as hairline rules. Each
+   grid ITEM is the Reveal wrapper, though, not the card inside it — so any
+   card shorter than its row left that ground showing as a thick grey bar
+   under the text. Both the wrapper and the card now fill the cell. */
+.dtools-grid > * {
+  display: flex;
+  min-width: 0;
+}
 .dtool-card {
+  flex: 1;
   background: var(--cream);
   padding: clamp(28px, 3vw, 40px);
   display: flex;
@@ -941,13 +954,60 @@
    paused on hover/focus). Perpetual ambient motion the reader never asked
    for, and a card could drift away mid-read. The list is short; show it.
    ============================================================ */
-.dres-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+/* RESOURCES — one row, travelling continuously, pausing under the cursor.
+   The track holds the list twice and moves exactly -50%, so the seam never
+   shows. Pause is :hover and :focus-within — the focus half is what gives a
+   keyboard user a way to stop it. */
+.dres-marquee {
+  position: relative;
   margin-top: 60px;
+  overflow: hidden;
+  /* Fade both ends so cards enter and leave rather than being cut off. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 64px,
+    #000 calc(100% - 64px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 64px,
+    #000 calc(100% - 64px),
+    transparent
+  );
+}
+.dres-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: dres-scroll 42s linear infinite;
+}
+.dres-marquee:hover .dres-track,
+.dres-marquee:focus-within .dres-track {
+  animation-play-state: paused;
+}
+.dres-marquee:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+@keyframes dres-scroll {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dres-track {
+    animation: none;
+  }
 }
 .dres-card {
+  flex: 0 0 292px;
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 26px;
@@ -1168,9 +1228,14 @@
   }
   .dquotes-grid,
   .dbuild-grid,
-  .dres-grid,
   .dfoot-cols {
     grid-template-columns: 1fr;
+  }
+  /* The marquee keeps travelling on a phone, but at a card width that
+     leaves room for the next one to show — so it reads as a row in motion
+     rather than one card filling the screen. */
+  .dres-card {
+    flex-basis: 248px;
   }
   .dbuild-grid {
     margin-top: 40px;

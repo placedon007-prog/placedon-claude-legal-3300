@@ -19,24 +19,23 @@ import type {
    had already read. A single short settle, played once, reads as the page
    arriving rather than performing.
 
-   It starts at --reveal-floor, never at opacity 0: below roughly alpha 0.48
-   the text drops under the 4.5:1 AA floor, so a fade from zero puts an
-   unreadable heading on screen for the length of the transition — and
-   server-renders it invisible. The old word-stagger avoided this by
-   clipping rather than fading; this has to opt in explicitly.
+   It MOVES rather than fades. Any opacity below roughly 0.48 puts the text
+   under the 4.5:1 AA floor, a fade from zero also server-renders the heading
+   invisible, and because this replays on every scroll pass the faded state
+   would be on screen often. Animating transform alone keeps every heading at
+   full contrast throughout.
 
    Plain strings only — LegalText's typographic substitutions run first. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
-const REVEAL_FLOOR = 0.55;
 function RevealHeading({ text }: { text: string }) {
   const reduce = useReducedMotion();
   if (reduce) return <>{text}</>;
   return (
     <motion.span
       style={{ display: "inline-block" }}
-      initial={{ opacity: REVEAL_FLOOR, y: 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
+      initial={{ y: 10 }}
+      whileInView={{ y: 0 }}
+      viewport={{ once: false, margin: "-60px" }}
       transition={{ duration: 0.24, ease: EASE }}
     >
       {text}

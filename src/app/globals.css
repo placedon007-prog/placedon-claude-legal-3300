@@ -1347,17 +1347,21 @@ code {
    on blocks BELOW the fold, so above-the-fold text never flashes and legal copy
    stays readable if JS or motion is unavailable. Text lifts from the 0.55
    contrast floor — never invisible. */
+/* Reveals MOVE; they do not fade.
+
+   The out state used to sit at --reveal-floor opacity. On the cream ground
+   that read as merely soft, but on the black sections cream at 0.55 is
+   plain grey — headings and buttons looked washed out and broken rather
+   than pending. Because the reveal replays on every pass, that dimmed state
+   is on screen often. Animating transform alone keeps every word at full
+   contrast at all times and still reads as an entrance. */
 [data-reveal] {
-  transition:
-    opacity var(--dur-3) var(--ease),
-    transform var(--dur-3) var(--ease);
+  transition: transform var(--dur-3) var(--ease);
 }
 [data-reveal="out"] {
-  opacity: var(--reveal-floor);
   transform: translateY(16px);
 }
 [data-reveal="in"] {
-  opacity: 1;
   transform: none;
 }
 @media (prefers-reduced-motion: reduce) {

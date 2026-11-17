@@ -6,6 +6,7 @@ import {
   motion,
   AnimatePresence,
   useReducedMotion,
+  useInView,
   type Variants,
 } from "framer-motion";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
@@ -27,7 +28,7 @@ function AnimatedH2({ children }: { children: string }) {
     <motion.h2
       initial={{ opacity: REVEAL_FLOOR, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
       transition={{ duration: 0.24, ease: EASE }}
     >
       {children}
@@ -126,19 +127,20 @@ function HeroVideo() {
 /**
  * Scroll reveal.
  *
- * Text never starts at `opacity: 0`. Cream on ink falls under the 4.5:1 AA
- * floor below roughly alpha 0.48, so a fade from zero leaves a window where
- * the words are on screen and unreadable — the reason headings looked broken
- * while scrolling. Reveals start at --reveal-floor (0.55) and mostly move.
+ * Reveals MOVE; they do not fade. Any opacity below roughly 0.48 puts cream
+ * on ink under the 4.5:1 AA floor, and even 0.55 reads as washed-out grey on
+ * the black sections — which is on screen often, because the reveal replays
+ * on every pass. Animating transform alone keeps text at full contrast.
  *
- * `mode="surface"` animates transform only. An ancestor at opacity < 1 becomes
- * a backdrop root, which silently kills `backdrop-filter` on any glass inside
- * it, so anything carrying glass must use this mode.
+ * The old `` opt-out is gone with the fade it existed to avoid:
+ * an ancestor at opacity < 1 becomes a backdrop root, which silently kills
+ * `backdrop-filter` on any glass inside it. Nothing changes opacity now, so
+ * glass is safe everywhere.
  *
- * Plays ONCE (`once: true`). It used to re-run every time a block re-entered
- * the viewport, so scrolling back up and down again re-animated content the
- * reader had already read — restless, and it made the page feel like it was
- * still loading. A reveal marks arrival; arriving twice is not a thing.
+ * Replays (`once: false`): scrolling back up and down again re-runs it, which
+ * is what the owner asked for. It is safe to replay because the reveal never
+ * drops below --reveal-floor (0.55) — a re-hidden block stays readable rather
+ * than blinking out.
  */
 const REVEAL_FLOOR = 0.55;
 
@@ -146,12 +148,10 @@ function Reveal({
   children,
   delay = 0,
   className,
-  mode = "text",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
-  mode?: "text" | "surface";
 }) {
   const reduce = useReducedMotion();
 
@@ -159,9 +159,8 @@ function Reveal({
   const variants: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: mode === "surface" ? 1 : REVEAL_FLOOR, y: 10 },
+        hidden: { y: 10 },
         show: {
-          opacity: 1,
           y: 0,
           transition: { duration: 0.24, delay, ease: EASE },
         },
@@ -173,7 +172,7 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
     >
       {children}
     </motion.div>
@@ -501,18 +500,34 @@ export default function DashboardPage() {
   const reduce = useReducedMotion();
   const active = demos[tab];
 
-  /* The demo tabs used to advance themselves every 3 seconds while the
-     section was on screen, with a click buying only a 10-second reprieve
-     before they resumed. Removed: it is an auto-rotating carousel, which is
-     the pattern this page is meant to be rid of; 3 seconds is not long
-     enough to read a document panel; and auto-updating content that runs
-     past 5 seconds with no way to stop it fails WCAG 2.2.2 (Level A).
-     The reader now changes the tab, and nothing changes it for them. */
+  /* The tabs advance themselves every 3 seconds — AGM timing, board
+     meetings, and on — while the section is on screen.
+
+     Two things keep that from trapping the reader, which is what WCAG 2.2.2
+     requires of anything that moves on its own for more than five seconds.
+     Pointing at the panel stops it, so the moment you lean in to read, it
+     holds. Choosing a tab by hand stops it for good: the reader has taken
+     over and nothing should take the wheel back. Under reduced motion it
+     never starts. */
   const demoSectionRef = useRef<HTMLElement>(null);
+  const demoInView = useInView(demoSectionRef, { amount: 0.4 });
+  /* Two separate reasons to stop, deliberately not one flag: hovering is a
+     pause that ends when the pointer leaves, choosing a tab is permanent. */
+  const [demoHovered, setDemoHovered] = useState(false);
+  const [demoTakenOver, setDemoTakenOver] = useState(false);
+
+  useEffect(() => {
+    if (!demoInView || demoHovered || demoTakenOver || reduce) return;
+    const id = setInterval(() => {
+      setTab((t) => (t + 1) % demos.length);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [demoInView, demoHovered, demoTakenOver, reduce]);
 
   function selectTab(i: number) {
     setTab(i);
     track("demo_tab_view", { tab: demos[i].tab });
+    setDemoTakenOver(true); // the reader has taken over; do not resume
   }
 
   return (
@@ -572,13 +587,19 @@ export default function DashboardPage() {
 
       {/* HERO VIDEO — reveals on scroll, below the first screen */}
       <section className="dash-container dsection dhero-media dsection-flush">
-        <Reveal mode="surface">
+        <Reveal>
           <HeroVideo />
         </Reveal>
       </section>
 
       {/* INTERACTIVE DEMO */}
-      <section id="evidence" ref={demoSectionRef} className="dash-container dsection">
+      <section
+        id="evidence"
+        ref={demoSectionRef}
+        className="dash-container dsection"
+        onMouseEnter={() => setDemoHovered(true)}
+        onMouseLeave={() => setDemoHovered(false)}
+      >
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 44 }}>
             <Index n="01" label="In practice" />
@@ -607,7 +628,7 @@ export default function DashboardPage() {
           </div>
         </Reveal>
 
-        <Reveal mode="surface">
+        <Reveal>
           <div className="ddemo-stage">
             <div className="ddoc">
               <AnimatePresence mode="wait">
@@ -665,7 +686,7 @@ export default function DashboardPage() {
         </Reveal>
         <div className="dtools-grid">
           {tools.map((f, i) => (
-            <Reveal key={f.title} delay={i * 0.05} mode="surface">
+            <Reveal key={f.title} delay={i * 0.05}>
               <div className="dtool-card">
                 <span className="dtool-icon">{toolIcons[f.title]}</span>
                 <h3>{f.title}</h3>
@@ -728,21 +749,36 @@ export default function DashboardPage() {
             <AnimatedH2>Evidence &amp; resources</AnimatedH2>
           </div>
         </Reveal>
-        <Reveal mode="surface">
-          {/* A static grid. This was a 38s infinite marquee that duplicated
-              the whole list to hide its seam: perpetual motion the reader
-              never asked for, which also meant a title could drift away
-              mid-read and the duplicate half was dead weight in the DOM.
-              The list is short enough to simply show. */}
-          <div className="dres-grid">
+        {/* One row, travelling continuously, pausing under the cursor.
+
+            The list renders twice back to back and the track moves exactly
+            half its width, so the loop point is invisible. The pause is pure
+            CSS on :hover and :focus-within — the focus half matters, because
+            a keyboard user needs a way to stop it too, and that is what makes
+            continuous motion acceptable rather than something the reader is
+            trapped in (WCAG 2.2.2). Under prefers-reduced-motion the track
+            simply stops. */}
+        <div
+          className="dres-marquee"
+          tabIndex={0}
+          role="group"
+          aria-label="Evidence and resources — scrolling; hover or focus to pause"
+        >
+          <div className="dres-track">
             {resources.map((r) => (
               <div className="dres-card" key={r.title}>
                 <div className="dres-title">{r.title}</div>
                 <span className="dres-kind">{r.kind}</span>
               </div>
             ))}
+            {resources.map((r) => (
+              <div className="dres-card" key={`${r.title}-dup`} aria-hidden="true">
+                <div className="dres-title">{r.title}</div>
+                <span className="dres-kind">{r.kind}</span>
+              </div>
+            ))}
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* CTA BAND */}
