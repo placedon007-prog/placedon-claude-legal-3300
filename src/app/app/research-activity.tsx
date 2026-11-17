@@ -15,21 +15,26 @@ const COPY: Record<ActivityKind, { title: string; detail: string }> = {
   },
 };
 
-/** Motion is decorative; the text remains meaningful when animation is reduced or disabled. */
+/**
+ * Indeterminate work indicator.
+ *
+ * The motion is a single hairline sweeping under the text — it says "still
+ * working" and nothing else. It replaced a 56x48px 3D book with turning
+ * pages: a skeuomorphic illustration that drew more attention than the
+ * message beside it, and that the console's own rules rule out (motion is
+ * for answering an action, not for decoration).
+ *
+ * The text alone is sufficient — the sweep is aria-hidden and disappears
+ * entirely under prefers-reduced-motion.
+ */
 export function ResearchActivity({ kind, note }: { kind: ActivityKind; note?: string }) {
   const copy = COPY[kind];
   return (
     <div className="research-activity" role="status" aria-live="polite" aria-atomic="true">
-      <div className="research-book" aria-hidden="true">
-        <span className="research-book-cover" />
-        <span className="research-book-left"><i /><i /><i /></span>
-        <span className="research-book-right"><i /><i /><i /></span>
-        <span className="research-book-leaf"><i /><i /></span>
-        <span className="research-book-spine" />
-      </div>
       <div className="min-w-0">
         <p className="text-body font-medium text-fg">{copy.title}</p>
         <p className="mt-0.5 text-ui text-fg-2">{copy.detail}{note ? ` ${note}` : ""}</p>
+        <span className="research-sweep" aria-hidden="true" />
       </div>
     </div>
   );

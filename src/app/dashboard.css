@@ -100,19 +100,6 @@
   max-width: 62ch;
 }
 
-/* Word mask for the heading reveal. The padding/negative-margin pair keeps
-   descenders and accents outside the clip, so `overflow: hidden` trims the
-   travelling word and nothing else. */
-.dword {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: bottom;
-  padding: 0.1em 0 0.18em;
-  margin: -0.1em 0 -0.18em;
-}
-.dword-in {
-  display: inline-block;
-}
 .dash .eyebrow {
   font-family: var(--font-body), sans-serif;
   font-size: 12px;
@@ -173,8 +160,6 @@
 .dbtn-solid {
   background: var(--ink);
   color: var(--cream);
-  position: relative;
-  overflow: hidden;
   transition:
     transform var(--dur-2) var(--ease),
     box-shadow var(--dur-2) var(--ease),
@@ -185,31 +170,15 @@
   background: var(--cream);
   color: var(--ink);
 }
-/* A light sweep that crosses once on hover — a moment of motion, not a loop. */
-.dbtn-solid::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.85) 50%,
-    transparent 100%
-  );
-  transform: skewX(-18deg);
-  pointer-events: none;
-}
+/* A small lift. There used to be a 600ms skewed white gradient sweeping
+   across the button on hover — 2.4x the motion budget, a hard-coded white
+   rather than a token, no transition on un-hover so it snapped back when
+   the cursor left, and nearly invisible on the cream variant anyway. The
+   lift and shadow are the whole response now. */
 .dbtn-solid:hover {
   opacity: 0.88;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
-}
-.dbtn-solid:hover::after {
-  transition: left 0.6s var(--ease);
-  left: 140%;
 }
 .dbtn-solid:active {
   transform: translateY(0) scale(0.97);
@@ -219,9 +188,6 @@
   .dbtn-solid:hover,
   .dbtn-solid:active {
     transform: none;
-  }
-  .dbtn-solid::after {
-    display: none;
   }
 }
 /* Default: an outline button on the white body (hero, CTA band). .dhero2 is
@@ -334,13 +300,7 @@
   gap: 12px;
   margin-left: auto;
 }
-.dnav-login {
-  font-size: 14px;
-  color: var(--muted);
-}
-.dnav-login:hover {
-  color: var(--cream);
-}
+
 .dnav-burger {
   display: none;
   flex-direction: column;
@@ -456,10 +416,6 @@
   max-width: 20ch;
   margin-inline: auto;
   text-align: center;
-  /* The word-reveal clip (.dword) pads for descenders per word, not per
-     wrapped line — on a 2-line heading the block still renders slightly
-     taller than its own box. This clearance keeps the lead/caption below
-     from sitting under it. */
   margin-bottom: 14px;
 }
 .dcenter .lead {
@@ -472,11 +428,6 @@
   font-size: 13px;
   color: var(--muted-2);
   line-height: 1.6;
-}
-.dsec-icon {
-  color: var(--cream);
-  margin-bottom: 30px;
-  opacity: 0.92;
 }
 
 /* ============================================================
@@ -519,94 +470,55 @@
   width: min(1240px, calc(100% - 112px));
   margin-inline: auto;
 }
-/* The architectural motif — the real chamber photo, not an illustration:
-   grayscale + a heavy brightness lift pre-bleaches it (true blacks hold, the
-   stone and sky wash out), then multiply-blend composites that onto the
-   cream page — wherever the bleached photo is near-white it disappears into
-   the page; wherever structure survives (columns, cornices, the dome ribs)
-   it reads as ink on paper. No positioned ancestor between this and
-   .dhero-img, so it covers the section edge to edge, not just the
-   1240px-wide text column. */
-.dhero-motif {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-.dhero-motif img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 32%;
-  display: block;
-  filter: grayscale(1) brightness(2.35) contrast(1.2);
-  mix-blend-mode: multiply;
-  /* Fades only the top/bottom now — left/right already end at the viewport
-     edge, so a side fade would just dim the corners for no reason. */
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
-}
-/* The bleached photo still has busy mid-tones in places (dense stonework
-   crops don't lighten as evenly as open-sky ones did), which swallowed the
-   headline. Same fix the ORIGINAL dark-photo hero used for the identical
-   problem — a scrim behind the text, just cream instead of ink: solid where
-   the text sits, fading away by the right third so the photo reads clearly
-   there. */
-.dhero-img-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    90deg,
-    var(--cream) 0%,
-    var(--cream) 38%,
-    color-mix(in srgb, var(--cream) 55%, transparent) 58%,
-    transparent 78%
-  );
-}
-@media (max-width: 900px) {
-  /* The background photo competes with text legibility at narrow widths —
-     drop it there, same as it was hidden in the side-column layout before. */
-  .dhero-motif {
-    display: none;
-  }
-}
 .dhero-img-actions {
   display: flex;
   gap: 12px;
   margin-top: 36px;
+  justify-content: center;
 }
+/* Centred, now that the chamber photo is gone — there is no longer a right
+   half for the image to occupy, so left-aligned type left the section
+   visibly lopsided. The measure caps still apply; `margin-inline: auto`
+   centres each block within the container rather than stretching it. */
 .dhero-img-text {
-  max-width: 760px;
-  text-align: left;
+  max-width: 880px;
+  margin-inline: auto;
+  text-align: center;
 }
 .dhero-img-text .eyebrow {
   display: block;
   margin-bottom: 22px;
 }
 .dhero-img-text h1 {
-  font-size: clamp(40px, 5.2vw, 74px);
+  font-size: clamp(46px, 6vw, 86px);
   line-height: 1.04;
   letter-spacing: -0.015em;
-  margin: 0;
-  max-width: 17ch;
+  margin: 0 auto;
+  max-width: 19ch;
 }
 .dhero-img-text .lead {
   color: var(--muted);
-  font-size: clamp(16px, 1.5vw, 20px);
+  font-size: clamp(17px, 1.6vw, 22px);
   margin-top: 26px;
-  max-width: 52ch;
+  margin-inline: auto;
+  max-width: 56ch;
 }
 @media (max-width: 760px) {
   .dhero-img-inner {
     padding-block: 20px;
   }
   .dhero-img-actions {
-    align-self: stretch;
-    justify-content: flex-start;
+    /* Centred like the rest of the hero. This said `flex-start` (plus an
+       inert `align-self: stretch` — the parent is not a flex container),
+       left over from the left-aligned photo hero, so on a phone the
+       centred eyebrow/headline/lead sat above two flush-left buttons. */
+    justify-content: center;
     flex-wrap: wrap;
   }
   .dhero-img-text h1 {
-    font-size: clamp(34px, 9.5vw, 52px);
+    /* Raised with the desktop tier (was clamp(34px, 9.5vw, 52px)) so the
+       hero reads larger on phones too, not only above 760px. */
+    font-size: clamp(38px, 10vw, 58px);
   }
 }
 .dhero .eyebrow {
@@ -621,41 +533,7 @@
   margin: 26px auto 0;
   max-width: 46ch;
 }
-.dhero-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 38px;
-}
 
-/* blank image / video placeholders */
-.dblank {
-  position: relative;
-  background: var(--paper);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(11, 11, 12, 0.34);
-  font-family: var(--font-code), monospace;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-}
-.dblank-dark {
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  color: var(--muted-2);
-}
-.dblank-tag {
-  position: absolute;
-  top: 14px;
-  left: 16px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.75;
-}
 .dblank .play {
   width: 62px;
   height: 62px;
@@ -665,12 +543,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.dhero-panel {
-  margin-top: clamp(48px, 6vw, 88px);
-  aspect-ratio: 16 / 8.4;
-  width: 100%;
 }
 
 /* ============================================================
@@ -772,9 +644,6 @@
   font-size: 12px;
   color: var(--muted-2);
 }
-.dfeature-learn {
-  margin-top: 20px;
-}
 
 /* two-column shell with sticky aside */
 .dfeature-shell {
@@ -797,11 +666,7 @@
   font-weight: 600;
   margin-bottom: 16px;
 }
-.daside-img {
-  aspect-ratio: 4 / 3;
-  border-radius: 10px;
-  margin-bottom: 16px;
-}
+
 .daside p {
   font-size: 14px;
   color: var(--muted);
@@ -1029,94 +894,13 @@
   border-radius: 20px;
   padding: clamp(28px, 4vw, 56px);
 }
-.deco-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-.deco-tile {
-  aspect-ratio: 1;
-  border-radius: 16px;
-}
+
 .deco h2 {
   font-size: clamp(28px, 3vw, 40px);
 }
 .deco p {
   color: var(--muted);
   margin: 16px 0 24px;
-}
-.dstrip {
-  margin-top: 24px;
-  height: clamp(150px, 20vw, 240px);
-  width: 100%;
-}
-
-/* ============================================================
-   TESTIMONIALS (blank placeholder carousel)
-   ============================================================ */
-.dquotes-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 26px;
-}
-.dquote {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 26px;
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.dquote-logo {
-  height: 26px;
-  width: 96px;
-  border-radius: 6px;
-}
-.dquote-body {
-  flex: 1;
-  border-radius: 10px;
-}
-.dquote-name {
-  height: 14px;
-  width: 60%;
-  border-radius: 4px;
-}
-.dcarousel-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 44px;
-}
-.dcarousel-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: none;
-  color: var(--cream);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.16s ease;
-}
-.dcarousel-btn:hover {
-  background: var(--ink-2);
-}
-.ddots {
-  display: flex;
-  gap: 8px;
-}
-.ddot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--line-strong);
-}
-.ddot[data-active="true"] {
-  background: var(--cream);
 }
 
 /* ============================================================
@@ -1152,55 +936,18 @@
 }
 
 /* ============================================================
-   RESOURCES — auto-scrolling marquee, pauses on hover/focus.
-   The track renders the list twice back-to-back and animates exactly -50%,
-   so the loop point is invisible. JS only toggles play/pause for a visible
-   affordance; the pause-on-hover itself is pure CSS (:hover/:focus-within).
+   RESOURCES — a static grid.
+   This was a 38s infinite marquee (list duplicated to hide the loop seam,
+   paused on hover/focus). Perpetual ambient motion the reader never asked
+   for, and a card could drift away mid-read. The list is short; show it.
    ============================================================ */
-.dres-marquee {
-  position: relative;
-  margin-top: 60px;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 64px,
-    #000 calc(100% - 64px),
-    transparent
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 64px,
-    #000 calc(100% - 64px),
-    transparent
-  );
-}
-.dres-track {
-  display: flex;
+.dres-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  width: max-content;
-  animation: dres-scroll 38s linear infinite;
-}
-.dres-marquee:hover .dres-track,
-.dres-marquee:focus-within .dres-track {
-  animation-play-state: paused;
-}
-.dres-marquee:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 6px;
-  border-radius: 4px;
-}
-@keyframes dres-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+  margin-top: 60px;
 }
 .dres-card {
-  flex: 0 0 292px;
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 26px;
@@ -1239,12 +986,6 @@
 .dres-card:focus-visible .dres-kind {
   color: var(--dark-muted, rgba(244, 239, 230, 0.6));
 }
-@media (prefers-reduced-motion: reduce) {
-  .dres-track {
-    animation: none;
-  }
-}
-
 /* ============================================================
    CTA band
    ============================================================ */
@@ -1256,10 +997,7 @@
   align-items: center;
   gap: 24px;
 }
-.dband-icon {
-  color: var(--cream);
-  flex: none;
-}
+
 .dband h3 {
   font-size: clamp(24px, 2.6vw, 34px);
   flex: 1;
@@ -1518,13 +1256,7 @@
   background: transparent;
   border: 1px solid var(--cream);
 }
-.chip-missing::before {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--cream) 0 2px,
-    transparent 2px 4px
-  );
-}
+
 .chip-abstain {
   color: var(--muted);
   border-style: dashed;
@@ -1542,53 +1274,6 @@
   background: var(--ink-2);
   overflow: hidden;
 }
-.hm-head,
-.hm-row {
-  display: grid;
-  grid-template-columns: 1.5fr 1.1fr 0.9fr;
-  gap: 20px;
-  align-items: center;
-  padding: 16px clamp(18px, 3vw, 32px);
-}
-.hm-head {
-  border-bottom: 1px solid var(--line);
-  font-family: var(--font-code), monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-2);
-}
-.hm-row {
-  border-top: 1px solid var(--line);
-}
-.hm-row:first-of-type {
-  border-top: none;
-}
-.hm-duty {
-  font-size: 15px;
-}
-.hm-basis {
-  font-family: var(--font-code), monospace;
-  font-size: 13px;
-  color: var(--muted);
-}
-.hm-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px clamp(18px, 3vw, 32px);
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--muted);
-  flex-wrap: wrap;
-}
-.hm-foot b {
-  font-family: var(--font-display), serif;
-  font-weight: 440;
-  font-size: 20px;
-  color: var(--cream);
-}
 
 /* aside chips row */
 .daside-chips {
@@ -1596,78 +1281,6 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
-}
-
-/* connector tiles (replaces blank logo tiles) */
-.deco-tile {
-  aspect-ratio: 1;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--ink);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    transform 0.18s ease;
-}
-.deco-tile:hover {
-  border-color: var(--line-strong);
-  background: #111113;
-  transform: translateY(-2px);
-}
-.deco-tile svg {
-  color: var(--cream);
-}
-.deco-tile span {
-  font-family: var(--font-code), monospace;
-  font-size: 12.5px;
-  color: var(--cream);
-  line-height: 1.3;
-}
-
-/* statute marquee (replaces animated logo strip) */
-.mq {
-  margin-top: 24px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--ink-2);
-  padding: 24px 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.mq-row {
-  overflow: hidden;
-}
-.mq-track {
-  display: flex;
-  gap: 12px;
-  width: max-content;
-  will-change: transform;
-}
-.mq-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 15px;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  font-family: var(--font-code), monospace;
-  font-size: 14px;
-  color: var(--cream);
-  white-space: nowrap;
-}
-.mq-tag i {
-  font-style: normal;
-  font-family: var(--font-body), sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted-2);
 }
 
 /* principles band (replaces blank testimonials) */
@@ -1771,10 +1384,5 @@
   .prin-grid {
     grid-template-columns: 1fr;
   }
-  .hm-head,
-  .hm-row {
-    grid-template-columns: 1.4fr 1fr 0.9fr;
-    gap: 12px;
-    padding: 14px 16px;
-  }
+
 }

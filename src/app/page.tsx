@@ -1,58 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
   motion,
   AnimatePresence,
   useReducedMotion,
-  useInView,
   type Variants,
 } from "framer-motion";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
 
-/* ---------------------------- heading with word-reveal typography
-   Words rise from behind a clipped edge rather than fading up. A fade sets
-   every word to opacity 0 first, so on a five-word heading the last word was
-   still invisible three quarters of a second in — the headline read as a
-   fragment ("How…") for most of the reveal. A mask wipe paints each word at
-   full contrast or not at all. */
+/* ---------------------------- section heading
+   Settles once, as a whole. This replaced a word-by-word clipped reveal that
+   re-played on every scroll pass: a headline assembling itself one word at a
+   time performs rather than states, which is the wrong register for a page
+   about statutory evidence, and replaying it kept pulling the eye back to
+   text already read. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
 
-const h2Container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.045 } },
-};
-const h2Word: Variants = {
-  hidden: { y: "110%" },
-  show: {
-    y: "0%",
-    transition: { duration: 0.42, ease: EASE },
-  },
-};
 function AnimatedH2({ children }: { children: string }) {
   const reduce = useReducedMotion();
   if (reduce) return <h2>{children}</h2>;
-  const words = children.split(" ");
   return (
     <motion.h2
-      variants={h2Container}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: false, margin: "-70px" }}
+      initial={{ opacity: REVEAL_FLOOR, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-70px" }}
+      transition={{ duration: 0.24, ease: EASE }}
     >
-      {words.map((w, i) => (
-        <Fragment key={i}>
-          <span className="dword">
-            <motion.span className="dword-in" variants={h2Word}>
-              {w}
-            </motion.span>
-          </span>
-          {i < words.length - 1 ? " " : ""}
-        </Fragment>
-      ))}
+      {children}
     </motion.h2>
   );
 }
@@ -156,6 +134,11 @@ function HeroVideo() {
  * `mode="surface"` animates transform only. An ancestor at opacity < 1 becomes
  * a backdrop root, which silently kills `backdrop-filter` on any glass inside
  * it, so anything carrying glass must use this mode.
+ *
+ * Plays ONCE (`once: true`). It used to re-run every time a block re-entered
+ * the viewport, so scrolling back up and down again re-animated content the
+ * reader had already read — restless, and it made the page feel like it was
+ * still loading. A reveal marks arrival; arriving twice is not a thing.
  */
 const REVEAL_FLOOR = 0.55;
 
@@ -176,11 +159,11 @@ function Reveal({
   const variants: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: mode === "surface" ? 1 : REVEAL_FLOOR, y: 14 },
+        hidden: { opacity: mode === "surface" ? 1 : REVEAL_FLOOR, y: 10 },
         show: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.32, delay, ease: EASE },
+          transition: { duration: 0.24, delay, ease: EASE },
         },
       };
 
@@ -190,7 +173,7 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: false, margin: "-70px" }}
+      viewport={{ once: true, margin: "-70px" }}
     >
       {children}
     </motion.div>
@@ -518,35 +501,18 @@ export default function DashboardPage() {
   const reduce = useReducedMotion();
   const active = demos[tab];
 
-  /* Auto-advancing demo tabs: every 3s while the section is on screen.
-     A manual click pauses it for 10s, then it resumes on its own. Leaving
-     the section (scrolling away) stops it; scrolling back in restarts the
-     3s cycle — useInView re-fires rather than remembering it already ran. */
+  /* The demo tabs used to advance themselves every 3 seconds while the
+     section was on screen, with a click buying only a 10-second reprieve
+     before they resumed. Removed: it is an auto-rotating carousel, which is
+     the pattern this page is meant to be rid of; 3 seconds is not long
+     enough to read a document panel; and auto-updating content that runs
+     past 5 seconds with no way to stop it fails WCAG 2.2.2 (Level A).
+     The reader now changes the tab, and nothing changes it for them. */
   const demoSectionRef = useRef<HTMLElement>(null);
-  const demoInView = useInView(demoSectionRef, { amount: 0.4 });
-  const [demoPaused, setDemoPaused] = useState(false);
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!demoInView || demoPaused || reduce) return;
-    const id = setInterval(() => {
-      setTab((t) => (t + 1) % demos.length);
-    }, 3000);
-    return () => clearInterval(id);
-  }, [demoInView, demoPaused, reduce]);
-
-  useEffect(() => {
-    return () => {
-      if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    };
-  }, []);
 
   function selectTab(i: number) {
     setTab(i);
     track("demo_tab_view", { tab: demos[i].tab });
-    setDemoPaused(true);
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => setDemoPaused(false), 10000);
   }
 
   return (
@@ -566,21 +532,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* HERO — white ground, headline left, actions beside it. The photo
-          and its scrim are direct children of .dhero-img (full section
-          width), not nested in .dash-container, so they paint edge to edge
-          behind the (container-width) text. */}
+      {/* HERO — centred type on the cream ground, no image and no entrance
+          animation. It is the first thing on the page: there is nothing to
+          reveal it from, and a hero that fades in delays the one statement
+          the site exists to make. */}
       <section className="dhero-img dsection-flush">
-        <Reveal mode="surface" delay={0.1} className="dhero-motif">
-          <img
-            src="/media/hero-chamber.jpg"
-            alt="A grand, empty classical legislative chamber, the seat of the record."
-            aria-hidden="true"
-          />
-        </Reveal>
-        <div className="dhero-img-scrim" aria-hidden="true" />
         <div className="dash-container dhero-img-inner">
-          <Reveal className="dhero-img-text">
+          <div className="dhero-img-text">
             <span className="eyebrow">
               Research · Compliance · Monitoring · Drafting
             </span>
@@ -608,7 +566,7 @@ export default function DashboardPage() {
                 See the evidence
               </Link>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -656,10 +614,15 @@ export default function DashboardPage() {
                 <motion.div
                   key={tab}
                   className="ddoc-paper"
-                  initial={reduce ? false : { opacity: 0, y: 10, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={reduce ? undefined : { opacity: 0, y: -8, filter: "blur(6px)" }}
-                  transition={{ duration: 0.34, ease: [0.2, 0, 0, 1] }}
+                  /* A plain crossfade. The blur(6px) materialise this
+                     replaced was a visual effect for its own sake — switching
+                     tabs is a swap of content, not a dissolve, and the blur
+                     made the document unreadable for a third of a second each
+                     time. 180ms is inside the ≤250ms budget. */
+                  initial={reduce ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
                 >
                   <h4>{active.title}</h4>
                   <div className="ddoc-meta mono">{active.meta}</div>
@@ -766,29 +729,18 @@ export default function DashboardPage() {
           </div>
         </Reveal>
         <Reveal mode="surface">
-          {/* The list renders twice back-to-back; the track animates exactly
-              -50% so the seam is invisible. Hover or focus pauses it — pure
-              CSS (.dres-marquee:hover/:focus-within in dashboard.css). */}
-          <div
-            className="dres-marquee"
-            tabIndex={0}
-            role="group"
-            aria-label="Evidence and resources — scrolling; focus or hover to pause"
-          >
-            <div className="dres-track">
-              {resources.map((r) => (
-                <div className="dres-card" key={r.title}>
-                  <div className="dres-title">{r.title}</div>
-                  <span className="dres-kind">{r.kind}</span>
-                </div>
-              ))}
-              {resources.map((r) => (
-                <div className="dres-card" key={`${r.title}-dup`} aria-hidden="true">
-                  <div className="dres-title">{r.title}</div>
-                  <span className="dres-kind">{r.kind}</span>
-                </div>
-              ))}
-            </div>
+          {/* A static grid. This was a 38s infinite marquee that duplicated
+              the whole list to hide its seam: perpetual motion the reader
+              never asked for, which also meant a title could drift away
+              mid-read and the duplicate half was dead weight in the DOM.
+              The list is short enough to simply show. */}
+          <div className="dres-grid">
+            {resources.map((r) => (
+              <div className="dres-card" key={r.title}>
+                <div className="dres-title">{r.title}</div>
+                <span className="dres-kind">{r.kind}</span>
+              </div>
+            ))}
           </div>
         </Reveal>
       </section>
