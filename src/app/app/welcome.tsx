@@ -50,7 +50,7 @@ export function Welcome() {
 
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <h2 className="max-w-[760px] text-display font-medium tracking-[-0.02em] text-fg">
+      <h2 className="max-w-[760px] text-pretty text-display font-medium tracking-[-0.02em] text-fg">
         {line.hello ? (
           <>
             <span className="block">{line.hello}</span>

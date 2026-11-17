@@ -324,7 +324,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
           <ul className="grid gap-2 sm:grid-cols-2">
             {STARTER_QUESTIONS.map((q) => <li key={q} className="flex">
               <button type="button" onClick={() => { setTool("research"); composerApi.current?.setText(q); composerRef.current?.querySelector("textarea")?.focus(); }}
-                className="flex min-h-11 w-full items-start rounded-card border border-line px-3 py-2.5 text-left text-ui text-fg-2 transition-colors hover:border-line-2 hover:bg-wash hover:text-fg focus-visible:outline-2 focus-visible:outline-fg">{q}</button>
+                className="flex min-h-11 w-full items-start rounded-card border border-line px-3 py-2.5 text-left text-body text-fg-2 transition-colors hover:border-line-2 hover:bg-wash hover:text-fg focus-visible:outline-2 focus-visible:outline-fg">{q}</button>
             </li>)}
           </ul>
         </section>
