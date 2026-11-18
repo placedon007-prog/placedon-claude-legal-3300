@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
 import {
   motion,
   AnimatePresence,
@@ -13,26 +13,50 @@ import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
 
-/* ---------------------------- section heading
-   Settles once, as a whole. This replaced a word-by-word clipped reveal that
-   re-played on every scroll pass: a headline assembling itself one word at a
-   time performs rather than states, which is the wrong register for a page
-   about statutory evidence, and replaying it kept pulling the eye back to
-   text already read. */
+/* ---------------------------- heading with word-reveal typography
+   Words rise from behind a clipped edge, one after another. Each word is
+   painted at full contrast or not at all (no fade), so text stays AA. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
 
-function AnimatedH2({ children }: { children: string }) {
+const h2Container: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.045 } },
+};
+const h2Word: Variants = {
+  hidden: { y: "110%" },
+  show: { y: "0%", transition: { duration: 0.42, ease: EASE } },
+};
+
+function AnimatedH2({
+  children,
+  as = "h2",
+}: {
+  children: string;
+  as?: "h1" | "h2";
+}) {
   const reduce = useReducedMotion();
-  if (reduce) return <h2>{children}</h2>;
+  const Tag = as;
+  if (reduce) return <Tag>{children}</Tag>;
+  const MotionTag = as === "h1" ? motion.h1 : motion.h2;
+  const words = children.split(" ");
   return (
-    <motion.h2
-      initial={{ opacity: REVEAL_FLOOR, y: 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
+    <MotionTag
+      variants={h2Container}
+      initial="hidden"
+      whileInView="show"
       viewport={{ once: false, margin: "-70px" }}
-      transition={{ duration: 0.24, ease: EASE }}
     >
-      {children}
-    </motion.h2>
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          <span className="dword">
+            <motion.span className="dword-in" variants={h2Word}>
+              {w}
+            </motion.span>
+          </span>
+          {i < words.length - 1 ? " " : ""}
+        </Fragment>
+      ))}
+    </MotionTag>
   );
 }
 
@@ -142,7 +166,6 @@ function HeroVideo() {
  * drops below --reveal-floor (0.55) — a re-hidden block stays readable rather
  * than blinking out.
  */
-const REVEAL_FLOOR = 0.55;
 
 function Reveal({
   children,
@@ -159,10 +182,10 @@ function Reveal({
   const variants: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        hidden: { y: 10 },
+        hidden: { y: 28 },
         show: {
           y: 0,
-          transition: { duration: 0.24, delay, ease: EASE },
+          transition: { duration: 0.5, delay, ease: EASE },
         },
       };
 
@@ -557,7 +580,7 @@ export default function DashboardPage() {
             <span className="eyebrow">
               Research · Compliance · Monitoring · Drafting
             </span>
-            <h1>The evidence-first workspace for Indian corporate law.</h1>
+            <AnimatedH2 as="h1">The evidence-first workspace for Indian corporate law.</AnimatedH2>
             <p className="lead">
               Placedon brings research, compliance, monitoring, and drafting
               into one place for corporate teams and their lawyers. Every answer

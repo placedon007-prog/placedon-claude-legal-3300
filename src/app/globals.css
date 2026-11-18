@@ -1356,10 +1356,10 @@ code {
    is on screen often. Animating transform alone keeps every word at full
    contrast at all times and still reads as an entrance. */
 [data-reveal] {
-  transition: transform var(--dur-3) var(--ease);
+  transition: transform 500ms var(--ease);
 }
 [data-reveal="out"] {
-  transform: translateY(16px);
+  transform: translateY(28px);
 }
 [data-reveal="in"] {
   transform: none;
@@ -1615,4 +1615,17 @@ code {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Word-reveal heading clip (AnimatedH2 / RevealHeading). Padding keeps
+   descenders and accents from being cut off by the overflow mask. */
+.dword {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding: 0.1em 0 0.18em;
+  margin: -0.1em 0 -0.18em;
+}
+.dword-in {
+  display: inline-block;
 }

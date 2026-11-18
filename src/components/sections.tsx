@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { Fragment } from "react";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LegalText } from "./brand";
 import type {
   ContentLink,
@@ -9,36 +10,40 @@ import type {
   PageContent,
 } from "@/lib/placedon-content/content/types";
 
-/* Headings settle once, as a whole.
-
-   This replaced a word-by-word staggered reveal that re-played every time a
-   heading re-entered the viewport. Two problems with that: a headline
-   assembling itself one word at a time is theatrical rather than
-   authoritative — the wrong register for a page about statutory evidence —
-   and replaying it on every scroll pass drew the eye back to text the reader
-   had already read. A single short settle, played once, reads as the page
-   arriving rather than performing.
-
-   It MOVES rather than fades. Any opacity below roughly 0.48 puts the text
-   under the 4.5:1 AA floor, a fade from zero also server-renders the heading
-   invisible, and because this replays on every scroll pass the faded state
-   would be on screen often. Animating transform alone keeps every heading at
-   full contrast throughout.
-
-   Plain strings only — LegalText's typographic substitutions run first. */
+/* Word-reveal heading for every marketing page — same clipped-word technique
+   as the homepage's AnimatedH2. Replays each time it re-enters the viewport.
+   Plain strings only — LegalText's substitutions run first. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
+const headingContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.045, delayChildren: 0.05 } },
+};
+const headingWord: Variants = {
+  hidden: { y: "110%" },
+  show: { y: "0%", transition: { duration: 0.46, ease: EASE } },
+};
 function RevealHeading({ text }: { text: string }) {
   const reduce = useReducedMotion();
   if (reduce) return <>{text}</>;
+  const words = text.split(" ");
   return (
     <motion.span
-      style={{ display: "inline-block" }}
-      initial={{ y: 10 }}
-      whileInView={{ y: 0 }}
+      style={{ display: "inline" }}
+      variants={headingContainer}
+      initial="hidden"
+      whileInView="show"
       viewport={{ once: false, margin: "-60px" }}
-      transition={{ duration: 0.24, ease: EASE }}
     >
-      {text}
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          <span className="dword">
+            <motion.span className="dword-in" variants={headingWord}>
+              {w}
+            </motion.span>
+          </span>
+          {i < words.length - 1 ? " " : ""}
+        </Fragment>
+      ))}
     </motion.span>
   );
 }
