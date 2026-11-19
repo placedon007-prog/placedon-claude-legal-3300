@@ -3,7 +3,7 @@ import type { PageContent } from "./types";
 
 export const pricingContent = {
   route: "/pricing",
-  eyebrow: "Participation · Pre-launch",
+  eyebrow: "",
   headline: "Scope first. Terms before access.",
   subhead:
     "We are finalising pricing for Indian corporate-law teams with our design partners. There is no published subscription price or launch date yet, and any figures would be in rupees.",

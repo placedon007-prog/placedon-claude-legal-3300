@@ -17,5 +17,5 @@ export function generateMetadata() {
  * content dedicates a section to it.
  */
 export default function ProductPage() {
-  return <MarketingPage page={productContent} reveal={false} />;
+  return <MarketingPage page={productContent} />;
 }

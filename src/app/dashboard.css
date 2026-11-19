@@ -5,24 +5,46 @@
    ============================================================ */
 
 .dash {
+  /* Dark constants — kept for the header/footer bookends and the UI-chrome
+     accent cards (evidence panel, worked examples, the demo aside). Every
+     dark-context selector below (.dnav, .dfoot, .dhero-video,
+     .dfeature-example, .daside, .dhero2) restates --line/--muted/--muted-2
+     against these, since the default below is now light. */
   --ink: #0b0b0c;
   --ink-2: #141416;
   --cream: #f4efe6;
   --paper: #e9e3d8;
-  --line: rgba(244, 239, 230, 0.12);
-  --line-strong: rgba(244, 239, 230, 0.22);
-  --muted: rgba(244, 239, 230, 0.6);
-  /* Was 0.42 — cream at 42% over #0b0b0c computes to ~3.8:1, under the 4.5:1
-     AA floor, and it carries real reading text (provenance values, stamps,
-     dt labels, the legal TOC). 0.5 lands at ~4.9:1 and still reads a clear
-     step dimmer than --muted (~6.7:1). */
-  --muted-2: rgba(244, 239, 230, 0.5);
 
-  background: var(--ink);
-  color: var(--cream);
+  /* Default surface: warm cream "white" body between the black header and
+     footer (Harvey-style banding, 2026-10-29 direction). */
+  --line: rgba(11, 11, 12, 0.1);
+  --line-strong: rgba(11, 11, 12, 0.18);
+  --muted: rgba(11, 11, 12, 0.62);
+  --muted-2: rgba(11, 11, 12, 0.46);
+
+  background: var(--cream);
+  color: var(--ink);
   font-family: var(--font-body), sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Dark-context restore — the exact values .dash used to carry everywhere,
+   now scoped to the sections that stay black. */
+.dnav,
+.dfoot,
+.dhero-video,
+.dfeature-example,
+.daside,
+/* .dcard is a dark panel too (--ink-2 ground, cream text) but was missing
+   from this list, so its label and border resolved to the LIGHT context's
+   near-black tokens — dark ink on a dark card, i.e. invisible. */
+.dcard,
+.dhero2 {
+  --line: rgba(244, 239, 230, 0.12);
+  --line-strong: rgba(244, 239, 230, 0.22);
+  --muted: rgba(244, 239, 230, 0.6);
+  --muted-2: rgba(244, 239, 230, 0.42);
 }
 
 .dash *,
@@ -49,40 +71,39 @@
 }
 .dash h1 {
   font-size: clamp(44px, 6vw, 88px);
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: var(--track-xl);
   line-height: var(--lead-xl);
+  font-variation-settings:
+    "opsz" var(--opsz-xl),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash h2 {
   font-size: clamp(34px, 4.4vw, 58px);
-  font-weight: 700;
+  font-weight: 420;
   letter-spacing: var(--track-l);
   line-height: var(--lead-l);
+  font-variation-settings:
+    "opsz" var(--opsz-l),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash h3 {
   font-size: clamp(22px, 2vw, 27px);
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: var(--track-m);
   line-height: var(--lead-m);
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dash p {
   margin: 0;
   max-width: 62ch;
 }
 
-/* Word mask for the heading reveal. The padding/negative-margin pair keeps
-   descenders and accents outside the clip, so `overflow: hidden` trims the
-   travelling word and nothing else. */
-.dword {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: bottom;
-  padding: 0.1em 0 0.18em;
-  margin: -0.1em 0 -0.18em;
-}
-.dword-in {
-  display: inline-block;
-}
 .dash .eyebrow {
   font-family: var(--font-body), sans-serif;
   font-size: 12px;
@@ -137,41 +158,31 @@
 .dbtn:active {
   transform: translateY(1px);
 }
+/* Default: a dark pill for the white body (hero, pilot-section text, cards).
+   .dnav and .dhero2 are black sections, so their solid button flips back to
+   a light pill below — same shape, inverted for contrast against black. */
 .dbtn-solid {
-  background: var(--cream);
-  color: var(--ink);
-  position: relative;
-  overflow: hidden;
+  background: var(--ink);
+  color: var(--cream);
   transition:
     transform var(--dur-2) var(--ease),
     box-shadow var(--dur-2) var(--ease),
-    background-color var(--dur-2) var(--ease);
+    opacity var(--dur-2) var(--ease);
 }
-/* A light sweep that crosses once on hover — a moment of motion, not a loop. */
-.dbtn-solid::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.85) 50%,
-    transparent 100%
-  );
-  transform: skewX(-18deg);
-  pointer-events: none;
+.dnav .dbtn-solid,
+.dhero2 .dbtn-solid {
+  background: var(--cream);
+  color: var(--ink);
 }
+/* A small lift. There used to be a 600ms skewed white gradient sweeping
+   across the button on hover — 2.4x the motion budget, a hard-coded white
+   rather than a token, no transition on un-hover so it snapped back when
+   the cursor left, and nearly invisible on the cream variant anyway. The
+   lift and shadow are the whole response now. */
 .dbtn-solid:hover {
-  background: #fff;
+  opacity: 0.88;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
-}
-.dbtn-solid:hover::after {
-  transition: left var(--dur-2) var(--ease);
-  left: 140%;
 }
 .dbtn-solid:active {
   transform: translateY(0) scale(0.97);
@@ -182,51 +193,66 @@
   .dbtn-solid:active {
     transform: none;
   }
-  .dbtn-solid::after {
-    display: none;
-  }
 }
+/* Default: an outline button on the white body (hero, CTA band). .dhero2 is
+   black, so it gets the original filled-dark-chip style back below. */
 .dbtn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.dbtn-ghost:hover {
+  background: rgba(11, 11, 12, 0.05);
+  border-color: var(--ink);
+}
+.dhero2 .dbtn-ghost {
   background: var(--ink-2);
   color: var(--cream);
   border-color: var(--line-strong);
 }
-.dbtn-ghost:hover {
+.dhero2 .dbtn-ghost:hover {
   background: #1d1d20;
   border-color: var(--line-strong);
 }
+/* Default: ink, for links sitting on the white body (most of them now).
+   .daside is a dark card, so it gets cream back explicitly below. */
 .dbtn-link {
   height: auto;
   padding: 0;
   border-radius: 0;
   background: none;
-  color: var(--cream);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
   gap: 8px;
   border: none;
   cursor: pointer;
 }
+.dbtn-link .dbtn-arrow {
+  transition: transform 0.18s ease;
+}
+.dbtn-link:hover .dbtn-arrow {
+  transform: translateX(4px);
+}
+
 /* ============================================================
    NAV
    ============================================================ */
+/* Pitch black, not a translucent/washed one — the color-mix and
+   backdrop-filter tints both read grey once a white body shows through them
+   on scroll, so the header is now solid --ink at all times (2026-10-29). */
 .dnav {
   position: sticky;
   top: 0;
   z-index: 40;
-  /* Designed opaque default — what ships where backdrop-filter is missing or
-     transparency is reduced. */
-  background: color-mix(in srgb, var(--ink) 94%, var(--cream));
-  border-bottom: 1px solid var(--line);
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dnav {
-    background: rgb(12 12 13 / 0.72);
-    /* brightness() clamps the contrast floor deterministically; saturate()
-       is wrong here — it would pull colour out of the warm greys. Blur kept
-       light (18px, not the 36px chrome token) because the backdrop is a
-       document scrolling at 60fps. */
-    -webkit-backdrop-filter: blur(18px) brightness(var(--glass-clamp));
-    backdrop-filter: blur(18px) brightness(var(--glass-clamp));
-  }
+  color: var(--cream);
+  background: var(--ink);
+  /* var(--line) here is a 12%-opacity hairline — nearly invisible as the
+     edge of a now-solid black header (2026-10-29: was tuned for the old
+     translucent/blurred nav, where the page showing through already
+     implied an edge). A clearer, more deliberate line now that it's the
+     only thing marking where black ends and the page begins. */
+  border-bottom: 1px solid rgba(244, 239, 230, 0.28);
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .dnav {
@@ -247,9 +273,13 @@
   gap: 10px;
   font-family: var(--font-display), serif;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: var(--track-m);
   color: var(--cream);
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dnav-brand img {
   display: block;
@@ -274,12 +304,13 @@
   gap: 12px;
   margin-left: auto;
 }
+
 .dnav-burger {
   display: none;
   flex-direction: column;
   gap: 5px;
-  width: 44px;
-  height: 44px; /* AA target size */
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
@@ -350,6 +381,12 @@
 .dcrumb-here:hover {
   color: var(--cream);
 }
+.dcrumb-here svg {
+  transition: transform var(--dur-2) var(--ease);
+}
+.dcrumb-here:hover svg {
+  transform: translateY(2px);
+}
 .dcrumb-here:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 3px;
@@ -383,6 +420,7 @@
   max-width: 20ch;
   margin-inline: auto;
   text-align: center;
+  margin-bottom: 14px;
 }
 .dcenter .lead {
   max-width: 52ch;
@@ -395,98 +433,122 @@
   color: var(--muted-2);
   line-height: 1.6;
 }
+
 /* ============================================================
    HERO
    ============================================================ */
+.dhero {
+  /* Fill the first screen (viewport minus the 68px nav and ~44px breadcrumb)
+     so the landing shows the line alone; the video sits below the fold. */
+  min-height: calc(100svh - 112px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  text-align: center;
+}
 .dhero-media {
   padding-top: clamp(24px, 4vw, 48px);
 }
 
-/* Image hero — full-bleed photo, left-to-right dark scrim, text left,
-   actions pinned top-right. */
+/* Hero — white ground, headline left, actions beside it. The dark accent is
+   .dhero-video below, not a photo backdrop (2026-10-29: Harvey-style
+   white-hero + dark-screenshot-card direction, replacing the former
+   full-bleed photo). */
+/* 2026-10-29: the photo is now a true full-bleed background for the whole
+   hero (edge to edge, behind the text) rather than a side column — small
+   compact text in front, exactly like the original dark-photo hero's scale,
+   just bleached to white instead of scrimmed to black. */
 .dhero-img {
   position: relative;
-  min-height: calc(100svh - 68px);
-  display: flex;
   overflow: hidden;
+  display: flex;
   border: none;
-}
-.dhero-img-photo {
-  object-fit: cover;
-  object-position: center;
-  z-index: 0;
-}
-.dhero-img-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(12, 12, 13, 0.94) 0%,
-      rgba(12, 12, 13, 0.78) 38%,
-      rgba(12, 12, 13, 0.42) 72%,
-      rgba(12, 12, 13, 0.35) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(12, 12, 13, 0.55) 0%,
-      rgba(12, 12, 13, 0) 26%,
-      rgba(12, 12, 13, 0) 70%,
-      rgba(12, 12, 13, 0.55) 100%
-    );
+  padding-block: clamp(56px, 9vw, 104px) clamp(32px, 5vw, 56px);
+  min-height: 560px;
 }
 .dhero-img-inner {
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   width: min(1240px, calc(100% - 112px));
-  padding-block: 32px;
+  margin-inline: auto;
 }
 .dhero-img-actions {
   display: flex;
   gap: 12px;
   margin-top: 36px;
+  justify-content: center;
 }
+/* Centred, now that the chamber photo is gone — there is no longer a right
+   half for the image to occupy, so left-aligned type left the section
+   visibly lopsided. The measure caps still apply; `margin-inline: auto`
+   centres each block within the container rather than stretching it. */
 .dhero-img-text {
-  max-width: 760px;
-  text-align: left;
+  max-width: 880px;
+  margin-inline: auto;
+  text-align: center;
 }
 .dhero-img-text .eyebrow {
   display: block;
   margin-bottom: 22px;
 }
 .dhero-img-text h1 {
-  font-size: clamp(40px, 5.2vw, 74px);
+  font-size: clamp(46px, 6vw, 86px);
   line-height: 1.04;
   letter-spacing: -0.015em;
-  margin: 0;
-  max-width: 17ch;
-  /* Caps at 74px, not the 88px `.dash h1` assumes: opsz has to track the size
-     actually rendered or Fraunces draws 88px hairlines at 74px and below. */
+  margin: 0 auto;
+  max-width: 19ch;
 }
 .dhero-img-text .lead {
   color: var(--muted);
-  font-size: clamp(16px, 1.5vw, 20px);
+  font-size: clamp(17px, 1.6vw, 22px);
   margin-top: 26px;
-  max-width: 52ch;
+  margin-inline: auto;
+  max-width: 56ch;
 }
 @media (max-width: 760px) {
   .dhero-img-inner {
     padding-block: 20px;
   }
   .dhero-img-actions {
-    align-self: stretch;
-    justify-content: flex-start;
+    /* Centred like the rest of the hero. This said `flex-start` (plus an
+       inert `align-self: stretch` — the parent is not a flex container),
+       left over from the left-aligned photo hero, so on a phone the
+       centred eyebrow/headline/lead sat above two flush-left buttons. */
+    justify-content: center;
     flex-wrap: wrap;
   }
   .dhero-img-text h1 {
-    font-size: clamp(34px, 9.5vw, 52px);
-    letter-spacing: var(--track-l);
+    /* Raised with the desktop tier (was clamp(34px, 9.5vw, 52px)) so the
+       hero reads larger on phones too, not only above 760px. */
+    font-size: clamp(38px, 10vw, 58px);
   }
 }
+.dhero .eyebrow {
+  display: block;
+  margin-bottom: 26px;
+}
+.dhero h1 {
+  margin-inline: auto;
+  max-width: 15ch;
+}
+.dhero .lead {
+  margin: 26px auto 0;
+  max-width: 46ch;
+}
+
+.dblank .play {
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ============================================================
    STATEMENT (Built for the record)
    ============================================================ */
@@ -536,12 +598,21 @@
   line-height: 1.5;
   max-width: 34ch;
 }
+.dfeature-head svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--cream);
+}
 .dfeature-title {
   font-family: var(--font-display), serif;
   font-size: 25px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: var(--track-m);
   line-height: 1.2;
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .dfeature-body {
   color: var(--muted);
@@ -557,6 +628,7 @@
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--ink-2);
+  color: var(--cream);
 }
 .dfeature-example-label {
   display: block;
@@ -576,9 +648,6 @@
   font-size: 12px;
   color: var(--muted-2);
 }
-.dfeature-learn {
-  margin-top: 20px;
-}
 
 /* two-column shell with sticky aside */
 .dfeature-shell {
@@ -594,12 +663,14 @@
   border-radius: 14px;
   padding: 22px;
   background: var(--ink-2);
+  color: var(--cream);
 }
 .daside-title {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 16px;
 }
+
 .daside p {
   font-size: 14px;
   color: var(--muted);
@@ -608,6 +679,72 @@
 .daside .dbtn-link {
   margin-top: 16px;
   font-size: 14px;
+}
+
+/* ============================================================
+   TOOLS — four bordered cards, icon + title + body + link. Replaces the
+   old full-width .dfeature-row stack, which read as empty text rows once
+   the canvas went light (2026-10-29).
+   ============================================================ */
+.dtools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-top: 56px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+/* The 1px gap lets the grid's --line ground through as hairline rules. Each
+   grid ITEM is the Reveal wrapper, though, not the card inside it — so any
+   card shorter than its row left that ground showing as a thick grey bar
+   under the text. Both the wrapper and the card now fill the cell. */
+.dtools-grid > * {
+  display: flex;
+  min-width: 0;
+}
+.dtool-card {
+  flex: 1;
+  background: var(--cream);
+  padding: clamp(28px, 3vw, 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: background 0.18s ease;
+}
+.dtool-card:hover {
+  background: var(--paper);
+}
+.dtool-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  color: var(--ink);
+  flex: none;
+}
+.dtool-card h3 {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.dtool-card p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+.dtool-card .dbtn-link {
+  margin-top: auto;
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .dtools-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ============================================================
@@ -626,11 +763,6 @@
   max-width: 100%;
 }
 .ddemo-tab {
-  /* inline-flex + min-height, not padding, so the 44px AA target holds at
-     every label length and font size. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
   padding: 9px 18px;
   border-radius: 999px;
   font-size: 14px;
@@ -642,9 +774,12 @@
     color 0.16s ease,
     background 0.16s ease;
 }
+/* The selected tab was cream on the cream ground — the pill was invisible,
+   so as the panel rotated nothing showed which case was on screen. It is
+   now the ink pill, which also makes the rotation legible at a glance. */
 .ddemo-tab[data-active="true"] {
-  color: var(--ink);
-  background: var(--cream);
+  color: var(--cream);
+  background: var(--ink);
 }
 .ddemo-stage {
   display: grid;
@@ -668,11 +803,13 @@
   margin: 0;
   font-family: var(--font-display), serif;
   font-size: 30px;
-  /* 600, not 560: this is the one display heading on a light (#fbf8f2) ground,
-     where ink-on-cream renders perceptually lighter than cream-on-ink. */
-  font-weight: 700;
+  font-weight: 460;
   letter-spacing: var(--track-m);
   line-height: 1.18;
+  font-variation-settings:
+    "opsz" 32,
+    "SOFT" 0,
+    "WONK" 0;
 }
 .ddoc-meta {
   font-style: italic;
@@ -712,28 +849,18 @@
 /* The Prompt/Connectors rail is the translucent READING beside the opaque
    cream document (the record) — glass-2, styled here directly so the whole
    card lives in one rule. Radius pulled to 10px (instrument, not pill). */
+/* Was the global glass-blur treatment — built for sitting over dark imagery.
+   On the cream page there's nothing behind it to blur, so it just rendered
+   as a flat black box ("looking black" — 2026-10-29). A plain solid dark
+   card, matching .dfeature-example/.daside's language elsewhere, replaces
+   it; dropped the @supports/@media blur variants below since they no longer
+   apply. */
 .dcard {
-  border: 1px solid var(--glass-edge);
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--glass-solid);
+  background: var(--ink-2);
+  color: var(--cream);
   padding: 18px;
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge-lit),
-    inset 0 -1px 0 var(--glass-seat);
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dcard {
-    background: rgb(12 12 13 / var(--glass-2-tint));
-    -webkit-backdrop-filter: blur(var(--glass-2-blur)) brightness(var(--glass-clamp));
-    backdrop-filter: blur(var(--glass-2-blur)) brightness(var(--glass-clamp));
-  }
-}
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .dcard {
-    background: var(--glass-solid);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 .dcard-label {
   font-size: 12px;
@@ -762,8 +889,34 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: var(--paper);
+  background: var(--ink);
+  color: var(--cream);
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   ECOSYSTEM
+   ============================================================ */
+.deco {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(28px, 4vw, 56px);
+}
+
+.deco h2 {
+  font-size: clamp(28px, 3vw, 40px);
+}
+.deco p {
+  color: var(--muted);
+  margin: 16px 0 24px;
 }
 
 /* ============================================================
@@ -784,6 +937,10 @@
   border-left: none;
   padding-left: 0;
 }
+.dbuild-col svg {
+  color: var(--cream);
+  margin-bottom: 22px;
+}
 .dbuild-col h3 {
   font-size: 22px;
   margin-bottom: 12px;
@@ -795,43 +952,103 @@
 }
 
 /* ============================================================
-   RESOURCES (blank card grid)
+   RESOURCES — a static grid.
+   This was a 38s infinite marquee (list duplicated to hide the loop seam,
+   paused on hover/focus). Perpetual ambient motion the reader never asked
+   for, and a card could drift away mid-read. The list is short; show it.
    ============================================================ */
-.dres-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+/* RESOURCES — one row, travelling continuously, pausing under the cursor.
+   The track holds the list twice and moves exactly -50%, so the seam never
+   shows. Pause is :hover and :focus-within — the focus half is what gives a
+   keyboard user a way to stop it. */
+.dres-marquee {
+  position: relative;
   margin-top: 60px;
+  overflow: hidden;
+  /* Fade both ends so cards enter and leave rather than being cut off. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 64px,
+    #000 calc(100% - 64px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 64px,
+    #000 calc(100% - 64px),
+    transparent
+  );
+}
+.dres-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: dres-scroll 42s linear infinite;
+}
+.dres-marquee:hover .dres-track,
+.dres-marquee:focus-within .dres-track {
+  animation-play-state: paused;
+}
+.dres-marquee:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+@keyframes dres-scroll {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dres-track {
+    animation: none;
+  }
 }
 .dres-card {
+  flex: 0 0 292px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 28px;
-  min-height: 220px;
+  padding: 26px;
+  min-height: 168px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 24px;
+  background: var(--cream);
+  color: var(--ink);
   transition:
     border-color 0.18s ease,
-    background 0.18s ease;
+    background 0.18s ease,
+    color 0.18s ease;
 }
-.dres-card:hover {
-  border-color: var(--line-strong);
-  background: var(--ink-2);
+.dres-card:hover,
+.dres-card:focus-visible {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--cream);
 }
-/* `.dres-title` is styled once, further down, by `.dres-card .dres-title`
-   (the serif title that replaced the old blank placeholder bar). A bare
-   `.dres-title { height: 46px; border-radius: 8px }` used to sit here and was
-   silently overridden by that higher-specificity rule — dead declarations that
-   also carried a radius above the 6px ceiling. Do not reintroduce it. */
+.dres-title {
+  font-family: var(--font-display), serif;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.32;
+  letter-spacing: var(--track-m);
+}
 .dres-kind {
-  font-size: 13px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted-2);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
-
+.dres-card:hover .dres-kind,
+.dres-card:focus-visible .dres-kind {
+  color: var(--dark-muted, rgba(244, 239, 230, 0.6));
+}
 /* ============================================================
    CTA band
    ============================================================ */
@@ -843,6 +1060,7 @@
   align-items: center;
   gap: 24px;
 }
+
 .dband h3 {
   font-size: clamp(24px, 2.6vw, 34px);
   flex: 1;
@@ -854,7 +1072,13 @@
 /* ============================================================
    SECONDARY HERO
    ============================================================ */
+/* The closing CTA band — the black echo of the header, directly above the
+   black footer (Harvey's "Unlock Professional Class AI" pattern). Full-bleed:
+   the section itself paints edge-to-edge black; .dash-container inside it
+   (see page.tsx) keeps the text column width. */
 .dhero2 {
+  background: var(--ink);
+  color: var(--cream);
   text-align: center;
 }
 .dhero2 h2 {
@@ -876,6 +1100,8 @@
    FOOTER
    ============================================================ */
 .dfoot {
+  background: var(--ink);
+  color: var(--cream);
   border-top: 1px solid var(--line);
   padding: clamp(56px, 7vw, 96px) 0 40px;
 }
@@ -912,57 +1138,48 @@
   color: var(--cream);
 }
 
-/* Connect column — official single-colour marks with mono handles + gold-accent hover.
-   Qualified with .dfoot-col so it outranks the block display on footer links. */
-.dfoot-col a.dfoot-social {
+/* Connect column — icons only now (names/handles removed, 2026-10-29),
+   bigger, stacked vertically (.dfoot-social-stack is the column; each
+   .dfoot-social row is just the icon, no text alongside it anymore). */
+.dfoot-social-stack {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 7px 0;
-  min-height: 44px;
-  color: var(--muted);
+  flex-direction: column;
+  gap: 10px;
+}
+.dfoot-col a.dfoot-social {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0;
+  min-height: 0;
 }
 .dfoot-social-icon {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 10px;
   color: var(--muted);
   transition:
     color 0.16s ease,
     border-color 0.16s ease,
     transform 0.16s ease;
 }
+.dfoot-social-icon svg {
+  width: 20px;
+  height: 20px;
+}
 .dfoot-social:hover .dfoot-social-icon {
   color: var(--gold, #c9a24b);
   border-color: var(--gold, #c9a24b);
   transform: translateY(-1px);
 }
-.dfoot-social-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-}
-.dfoot-social-net {
-  font-size: 14px;
-  color: var(--muted);
-  transition: color 0.16s ease;
-}
-.dfoot-social:hover .dfoot-social-net {
-  color: var(--cream);
-}
-.dfoot-social-handle {
-  font-size: 12px;
-  color: var(--muted-2);
-}
 .dfoot-social:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 3px;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 .dfoot-bottom {
   display: flex;
@@ -985,6 +1202,7 @@
     width: calc(100% - 40px);
   }
   .dnav-links,
+  .dnav-login,
   .dnav-actions .dbtn-solid {
     display: none;
   }
@@ -1007,10 +1225,20 @@
   .ddemo-stage {
     grid-template-columns: 1fr;
   }
+  .deco {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .dquotes-grid,
   .dbuild-grid,
-  .dres-grid,
   .dfoot-cols {
     grid-template-columns: 1fr;
+  }
+  /* The marquee keeps travelling on a phone, but at a card width that
+     leaves room for the next one to show — so it reads as a row in motion
+     rather than one card filling the screen. */
+  .dres-card {
+    flex-basis: 248px;
   }
   .dbuild-grid {
     margin-top: 40px;
@@ -1096,6 +1324,7 @@
   background: transparent;
   border: 1px solid var(--cream);
 }
+
 .chip-abstain {
   color: var(--muted);
   border-style: dashed;
@@ -1103,6 +1332,15 @@
 .chip-abstain::before {
   background: transparent;
   border: 1px dashed var(--muted);
+}
+
+/* hero matrix motion graphic (replaces hero image placeholder) */
+.hm {
+  margin-top: clamp(48px, 6vw, 88px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--ink-2);
+  overflow: hidden;
 }
 
 /* aside chips row */
@@ -1127,15 +1365,33 @@
   flex-direction: column;
   gap: 14px;
   min-height: 250px;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.prin-card:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+}
+.prin-card svg {
+  color: currentColor;
 }
 .prin-card h3 {
   font-family: var(--font-display), serif;
   font-size: 24px;
+  font-variation-settings:
+    "opsz" var(--opsz-m),
+    "SOFT" 0,
+    "WONK" 0;
 }
 .prin-card p {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.55;
+}
+.prin-card:hover p {
+  color: var(--dark-muted, rgba(244, 239, 230, 0.6));
 }
 .prin-step {
   font-family: var(--font-code), monospace;
@@ -1143,25 +1399,8 @@
   color: var(--muted-2);
   margin-top: auto;
 }
-
-/* resources — serif title (replaces blank image bar) */
-.dres-foot {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.dres-card .dres-title {
-  height: auto;
-  background: none;
-  border-radius: 0;
-  font-family: var(--font-display), serif;
-  font-size: 20px;
-  /* Card titles sit in the 16–20px serif tier: sturdier optical size, no
-     negative tracking. 620 holds its weight against the body copy under it. */
-  font-weight: 700;
-  letter-spacing: var(--track-s);
-  line-height: 1.3;
-  color: var(--cream);
+.prin-card:hover .prin-step {
+  color: var(--dark-muted, rgba(244, 239, 230, 0.42));
 }
 
 /* hero video */
@@ -1213,4 +1452,5 @@
   .prin-grid {
     grid-template-columns: 1fr;
   }
+
 }

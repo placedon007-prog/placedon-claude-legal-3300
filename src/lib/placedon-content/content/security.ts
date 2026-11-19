@@ -3,7 +3,7 @@ import type { PageContent } from "./types";
 
 export const securityContent = {
   route: "/security",
-  eyebrow: "Data handling and source discipline · Pre-launch",
+  eyebrow: "",
   headline: "Security claims require evidence too.",
   subhead:
     "We are defining how Placedon handles data before any pilot, guided by India's Digital Personal Data Protection Act, 2023. This page states the standard we intend to meet, not a certified live system.",

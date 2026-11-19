@@ -47,7 +47,7 @@ const socialPaths: Record<SocialIcon, string> = {
 };
 function SocialGlyph({ name }: { name: SocialIcon }) {
   return (
-    <svg width={17} height={17} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d={socialPaths[name]} />
     </svg>
   );
@@ -201,25 +201,23 @@ export function SiteFooter() {
             ))}
             <div className="dfoot-col dfoot-connect">
               <div className="dfoot-col-label">Connect</div>
-              {socialLinks.map((s) => (
-                <a
-                  key={s.name}
-                  href={s.href}
-                  className="dfoot-social"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Placedon on ${s.label} (opens in a new tab)`}
-                  onClick={() => track("social_click", { network: s.name })}
-                >
-                  <span className="dfoot-social-icon">
-                    <SocialGlyph name={s.name} />
-                  </span>
-                  <span className="dfoot-social-text">
-                    <span className="dfoot-social-net">{s.label}</span>
-                    <span className="dfoot-social-handle mono">{s.handle}</span>
-                  </span>
-                </a>
-              ))}
+              <div className="dfoot-social-stack">
+                {socialLinks.map((s) => (
+                  <a
+                    key={s.name}
+                    href={s.href}
+                    className="dfoot-social"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Placedon on ${s.label} (opens in a new tab)`}
+                    onClick={() => track("social_click", { network: s.name })}
+                  >
+                    <span className="dfoot-social-icon">
+                      <SocialGlyph name={s.name} />
+                    </span>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>
