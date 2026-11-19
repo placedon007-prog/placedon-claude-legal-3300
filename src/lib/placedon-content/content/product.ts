@@ -10,7 +10,7 @@ import type { PageContent } from "./types";
 
 export const productContent = {
   route: "/product",
-  eyebrow: "Product concept · Pre-launch",
+  eyebrow: "",
   headline: "The answer. Its authority. Its limits.",
   subhead:
     "Placedon is built around an evidence record you can inspect for Indian corporate law. The views here show the intended product, not live compliance checks.",

@@ -1,10 +1,53 @@
+"use client";
+
 import Link from "next/link";
+import { Fragment } from "react";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LegalText } from "./brand";
 import type {
   ContentLink,
   ContentSection,
   PageContent,
 } from "@/lib/placedon-content/content/types";
+
+/* Word-reveal heading for every marketing page — same clipped-word technique
+   as the homepage's AnimatedH2. Replays each time it re-enters the viewport.
+   Plain strings only — LegalText's substitutions run first. */
+const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
+const headingContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.045, delayChildren: 0.05 } },
+};
+const headingWord: Variants = {
+  hidden: { y: "110%" },
+  show: { y: "0%", transition: { duration: 0.46, ease: EASE } },
+};
+function RevealHeading({ text }: { text: string }) {
+  const reduce = useReducedMotion();
+  if (reduce) return <>{text}</>;
+  const words = text.split(" ");
+  return (
+    <motion.span
+      style={{ display: "inline" }}
+      variants={headingContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: false, margin: "-60px" }}
+    >
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          <span className="dword">
+            <motion.span className="dword-in" variants={headingWord}>
+              {w}
+            </motion.span>
+          </span>
+          {i < words.length - 1 ? " " : ""}
+        </Fragment>
+      ))}
+    </motion.span>
+  );
+}
+
 export function Action({
   action,
   secondary = false,
@@ -21,9 +64,9 @@ export function Action({
 export function PageHero({ page }: { page: PageContent }) {
   return (
     <div className="container page-hero">
-      <p className="eyebrow">{page.eyebrow}</p>
+      {page.eyebrow && <p className="eyebrow">{page.eyebrow}</p>}
       <h1>
-        <LegalText>{page.headline}</LegalText>
+        <RevealHeading text={page.headline} />
       </h1>
       <p className="page-intro">
         <LegalText>{page.subhead}</LegalText>
@@ -45,7 +88,7 @@ export function ReadingSection({
       <div className="container reading-grid">
         <div className="section-aside">
           <h2>
-            <LegalText>{section.heading}</LegalText>
+            <RevealHeading text={section.heading} />
           </h2>
         </div>
         <div className="section-body">
@@ -75,36 +118,6 @@ export function ReadingSection({
         )}
         {section.action && <Action action={section.action} secondary />}
         </div>
-      </div>
-    </section>
-  );
-}
-export function ClosingInvitation() {
-  return (
-    <section className="closing-invitation container">
-      <div>
-        <span className="eyebrow">The next step</span>
-        <h2>
-          Put the standard
-          <br />
-          under review.
-        </h2>
-        <p>
-          Describe a compliance workflow. Scope and terms must be agreed before
-          participation.
-        </p>
-      </div>
-      <div className="closing-actions">
-        <Action
-          action={{ label: "Request a pilot", href: "/waitlist?intent=pilot" }}
-        />
-        <Action
-          action={{ label: "How Placedon works", href: "/how-it-works" }}
-          secondary
-        />
-        <span className="small muted">
-          Pre-launch. No access date promised.
-        </span>
       </div>
     </section>
   );

@@ -12,10 +12,6 @@ import { useEffect, useRef, type ReactNode } from "react";
  * Anti-flash + readability contract:
  *   - Blocks already in view on load are left visible (never hidden → no flash).
  *   - Only below-the-fold blocks are set to `out` and revealed as they enter.
- *   - A block reveals ONCE and is then unobserved. The earlier version replayed
- *     the reveal on every scroll pass, so a reader scrolling back up through a
- *     privacy policy watched the same paragraphs dim and lift again — motion
- *     with no information in it, and the page never settled.
  *   - Reduced motion, or no IntersectionObserver, leaves everything visible.
  * Legal text is therefore always readable even if JS fails.
  */
@@ -52,14 +48,18 @@ export function ScrollReveal({
       el.setAttribute("data-reveal", rect.top >= viewportH ? "out" : "in");
     });
 
-    // Reveal once, then stop watching the block: it stays at `in` for the rest
-    // of the session, so scrolling back up does not re-dim settled copy.
+    // Replay: toggle in/out as blocks enter and leave, so the reveal plays
+    // again each time the reader scrolls back to a section. Safe to repeat
+    // because the reveal floors at 0.55 opacity — a re-hidden block stays
+    // readable rather than blinking out. This matches the framer reveals
+    // inside these same blocks, which also replay.
     const observer = new IntersectionObserver(
-      (entries, obs) => {
+      (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.setAttribute("data-reveal", "in");
-          obs.unobserve(entry.target);
+          entry.target.setAttribute(
+            "data-reveal",
+            entry.isIntersecting ? "in" : "out",
+          );
         }
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },

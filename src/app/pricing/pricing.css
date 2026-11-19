@@ -2,14 +2,17 @@
    Scoped to .pricing- classes; touches no shared scaffold style.
    Two participation routes shown as at-a-glance tiers, plus an honesty strip
    that keeps the pre-launch position explicit (no published tariff, no payment
-   requested). Monochrome on the dark .dash surface; corners use the 3px
-   --radius token; no decorative shadow. */
+   requested). White cards on the now-light .dash surface (2026-10-29); corners
+   use the 3px --radius token; no decorative shadow.
+   NOTE: every color below is a hex literal, not --ink-2/--muted/--cream —
+   those token NAMES are shared with dashboard.css's .dash-scoped system
+   (.pricing-tier is nested inside .dash) but mean something different there
+   now that .dash defaults to a light canvas; reusing them here silently gave
+   dark-on-dark text (the "dull tile" bug). Literal colors sidestep that. */
 
-/* Same rhythm as `.reading-section` (64px, 32px under 760px) — this block sits
-   directly below those sections, so an odd 50px read as a misaligned seam. */
 .pricing-tiers {
   border-top: 1px solid var(--border);
-  padding-block: 64px;
+  padding-block: 50px;
 }
 
 .pricing-tiers-head {
@@ -32,43 +35,51 @@
   flex-direction: column;
   gap: 16px;
   padding: 28px;
-  border: 1px solid var(--line-strong, var(--border));
-  border-radius: var(--radius);
-  background: var(--ink-2, transparent);
+  border: 1px solid rgba(11, 11, 12, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+/* Hover turns the border fully black, like the primary tile's permanent
+   border — a plain CSS :hover, so it replays every time the cursor leaves
+   and comes back, on this card and the Waitlist one (2026-10-29). */
+.pricing-tier:hover {
+  border-color: #0b0b0c;
+  box-shadow: 0 16px 36px -20px rgba(11, 11, 12, 0.28);
+  transform: translateY(-2px);
 }
 
-/* The primary route is marked with a heavier rule, not colour, so it reads
-   without relying on hue. */
-.pricing-tier[data-primary="true"] {
-  border-width: 2px;
-}
 
 .pricing-tier-name {
   font-size: 22px;
-  line-height: 1.25;
-  letter-spacing: var(--track-m);
+  line-height: 1.2;
   margin: 0;
+  color: #0b0b0c;
 }
 
 .pricing-tier-price {
   font-size: 15px;
+  font-weight: 500;
   line-height: 1.5;
-  color: var(--cream);
+  color: #0b0b0c;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--line, var(--border));
+  border-bottom: 1px solid rgba(11, 11, 12, 0.12);
 }
 
 .pricing-tier-desc {
   font-size: 14px;
   line-height: 1.7;
-  color: var(--muted);
+  color: rgba(11, 11, 12, 0.66);
   margin: 0;
 }
 
 .pricing-tier-note {
   font-size: 12px;
   line-height: 1.6;
-  color: var(--muted-2, var(--muted));
+  color: rgba(11, 11, 12, 0.46);
   margin: 0;
 }
 
@@ -87,8 +98,7 @@
 }
 
 .pricing-note dt {
-  /* 11px, matching `.eyebrow` — 10px uppercase at 0.1em was under the floor. */
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-2, var(--muted));
@@ -103,9 +113,6 @@
 }
 
 @media (max-width: 760px) {
-  .pricing-tiers {
-    padding-block: 32px;
-  }
   .pricing-tier-grid,
   .pricing-notes {
     grid-template-columns: 1fr;

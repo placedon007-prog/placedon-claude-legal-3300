@@ -2,14 +2,14 @@
    Scoped to .hiw- classes so it never touches shared scaffold styles.
    Renders the three intended answer classes as an inspectable explainer that
    complements the "answer-classes" content section (which carries no items).
-   Monochrome on the dark .dash surface; citations remain the only accent.
-   Corners inherit the 3px --radius token; no decorative shadow. */
+   White cards on the now-light .dash surface (2026-10-29); citations remain
+   the only accent. Corners inherit the 3px --radius token; no decorative
+   shadow. Literal hex colors, not --ink-2/--muted/--cream — see pricing.css
+   for why those token names are unsafe to reuse inside .dash now. */
 
-/* Same rhythm as `.reading-section` (64px, 32px under 760px) — this block sits
-   directly below those sections, so an odd 50px read as a misaligned seam. */
 .hiw-classes {
   border-top: 1px solid var(--border);
-  padding-block: 64px;
+  padding-block: 50px;
 }
 
 .hiw-classes-head {
@@ -39,9 +39,13 @@
   flex-direction: column;
   gap: 12px;
   padding: 24px;
-  border: 1px solid var(--line-strong, var(--border));
-  border-radius: var(--radius);
-  background: var(--ink-2, transparent);
+  border: 1px solid rgba(11, 11, 12, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  transition: border-color 160ms ease;
+}
+.hiw-class:hover {
+  border-color: rgba(11, 11, 12, 0.28);
 }
 
 .hiw-class-top {
@@ -54,37 +58,36 @@
 .hiw-class-index {
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: rgba(11, 11, 12, 0.46);
 }
 
 .hiw-class-tag {
-  /* 11px, matching `.eyebrow` — 10px uppercase at 0.1em was under the floor. */
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 3px 8px;
-  border: 1px solid var(--line-strong, var(--border));
-  border-radius: var(--radius);
-  color: var(--muted);
+  border: 1px solid rgba(11, 11, 12, 0.18);
+  border-radius: 6px;
+  color: rgba(11, 11, 12, 0.56);
   white-space: nowrap;
 }
 
 .hiw-class h3 {
   font-size: 22px;
-  line-height: 1.25;
-  letter-spacing: var(--track-m);
+  line-height: 1.2;
   margin: 0;
+  color: #0b0b0c;
 }
 
 .hiw-class-short {
-  font-size: 13px;
-  color: var(--muted);
+  font-size: 12px;
+  color: rgba(11, 11, 12, 0.46);
 }
 
 .hiw-class-claim {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--cream);
+  color: #0b0b0c;
 }
 
 .hiw-class dl {
@@ -95,10 +98,10 @@
 }
 
 .hiw-class dt {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted-2, var(--muted));
+  color: rgba(11, 11, 12, 0.46);
   margin-bottom: 4px;
 }
 
@@ -106,17 +109,11 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--muted);
+  color: rgba(11, 11, 12, 0.66);
 }
 
 @media (max-width: 900px) {
   .hiw-class-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .hiw-classes {
-    padding-block: 32px;
   }
 }

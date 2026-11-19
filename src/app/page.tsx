@@ -1,54 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useRef, useEffect, Fragment, type ReactNode } from "react";
 import {
   motion,
   AnimatePresence,
   useReducedMotion,
+  useInView,
   type Variants,
 } from "framer-motion";
-import Balancer from "react-wrap-balancer";
 import { SiteNav, SiteFooter } from "@/components/site-chrome";
 import { track } from "@/lib/track";
 import "./dashboard.css";
 
 /* ---------------------------- heading with word-reveal typography
-   Words rise from behind a clipped edge rather than fading up. A fade sets
-   every word to opacity 0 first, so on a five-word heading the last word was
-   still invisible three quarters of a second in — the headline read as a
-   fragment ("How…") for most of the reveal. A mask wipe paints each word at
-   full contrast or not at all.
-
-   Budget: a seven-word heading used to take 0.42s + 6 × 0.045s ≈ 0.69s, and it
-   replayed on every scroll pass — seven headings each running a sub-second
-   choreography, which is not "one orchestrated moment, everywhere else
-   ≤250ms". Now 0.24s per word at a 0.028s stagger (≈0.41s worst case) and it
-   plays once per session. */
+   Words rise from behind a clipped edge, one after another. Each word is
+   painted at full contrast or not at all (no fade), so text stays AA. */
 const EASE: [number, number, number, number] = [0.2, 0, 0, 1];
 
 const h2Container: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.028 } },
+  show: { transition: { staggerChildren: 0.045 } },
 };
 const h2Word: Variants = {
   hidden: { y: "110%" },
-  show: {
-    y: "0%",
-    transition: { duration: 0.24, ease: EASE },
-  },
+  show: { y: "0%", transition: { duration: 0.42, ease: EASE } },
 };
-function AnimatedH2({ children }: { children: string }) {
+
+function AnimatedH2({
+  children,
+  as = "h2",
+}: {
+  children: string;
+  as?: "h1" | "h2";
+}) {
   const reduce = useReducedMotion();
-  if (reduce) return <h2>{children}</h2>;
+  const Tag = as;
+  if (reduce) return <Tag>{children}</Tag>;
+  const MotionTag = as === "h1" ? motion.h1 : motion.h2;
   const words = children.split(" ");
   return (
-    <motion.h2
+    <MotionTag
       variants={h2Container}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
     >
       {words.map((w, i) => (
         <Fragment key={i}>
@@ -60,37 +56,23 @@ function AnimatedH2({ children }: { children: string }) {
           {i < words.length - 1 ? " " : ""}
         </Fragment>
       ))}
-    </motion.h2>
+    </MotionTag>
   );
 }
 
-/* ---------------------------------------- hero video (autoplay on view)
-   Autoplay is driven entirely from the effect, not the `autoPlay` attribute,
-   for two reasons:
-   - prefers-reduced-motion. A looping video is motion, and the global CSS
-     reduced-motion reset cannot reach a <video>. Under `reduce` the clip is
-     never started automatically; it stays on its first frame and the play
-     button is the only way to run it.
-   - It keeps the markup identical on the server and the client, so reading
-     the media query costs no hydration mismatch.
-   The observer also honours an explicit pause: once the reader presses pause,
-   scrolling away and back does not restart the clip against their intent. */
+/* ---------------------------------------- hero video (autoplay on view) */
 function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
-  const [paused, setPaused] = useState(true);
+  const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
-  /* Set when the reader pauses by hand; suppresses the scroll-into-view play. */
-  const pausedByReader = useRef(false);
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     v.muted = true; // ensure muted so autoplay is allowed
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) {
-          if (!pausedByReader.current) v.play().catch(() => {});
-        } else v.pause();
+        if (e.isIntersecting) v.play().catch(() => {});
+        else v.pause();
       },
       { threshold: 0.2 },
     );
@@ -100,31 +82,22 @@ function HeroVideo() {
   const togglePlay = () => {
     const v = ref.current;
     if (!v) return;
-    if (v.paused) {
-      pausedByReader.current = false;
-      v.play().catch(() => {});
-    } else {
-      pausedByReader.current = true;
-      v.pause();
-    }
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
   };
   const toggleMute = () => {
     const v = ref.current;
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
-    if (!v.muted && v.paused) {
-      // Unmuting is an explicit request to hear the clip, so it also clears
-      // an earlier manual pause rather than leaving playback suppressed.
-      pausedByReader.current = false;
-      v.play().catch(() => {});
-    }
+    if (!v.muted && v.paused) v.play().catch(() => {});
   };
   return (
     <div className="dhero-video">
       <video
         ref={ref}
         src="/media/hero.mp4"
+        autoPlay
         muted
         loop
         playsInline
@@ -178,27 +151,30 @@ function HeroVideo() {
 /**
  * Scroll reveal.
  *
- * Text never starts at `opacity: 0`. Cream on ink falls under the 4.5:1 AA
- * floor below roughly alpha 0.48, so a fade from zero leaves a window where
- * the words are on screen and unreadable — the reason headings looked broken
- * while scrolling. Reveals start at --reveal-floor (0.55) and mostly move.
+ * Reveals MOVE; they do not fade. Any opacity below roughly 0.48 puts cream
+ * on ink under the 4.5:1 AA floor, and even 0.55 reads as washed-out grey on
+ * the black sections — which is on screen often, because the reveal replays
+ * on every pass. Animating transform alone keeps text at full contrast.
  *
- * `mode="surface"` animates transform only. An ancestor at opacity < 1 becomes
- * a backdrop root, which silently kills `backdrop-filter` on any glass inside
- * it, so anything carrying glass must use this mode.
+ * The old `` opt-out is gone with the fade it existed to avoid:
+ * an ancestor at opacity < 1 becomes a backdrop root, which silently kills
+ * `backdrop-filter` on any glass inside it. Nothing changes opacity now, so
+ * glass is safe everywhere.
+ *
+ * Replays (`once: false`): scrolling back up and down again re-runs it, which
+ * is what the owner asked for. It is safe to replay because the reveal never
+ * drops below --reveal-floor (0.55) — a re-hidden block stays readable rather
+ * than blinking out.
  */
-const REVEAL_FLOOR = 0.55;
 
 function Reveal({
   children,
   delay = 0,
   className,
-  mode = "text",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
-  mode?: "text" | "surface";
 }) {
   const reduce = useReducedMotion();
 
@@ -206,11 +182,10 @@ function Reveal({
   const variants: Variants = reduce
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: mode === "surface" ? 1 : REVEAL_FLOOR, y: 14 },
+        hidden: { y: 28 },
         show: {
-          opacity: 1,
           y: 0,
-          transition: { duration: 0.22, delay, ease: EASE },
+          transition: { duration: 0.5, delay, ease: EASE },
         },
       };
 
@@ -220,141 +195,12 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-70px" }}
+      viewport={{ once: false, margin: "-70px" }}
     >
       {children}
     </motion.div>
   );
 }
-
-/* ------------------------------------------------------------- content */
-/* Each feature: what it is, why it matters, one worked example, and where it
-   honestly stands. Examples reuse only references already stated on this page. */
-type Feature = {
-  n: string;
-  area: string;
-  title: string;
-  lead: string;
-  body: string[];
-  example: ReactNode;
-  status: string;
-};
-const features: Feature[] = [
-  {
-    n: "01",
-    area: "Research",
-    title: "Read the law as it stood on the day",
-    lead: "Ask about a section, give a date, and get the wording that was in force on that date.",
-    body: [
-      "Most research tools show you today's text. That works until the question is about last year's board meeting, or a notice sent out before a rule changed. Placedon keeps each version of a provision next to the notification that replaced it, so it can tell you what the law said on the date your file cares about, not the date you happen to be asking.",
-      "Every answer comes back with three things: the provision, the instrument that set its wording, and the date that wording took effect. If you want to check the answer yourself, those three are all you need.",
-    ],
-    example: (
-      <>
-        Asked what <strong className="dcite section-reference">Section 96(1)</strong> required for the year
-        ending <span className="dcite">2026-03-31</span>, Placedon answers: an
-        AGM within six months of the year&rsquo;s end, and no more than fifteen
-        months after the last one. The section and its operative date sit
-        under the answer.
-      </>
-    ),
-    status: "In development · Companies Act, 2013 first",
-  },
-  {
-    n: "02",
-    area: "Compliance",
-    title: "Start from the company, not the paperwork",
-    lead: "Describe the company once. Placedon works out which duties under the Act apply to it.",
-    body: [
-      "You tell it what the company is: its class, when it was incorporated, who its directors are, its capital and its turnover. From that it builds a matrix with a row for each duty the Act places on a company like yours. Each row says whether the duty applies, whether it has been met, or exactly which fact is missing before anyone can say.",
-      "The rows come from the Act, not from whatever happens to be in the folder. A company that has uploaded nothing still gets a full matrix, and the empty rows are usually the ones worth looking at first.",
-    ],
-    example: (
-      <>
-        Board meetings under <strong className="dcite section-reference">Section 173(1)</strong>: at least
-        four a year, no more than 120 days apart. Three held so far,{" "}
-        <span className="dcite">96 days</span> since the last. The next one is
-        due before <span className="dcite">2026-10-14</span>.
-      </>
-    ),
-    status: "In development · first duties include Section 96 and Section 173",
-  },
-  {
-    n: "03",
-    area: "Document check",
-    title: "A second reader for every draft",
-    lead: "Give it a notice, a set of minutes or a resolution, and it checks the document against the law the document relies on.",
-    body: [
-      "It asks what a careful reviewer would ask. Is this the kind of document it says it is? Does the rule it cites apply to this company on this date? Is that rule still current, or has it been amended since? Is anything the law requires simply not there?",
-      "It also knows what not to flag. A check written for minutes won't fire on a notice, and a document it can't identify comes back marked as uncertain, not covered in defects it made up.",
-    ],
-    example: (
-      <>
-        A notice relies on a provision that was amended after the notice was
-        drafted. Placedon marks the reference as out of date and names the
-        instrument that changed it, so you know what to correct.
-      </>
-    ),
-    status: "In development",
-  },
-  {
-    n: "04",
-    area: "Monitoring",
-    title: "Know when the law moves under you",
-    lead: "When a new notification is published, see which provisions it touches and which of your answers depend on them.",
-    body: [
-      "Indian corporate law mostly changes through rules and notifications, not through headline amendments to the Act. A limit moves in the Gazette, and nobody tells the folder of resolutions that relied on the old one.",
-      "Placedon keeps a dated log of those changes and links each one to the provisions it affects. When something you relied on changes, the record tells you, with the notification and its date attached.",
-    ],
-    example: (
-      <>
-        <span className="dcite">G.S.R. 880(E)</span> revised the small-company
-        limits under <strong className="dcite section-reference">Section 2(85)</strong> from{" "}
-        <span className="dcite">2025-12-01</span>. Placedon records the
-        notification and links it to every duty that turns on small-company
-        status.
-      </>
-    ),
-    status: "Planned",
-  },
-  {
-    n: "05",
-    area: "Drafting",
-    title: "Drafts that carry their authority",
-    lead: "Write board resolutions, notices and Board's report sections in Word, with the source attached to each clause.",
-    body: [
-      "Drafting is where old law gets copied forward. A template written three years ago still cites what it cited then, and nobody checks, because the document looks finished.",
-      "In the Word add-in, each clause keeps its section and the date its wording took effect. If the law under a clause changes, you can see which clause is affected without rereading the whole draft.",
-    ],
-    example: (
-      <>
-        A Board&rsquo;s report drafted under{" "}
-        <strong className="dcite section-reference">Section 134</strong>, where each disclosure shows the
-        provision it answers to and the date that provision took its current
-        form.
-      </>
-    ),
-    status: "Prototype · Microsoft Word",
-  },
-  {
-    n: "06",
-    area: "Abstention",
-    title: "It tells you when it doesn't know",
-    lead: "If Placedon cannot prove an answer, it holds back and tells you what is missing.",
-    body: [
-      "A 2024 Stanford study found that leading legal AI tools produced false or unsupported answers on 17 to 33 percent of queries. A wrong answer that sounds certain does more damage than no answer. So when part of a provision can't be decided, or the instrument that fixes a figure isn't in the record, Placedon stops and says so.",
-      "An abstention still tells you something. It names the missing instrument or fact and the step that would settle it, so you know exactly what to go and get. A blank row never means you are compliant.",
-    ],
-    example: (
-      <>
-        Does the company have a director resident in India under{" "}
-        <strong className="dcite section-reference">Section 149(3)</strong>? Not answered. That turns on
-        the days each director spent in India, and those are not on record.
-      </>
-    ),
-    status: "Built into every answer",
-  },
-];
 
 const principles = [
   {
@@ -590,6 +436,78 @@ const resources = [
   { title: "Reading the obligation matrix", kind: "Guide" },
 ];
 
+const toolIcons: Record<string, ReactNode> = {
+  "Placedon for Word": (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <path d="M6 3h9l4 4v14H6z" strokeLinejoin="round" />
+      <path d="M15 3v4h4" strokeLinejoin="round" />
+      <path d="M9 13.5 10.5 17 12 14l1.5 3 1.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  "Placedon Matrix": (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+      <line x1="3.5" y1="10" x2="20.5" y2="10" />
+      <line x1="3.5" y1="16" x2="20.5" y2="16" />
+      <line x1="10.5" y1="3.5" x2="10.5" y2="20.5" />
+    </svg>
+  ),
+  "Annual filing checks": (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="1.5" />
+      <line x1="3.5" y1="9.5" x2="20.5" y2="9.5" />
+      <line x1="7.5" y1="3" x2="7.5" y2="6.5" strokeLinecap="round" />
+      <line x1="16.5" y1="3" x2="16.5" y2="6.5" strokeLinecap="round" />
+      <path d="M8 14.5 10.5 17 16 12" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Platform: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <circle cx="5" cy="6" r="2.5" />
+      <circle cx="19" cy="6" r="2.5" />
+      <circle cx="12" cy="19" r="2.5" />
+      <path d="M7.2 7.1 10.3 17M16.8 7.1 13.7 17M7.3 6H16.7" />
+    </svg>
+  ),
+};
+
+const connectorIcons: Record<string, ReactNode> = {
+  "MCA21 Portal": (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18" />
+    </svg>
+  ),
+  "Board minutes": (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M6 3h9l4 4v14H6z" strokeLinejoin="round" />
+      <line x1="9" y1="12" x2="16" y2="12" />
+      <line x1="9" y1="16" x2="16" y2="16" />
+    </svg>
+  ),
+  "Secretarial software": (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="12" rx="1.5" />
+      <line x1="8" y1="20" x2="16" y2="20" />
+      <line x1="12" y1="17" x2="12" y2="20" />
+    </svg>
+  ),
+  Financials: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M4 18 9 11l4 3 7-9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 5h5v5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Registers: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <rect x="4.5" y="3.5" width="15" height="17" rx="1.2" />
+      <line x1="8" y1="8" x2="16" y2="8" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+      <line x1="8" y1="16" x2="13" y2="16" />
+    </svg>
+  ),
+};
+
 /* small helper: ledger index eyebrow */
 function Index({ n, label }: { n: string; label: string }) {
   return (
@@ -605,6 +523,36 @@ export default function DashboardPage() {
   const reduce = useReducedMotion();
   const active = demos[tab];
 
+  /* The tabs advance themselves every 2 seconds — AGM timing, board
+     meetings, and on — while the section is on screen.
+
+     Two things keep that from trapping the reader, which is what WCAG 2.2.2
+     requires of anything that moves on its own for more than five seconds.
+     Pointing at the panel stops it, so the moment you lean in to read, it
+     holds. Choosing a tab by hand stops it for good: the reader has taken
+     over and nothing should take the wheel back. Under reduced motion it
+     never starts. */
+  const demoSectionRef = useRef<HTMLElement>(null);
+  const demoInView = useInView(demoSectionRef, { amount: 0.4 });
+  /* Two separate reasons to stop, deliberately not one flag: hovering is a
+     pause that ends when the pointer leaves, choosing a tab is permanent. */
+  const [demoHovered, setDemoHovered] = useState(false);
+  const [demoTakenOver, setDemoTakenOver] = useState(false);
+
+  useEffect(() => {
+    if (!demoInView || demoHovered || demoTakenOver || reduce) return;
+    const id = setInterval(() => {
+      setTab((t) => (t + 1) % demos.length);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [demoInView, demoHovered, demoTakenOver, reduce]);
+
+  function selectTab(i: number) {
+    setTab(i);
+    track("demo_tab_view", { tab: demos[i].tab });
+    setDemoTakenOver(true); // the reader has taken over; do not resume
+  }
+
   return (
     <div className="dash">
       {/* NAV */}
@@ -616,29 +564,23 @@ export default function DashboardPage() {
           <span>
             Placedon <span className="sep">/</span> Indian corporate law
           </span>
-          <a href="#product" className="dcrumb-here" aria-label="Explore: scroll to the product overview">
+          <a href="#evidence" className="dcrumb-here" aria-label="Explore: scroll to the product in practice">
             Explore here
           </a>
         </div>
       </div>
 
-      {/* HERO — image backdrop, text left, actions top-right */}
+      {/* HERO — centred type on the cream ground, no image and no entrance
+          animation. It is the first thing on the page: there is nothing to
+          reveal it from, and a hero that fades in delays the one statement
+          the site exists to make. */}
       <section className="dhero-img dsection-flush">
-        <Image
-          className="dhero-img-photo"
-          src="/media/hero-chamber.jpg"
-          alt="A grand, empty classical legislative chamber, the seat of the record."
-          fill
-          priority
-          sizes="100vw"
-        />
-        <div className="dhero-img-scrim" aria-hidden="true" />
         <div className="dash-container dhero-img-inner">
-          <Reveal className="dhero-img-text">
+          <div className="dhero-img-text">
             <span className="eyebrow">
               Research · Compliance · Monitoring · Drafting
             </span>
-            <h1>The evidence-first workspace for Indian corporate law.</h1>
+            <AnimatedH2 as="h1">The evidence-first workspace for Indian corporate law.</AnimatedH2>
             <p className="lead">
               Placedon brings research, compliance, monitoring, and drafting
               into one place for corporate teams and their lawyers. Every answer
@@ -662,89 +604,28 @@ export default function DashboardPage() {
                 See the evidence
               </Link>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
       {/* HERO VIDEO — reveals on scroll, below the first screen */}
       <section className="dash-container dsection dhero-media dsection-flush">
-        <Reveal mode="surface">
+        <Reveal>
           <HeroVideo />
         </Reveal>
       </section>
 
-      {/* STATEMENT + FEATURES */}
-      <section id="product" className="dash-container dsection">
-        <Reveal>
-          <div className="dstatement">
-            <Index n="01" label="The record" />
-            <AnimatedH2>Built for the record</AnimatedH2>
-            <p className="lead">
-              Placedon reads the Companies Act, 2013, traces every answer back
-              to its source, and works inside the tools your compliance team
-              already uses. Every answer shows its citation and its operative
-              date. When it cannot, it abstains.
-            </p>
-          </div>
-        </Reveal>
-
-        <div className="dfeature-shell" style={{ marginTop: "clamp(48px,6vw,88px)" }}>
-          <div className="dfeatures">
-            {features.map((f, i) => (
-              <Reveal key={f.title} delay={i * 0.05}>
-                <article className="dfeature-row" aria-labelledby={`feature-${f.n}`}>
-                  <div className="dfeature-head">
-                    <span className="dfeature-area mono">
-                      {f.n} · {f.area}
-                    </span>
-                    <h3 className="dfeature-title" id={`feature-${f.n}`}>
-                      {f.title}
-                    </h3>
-                    <p className="dfeature-lead">{f.lead}</p>
-                  </div>
-                  <div>
-                    {f.body.map((para) => (
-                      <p className="dfeature-body" key={para.slice(0, 24)}>
-                        {para}
-                      </p>
-                    ))}
-                    <div className="dfeature-example">
-                      <span className="dfeature-example-label mono">Example</span>
-                      <p>{f.example}</p>
-                    </div>
-                    <p className="dfeature-status mono">{f.status}</p>
-                  </div>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal delay={0.1}>
-            <aside className="daside">
-              <div className="daside-title">Evidence over confidence</div>
-              <div className="daside-chips">
-                {/* The base `.chip` filled square IS the verified treatment;
-                    "attaches" and "abstain" are the two modifiers. */}
-                <span className="chip">Verified</span>
-                <span className="chip chip-attaches">Attaches</span>
-                <span className="chip chip-abstain">Abstained</span>
-              </div>
-              <p>
-                Every answer traces to a provision, an instrument, and an
-                operative date. Nothing ships while it cannot be verified.
-              </p>
-              <Link href="/how-it-works" className="dbtn dbtn-link">
-                How the record works
-              </Link>
-            </aside>
-          </Reveal>
-        </div>
-      </section>
-
       {/* INTERACTIVE DEMO */}
-      <section id="evidence" className="dash-container dsection">
+      <section
+        id="evidence"
+        ref={demoSectionRef}
+        className="dash-container dsection"
+        onMouseEnter={() => setDemoHovered(true)}
+        onMouseLeave={() => setDemoHovered(false)}
+      >
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 44 }}>
-            <Index n="02" label="In practice" />
+            <Index n="01" label="In practice" />
             <AnimatedH2>How compliance teams use Placedon</AnimatedH2>
             <p className="ddemo-caption">
               Illustrative example. The sample data shows the format, not a live
@@ -762,10 +643,7 @@ export default function DashboardPage() {
                 aria-selected={i === tab}
                 data-active={i === tab}
                 className="ddemo-tab"
-                onClick={() => {
-                  setTab(i);
-                  track("demo_tab_view", { tab: d.tab });
-                }}
+                onClick={() => selectTab(i)}
               >
                 {d.tab}
               </button>
@@ -773,22 +651,22 @@ export default function DashboardPage() {
           </div>
         </Reveal>
 
-        <Reveal mode="surface">
+        <Reveal>
           <div className="ddemo-stage">
             <div className="ddoc">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={tab}
                   className="ddoc-paper"
-                  /* Opacity + a short lift only. The earlier version morphed
-                     a blur(6px) in and out, which left a statutory extract
-                     legible-but-smeared for a third of a second on every tab
-                     press — the same readability failure the Reveal floor
-                     exists to prevent. */
-                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  /* A plain crossfade. The blur(6px) materialise this
+                     replaced was a visual effect for its own sake — switching
+                     tabs is a swap of content, not a dissolve, and the blur
+                     made the document unreadable for a third of a second each
+                     time. 180ms is inside the ≤250ms budget. */
+                  initial={reduce ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2, ease: EASE }}
+                  exit={reduce ? undefined : { opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
                 >
                   <h4>{active.title}</h4>
                   <div className="ddoc-meta mono">{active.meta}</div>
@@ -811,7 +689,7 @@ export default function DashboardPage() {
                 <div className="dcard-label">Connectors</div>
                 {active.connectors.map((c) => (
                   <div className="dconn" key={c}>
-                    <span className="dconn-mark" />
+                    <span className="dconn-mark">{connectorIcons[c]}</span>
                     {c}
                   </div>
                 ))}
@@ -825,23 +703,20 @@ export default function DashboardPage() {
       <section id="tools" className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 20 }}>
-            <Index n="03" label="Tools" />
+            <Index n="02" label="Tools" />
             <AnimatedH2>Tools made for the way you work</AnimatedH2>
           </div>
         </Reveal>
-        <div className="dfeatures">
+        <div className="dtools-grid">
           {tools.map((f, i) => (
             <Reveal key={f.title} delay={i * 0.05}>
-              <div className="dfeature-row">
-                <div className="dfeature-head">
-                  <span className="dfeature-title">{f.title}</span>
-                </div>
-                <div>
-                  <p className="dfeature-body">{f.body}</p>
-                  <Link href={f.href ?? "/product"} className="dbtn dbtn-link dfeature-learn">
-                    Learn more
-                  </Link>
-                </div>
+              <div className="dtool-card">
+                <span className="dtool-icon">{toolIcons[f.title]}</span>
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+                <Link href={f.href ?? "/product"} className="dbtn dbtn-link">
+                  Learn more
+                </Link>
               </div>
             </Reveal>
           ))}
@@ -852,7 +727,7 @@ export default function DashboardPage() {
       <section className="dash-container dsection">
         <Reveal>
           <div className="dcenter" style={{ marginBottom: 44 }}>
-            <Index n="04" label="The standard" />
+            <Index n="03" label="The standard" />
             <AnimatedH2>The model may propose. The system must verify.</AnimatedH2>
           </div>
         </Reveal>
@@ -871,7 +746,7 @@ export default function DashboardPage() {
       <section className="dash-container dsection">
         <Reveal>
           <div className="dcenter">
-            <Index n="05" label="Platform" />
+            <Index n="04" label="Platform" />
             <AnimatedH2>Build legal products with Placedon</AnimatedH2>
             <p className="lead" style={{ marginTop: 22 }}>
               Embed the record into your platform through the API and the
@@ -893,23 +768,39 @@ export default function DashboardPage() {
       <section id="resources" className="dash-container dsection">
         <Reveal>
           <div className="dcenter">
-            <Index n="06" label="Evidence" />
+            <Index n="05" label="Evidence" />
             <AnimatedH2>Evidence &amp; resources</AnimatedH2>
           </div>
         </Reveal>
-        <div className="dres-grid">
-          {resources.map((r, i) => (
-            <Reveal key={r.title} delay={(i % 3) * 0.05} className="dres-card">
-              <div className="dres-foot">
-                <div className="dres-title">
-                  <Balancer>{r.title}</Balancer>
-                </div>
-                <span className="dres-kind">
-                  {r.kind}
-                </span>
+        {/* One row, travelling continuously, pausing under the cursor.
+
+            The list renders twice back to back and the track moves exactly
+            half its width, so the loop point is invisible. The pause is pure
+            CSS on :hover and :focus-within — the focus half matters, because
+            a keyboard user needs a way to stop it too, and that is what makes
+            continuous motion acceptable rather than something the reader is
+            trapped in (WCAG 2.2.2). Under prefers-reduced-motion the track
+            simply stops. */}
+        <div
+          className="dres-marquee"
+          tabIndex={0}
+          role="group"
+          aria-label="Evidence and resources — scrolling; hover or focus to pause"
+        >
+          <div className="dres-track">
+            {resources.map((r) => (
+              <div className="dres-card" key={r.title}>
+                <div className="dres-title">{r.title}</div>
+                <span className="dres-kind">{r.kind}</span>
               </div>
-            </Reveal>
-          ))}
+            ))}
+            {resources.map((r) => (
+              <div className="dres-card" key={`${r.title}-dup`} aria-hidden="true">
+                <div className="dres-title">{r.title}</div>
+                <span className="dres-kind">{r.kind}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -925,31 +816,35 @@ export default function DashboardPage() {
         </Reveal>
       </section>
 
-      {/* SECONDARY HERO */}
-      <section id="pilot" className="dash-container dsection dhero2">
-        <Reveal>
-          <AnimatedH2>See what Placedon does for compliance teams</AnimatedH2>
-          <p className="lead">
-            Whether you are an in-house secretary scaling filings or an advisor
-            building on the record, we will help you find where to start.
-          </p>
-          <div className="dhero2-actions">
-            <Link
-              href="/waitlist?intent=pilot"
-              className="dbtn dbtn-solid"
-              onClick={() => track("request_pilot_click", { location: "secondary_hero" })}
-            >
-              Request a pilot
-            </Link>
-            <Link
-              href="/product/compliance-pack"
-              className="dbtn dbtn-ghost"
-              onClick={() => track("see_evidence_click", { location: "secondary_hero" })}
-            >
-              See the evidence
-            </Link>
-          </div>
-        </Reveal>
+      {/* SECONDARY HERO — full-bleed black band, the header's echo before the
+          footer (dash-container is nested inside .dhero2, not applied to the
+          section itself, so the black paints edge-to-edge). */}
+      <section id="pilot" className="dsection dhero2">
+        <div className="dash-container">
+          <Reveal>
+            <AnimatedH2>See what Placedon does for compliance teams</AnimatedH2>
+            <p className="lead">
+              Whether you are an in-house secretary scaling filings or an advisor
+              building on the record, we will help you find where to start.
+            </p>
+            <div className="dhero2-actions">
+              <Link
+                href="/waitlist?intent=pilot"
+                className="dbtn dbtn-solid"
+                onClick={() => track("request_pilot_click", { location: "secondary_hero" })}
+              >
+                Request a pilot
+              </Link>
+              <Link
+                href="/product/compliance-pack"
+                className="dbtn dbtn-ghost"
+                onClick={() => track("see_evidence_click", { location: "secondary_hero" })}
+              >
+                See the evidence
+              </Link>
+            </div>
+          </Reveal>
+        </div>
       </section>
 
       {/* FOOTER */}

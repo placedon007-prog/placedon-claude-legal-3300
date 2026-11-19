@@ -111,7 +111,7 @@ function ParticipationTiers() {
 
 export default function PricingPage() {
   return (
-    <MarketingPage page={pricingContent} reveal={false}>
+    <MarketingPage page={pricingContent}>
       <ParticipationTiers />
     </MarketingPage>
   );

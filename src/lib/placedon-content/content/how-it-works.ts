@@ -9,7 +9,7 @@ import type { PageContent } from "./types";
 
 export const howItWorksContent = {
   route: "/how-it-works",
-  eyebrow: "The intended method · Pre-launch",
+  eyebrow: "",
   headline: "Ask. Verify. Cite. Or abstain.",
   subhead:
     "Before it shows an answer, Placedon tests a compliance question against the Indian statutory record: the Companies Act, 2013 and the instruments that amend it. You always see the source, which version applies, and where the answer stops.",
