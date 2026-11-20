@@ -15,7 +15,7 @@ import { documentReadinessAction, findDocumentsAction, loadComposerContext, send
 import { vaultUploadAction } from "./vault/actions";
 import { TurnView, type Turn } from "./answer";
 import { SourcePanel, type OpenSource } from "./source-panel";
-import { NEW_THREAD, recordActivity, rememberCarried, rememberedCarried, rememberQueued, rememberedQueued, rememberThread, rememberThreadSources, stashResume, takeResume, useThreadSources } from "./local-store";
+import { NEW_THREAD, recordActivity, rememberCarried, rememberedCarried, rememberQueued, rememberedQueued, rememberThread, rememberThreadSources, stashResume, takeResume, usePracticeArea, useThreadSources } from "./local-store";
 import { MatterHistoryMenu } from "./matter-history";
 import { Welcome } from "./welcome";
 
@@ -74,6 +74,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
   const [matterId, setMatterId] = React.useState(initialMatterId);
   /** A past date picked in the composer; kept for follow-ups until changed back to today. */
   const [asOf, setAsOf] = React.useState<string | null>(null);
+  const [practiceArea] = usePracticeArea();
   const [sending, setSending] = React.useState(false);
   const [refreshingSources, setRefreshingSources] = React.useState(false);
   const router = useRouter();
@@ -193,7 +194,7 @@ export function AskWorkspace({ initialConversationId, initialTurns, initialMatte
       const state = await sendAction({ conversationId: request.conversationId, requestId: key,
         text: request.text, fileIds: request.fileIds, sources: request.sources.length ? request.sources : undefined,
         matterId: request.matterId, taskOverride: request.tool === "draft" ? "DRAFT" : undefined,
-        asOf: request.asOf ?? undefined });
+        asOf: request.asOf ?? undefined, practiceArea: practiceArea ?? undefined });
       if (lifetime.current !== generation) return;
       if (state.phase === "signed_out") {
         // The session ended. Do NOT print "sign in" into the thread as if it were the answer:

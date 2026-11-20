@@ -479,6 +479,7 @@ export class MockGateway implements GatewayProvider {
     sources?: readonly string[];
     matterId?: string;
     asOf?: string;
+    practiceArea?: string;
   }): Promise<EngineResult<ConversationSend>> {
     if (input.sources?.some((id) => !["held", "vault"].includes(id)) || input.sources?.join(",") === "vault") {
       return engineOk({ status: "REFUSED", code: "NOT_RECORDED", detail: "No recorded reply exists for this source selection in the demo." });

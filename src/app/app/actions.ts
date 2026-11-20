@@ -98,6 +98,8 @@ export async function sendAction(input: {
   matterId?: string | null;
   /** A past date (YYYY-MM-DD) picked in the composer; anything else means today's law. */
   asOf?: string;
+  /** Practice area id from the sidebar selector. */
+  practiceArea?: string;
 }): Promise<TurnState> {
   if (!(await hasSession())) return { phase: "signed_out" };
   const request = z.string().regex(/^[A-Za-z0-9_-]{8,128}$/).safeParse(input.requestId);
@@ -131,6 +133,7 @@ export async function sendAction(input: {
     sources: sources.data,
     matterId: matter?.data,
     asOf,
+    practiceArea: input.practiceArea || undefined,
   });
   if (!result.ok) return { phase: "failed", error: result.error };
   const data = result.data;

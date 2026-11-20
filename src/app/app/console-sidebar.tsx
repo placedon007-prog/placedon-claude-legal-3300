@@ -53,6 +53,7 @@ import {
   useNicknamesOn,
   useSidebarExpanded,
 } from "./local-store";
+import { PracticeSelector } from "./practice-selector";
 import { NameDialog } from "./welcome";
 import { PERSONA_NAME, PERSONA_REASON, persona } from "@/lib/greeting";
 import { loadSavedConversations, logoutAction, type SavedConversations } from "./actions";
@@ -197,6 +198,8 @@ function Rail({ who }: { who: Who }) {
         </a>
       </Tip>
       <span aria-hidden className="my-2 h-px w-6 bg-line" />
+      <PracticeSelector collapsed />
+      <span aria-hidden className="my-2 h-px w-6 bg-line" />
       {LINKS.map(({ href, label, icon: Icon }) => (
         <Tip key={href} label={label}>
           <Link href={href} className={iconOnly} aria-label={label} aria-current={current(href) ? "page" : undefined}>
@@ -219,6 +222,9 @@ function Expanded({ who }: { who: Who }) {
         <SquarePen className="size-4" aria-hidden />
         New question
       </a>
+      <div className="mt-2">
+        <PracticeSelector collapsed={false} />
+      </div>
       <Threads server={who.serverThreads} />
       <nav aria-label="Console" className="mt-3 flex flex-col gap-0.5 border-t border-line pt-3">
         {LINKS.map(({ href, label, icon: Icon }) => (

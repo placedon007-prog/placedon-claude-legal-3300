@@ -478,6 +478,7 @@ export class HttpGateway implements GatewayProvider {
     sources?: readonly string[];
     matterId?: string;
     asOf?: string;
+    practiceArea?: string;
   }): Promise<EngineResult<ConversationSend>> {
     return this.call(GATEWAY_ROUTES.conversationSend, GATEWAY_ROUTES.conversationSend,
       conversationSendSchema, {
@@ -491,6 +492,7 @@ export class HttpGateway implements GatewayProvider {
           ...(input.sources ? { sources: [...input.sources] } : {}),
           ...(input.matterId ? { matter_id: input.matterId } : {}),
           ...(input.asOf ? { as_of: input.asOf } : {}),
+          ...(input.practiceArea ? { practice_area: input.practiceArea } : {}),
         },
       });
   }

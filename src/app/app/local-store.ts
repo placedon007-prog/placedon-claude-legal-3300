@@ -260,6 +260,21 @@ export function saveCompanyFacts(facts: readonly StoredFact[]): void {
   write(COMPANY_KEY, JSON.stringify(facts));
 }
 
+/* ── practice area: which area of law the lawyer focuses on ─────────────────── */
+
+const PRACTICE_KEY = "placedon.console.practice.v1";
+
+export function usePracticeArea(): [string | null, (id: string | null) => void] {
+  const raw = useStored(PRACTICE_KEY);
+  const set = React.useCallback((id: string | null) => {
+    if (id === null) {
+      try { window.localStorage.removeItem(PRACTICE_KEY); } catch { /* nothing */ }
+      window.dispatchEvent(new Event(CHANGED));
+    } else write(PRACTICE_KEY, id);
+  }, []);
+  return [raw, set];
+}
+
 /* ── review tables this browser opened, and the names of the files it ticked ── */
 
 const TABLES_KEY = "placedon.console.tables.v1";
